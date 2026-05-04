@@ -8,21 +8,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
-      manifest: {
-        name: 'Life OS',
-        short_name: 'LifeOS',
-        description: 'Segundo cerebro personal',
-        theme_color: '#0f0f0f',
-        background_color: '#0f0f0f',
-        display: 'standalone',
-        start_url: '/',
-        icons: [
-          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-        ]
-      },
+      manifest: false,  // usamos public/manifest.json manual para control total
+      includeAssets: ['icon.svg', 'icons/*.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
