@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
+import DrumPicker from '../../components/DrumPicker.jsx'
 import { CATEGORY_COLORS, DAYS_LONG } from '../../lib/constants.js'
 import { upsertRoutineBlock, deleteRoutineBlock } from './queries.js'
 import { toast } from '../../store/toastStore.js'
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
 const EMOJIS = ['🏋️', '🥊', '📖', '💼', '🍳', '🧘', '🏃', '☕', '💻', '🎯', '🛌', '🎵']
 const empty = {
@@ -114,20 +118,14 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="label">Inicio</label>
-            <input type="number" min={0} max={23} className="input" value={form.hour_start} onChange={(e) => setForm({ ...form, hour_start: Number(e.target.value) })} />
-          </div>
-          <div>
-            <label className="label">:Min</label>
-            <select className="input" value={form.hour_min} onChange={(e) => setForm({ ...form, hour_min: Number(e.target.value) })}>
-              {[0, 15, 30, 45].map((m) => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Fin (h)</label>
-            <input type="number" min={0} max={24} className="input" value={form.hour_end} onChange={(e) => setForm({ ...form, hour_end: Number(e.target.value) })} />
+        <div>
+          <label className="label">Horario</label>
+          <div className="flex items-end justify-center gap-1">
+            <DrumPicker values={HOURS} selected={form.hour_start} onChange={(h) => setForm({ ...form, hour_start: h })} label="Inicio" />
+            <span className="text-2xl font-bold text-white/30 pb-2">:</span>
+            <DrumPicker values={MINUTES} selected={form.hour_min} onChange={(m) => setForm({ ...form, hour_min: m })} label="Min" />
+            <span className="text-xs text-white/25 pb-3 px-2">hasta</span>
+            <DrumPicker values={HOURS} selected={form.hour_end} onChange={(h) => setForm({ ...form, hour_end: h })} label="Fin" />
           </div>
         </div>
 
