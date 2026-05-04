@@ -12,6 +12,16 @@ export default defineConfig({
       includeAssets: ['icon.svg', 'icons/*.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // El SW sirve index.html para navegaciones SPA, pero NO para assets estáticos
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [
+          /^\/manifest\.json$/,
+          /^\/icons\//,
+          /^\/assets\//,
+          /^\/sw\.js$/,
+          /^\/workbox-/,
+          /^\/registerSW\.js$/
+        ],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.origin.includes('supabase.co'),
