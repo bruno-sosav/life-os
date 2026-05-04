@@ -20,6 +20,7 @@ alter table habits add column if not exists start_time time;
 alter table habits add column if not exists duration_min int default 30;
 alter table habits add column if not exists days_of_week integer[];
 alter table habits add column if not exists sort_order int default 0;
+alter table habits add column if not exists linked_module text; -- 'gym', 'mma', null → sincroniza con pestaña física
 
 -- ─── Logs de hábitos ────────────────────────────────────────
 create table if not exists habit_logs (

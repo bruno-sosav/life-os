@@ -2,6 +2,19 @@ import { supabase } from '../../lib/supabase.js'
 import { format, subDays } from 'date-fns'
 
 // ─── Hábitos ────────────────────────────────────────────────
+export async function fetchLinkedModuleHabit(module) {
+  try {
+    const { data, error } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('linked_module', module)
+      .eq('active', true)
+      .maybeSingle()
+    if (error) return null
+    return data
+  } catch { return null }
+}
+
 export async function fetchActiveHabits() {
   const { data, error } = await supabase
     .from('habits')

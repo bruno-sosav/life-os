@@ -9,6 +9,9 @@ import {
   fetchGymSessions, createGymSession, deleteGymSession,
   fetchExerciseProgression, fetchAllExerciseNames
 } from './queries.js'
+import {
+  fetchLinkedModuleHabit, fetchHabitLogsRange, toggleHabitLog
+} from '../dashboard/queries.js'
 import { fmt, todayISO, weekRange, eachDayOfInterval, format } from '../../lib/dates.js'
 import {
   ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip
@@ -22,13 +25,24 @@ export default function Gym() {
   const [exerciseFilter, setExerciseFilter] = useState('')
   const [adding, setAdding] = useState(false)
 
+  // Hábito vinculado al módulo gym (para sync con dashboard)
+  const gymHabitQ = useAsync(() => fetchLinkedModuleHabit('gym'), [])
+  const gymHabit = gymHabitQ.data
+
+  const { start, end } = weekRange()
+  const startISO = format(start, 'yyyy-MM-dd')
+  const endISO = format(end, 'yyyy-MM-dd')
+  const weekDays = eachDayOfInterval({ start, end })
+
+  const weekHabitLogsQ = useAsync(
+    () => gymHabit ? fetchHabitLogsRange(startISO, endISO) : Promise.resolve([]),
+    [gymHabit?.id, startISO, endISO]
+  )
+
   const progressionQ = useAsync(
     () => exerciseFilter ? fetchExerciseProgression(exerciseFilter) : Promise.resolve([]),
     [exerciseFilter]
   )
-
-  const { start, end } = weekRange()
-  const weekDays = eachDayOfInterval({ start, end })
 
   const sessionsByDate = useMemo(() => {
     const m = {}
@@ -36,21 +50,45 @@ export default function Gym() {
     return m
   }, [sessionsQ.data])
 
-  async function quickToggle(dateISO, existing) {
+  // Set de fechas asistidas — lee habit_logs si hay hábito vinculado, sino gym_sessions
+  const attendedDates = useMemo(() => {
+    const s = new Set()
+    if (gymHabit) {
+      ;(weekHabitLogsQ.data || [])
+        .filter((l) => l.habit_id === gymHabit.id && l.completed)
+        .forEach((l) => s.add(l.date))
+    } else {
+      ;(sessionsQ.data || [])
+        .filter((sess) => sess.attended)
+        .forEach((sess) => s.add(sess.date))
+    }
+    return s
+  }, [gymHabit, weekHabitLogsQ.data, sessionsQ.data])
+
+  async function quickToggle(dateISO) {
     try {
-      if (existing) {
-        const newAttended = !existing.attended
-        await fetch('')   // no-op to satisfy linter
-        // actual update via supabase
-        const { supabase } = await import('../../lib/supabase.js')
-        const { error } = await supabase.from('gym_sessions').update({ attended: newAttended }).eq('id', existing.id)
-        if (error) throw error
-        toast.success(newAttended ? 'Asistencia registrada ✓' : 'Marcado como ausente')
+      if (gymHabit) {
+        // Sync vía habit_logs → mismo dato que el dashboard
+        const log = (weekHabitLogsQ.data || []).find((l) => l.date === dateISO && l.habit_id === gymHabit.id)
+        const next = !log?.completed
+        await toggleHabitLog({ habit_id: gymHabit.id, date: dateISO, completed: next })
+        toast.success(next ? '¡Gym completado! ✓' : 'Desmarcado')
+        weekHabitLogsQ.refetch()
       } else {
-        await createGymSession({ date: dateISO, attended: true, routine_name: null, exercises: [] })
-        toast.success('Sesión registrada ✓')
+        // Sin hábito vinculado: fallback a gym_sessions
+        const existing = sessionsByDate[dateISO]
+        if (existing) {
+          const { supabase } = await import('../../lib/supabase.js')
+          const newAttended = !existing.attended
+          const { error } = await supabase.from('gym_sessions').update({ attended: newAttended }).eq('id', existing.id)
+          if (error) throw error
+          toast.success(newAttended ? 'Asistencia registrada ✓' : 'Desmarcado')
+        } else {
+          await createGymSession({ date: dateISO, attended: true, routine_name: null, exercises: [] })
+          toast.success('Sesión registrada ✓')
+        }
+        sessionsQ.refetch()
       }
-      sessionsQ.refetch()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -65,29 +103,31 @@ export default function Gym() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="lg:col-span-2 space-y-4">
         {/* Weekly check */}
-        <Card title="Semana" emoji="📅">
+        <Card
+          title="Semana"
+          emoji="📅"
+          subtitle={gymHabit ? `Sincronizado con hábito "${gymHabit.name}"` : 'Vincular hábito en Dashboard → + Hábito'}
+        >
           <div className="grid grid-cols-7 gap-1.5">
             {weekDays.map((day, i) => {
               const iso = format(day, 'yyyy-MM-dd')
-              const session = sessionsByDate[iso]
+              const attended = attendedDates.has(iso)
               const isToday = iso === todayISO()
               return (
                 <button
                   key={iso}
-                  onClick={() => quickToggle(iso, session)}
+                  onClick={() => quickToggle(iso)}
                   className="flex flex-col items-center gap-1 py-3 rounded-[14px] transition-all active:scale-95"
                   style={{
-                    background: session?.attended ? '#30D15822' : session ? '#FF453A11' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${session?.attended ? '#30D15840' : session ? '#FF453A30' : isToday ? 'rgba(10,132,255,0.5)' : 'rgba(255,255,255,0.06)'}`
+                    background: attended ? '#30D15822' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${attended ? '#30D15840' : isToday ? 'rgba(10,132,255,0.5)' : 'rgba(255,255,255,0.06)'}`
                   }}
                 >
                   <span className="text-[10px] font-semibold text-white/40">{DOW[i]}</span>
-                  <span className="text-base">
-                    {session?.attended ? '✓' : session ? '✗' : '○'}
-                  </span>
+                  <span className="text-base">{attended ? '✓' : '○'}</span>
                   <span
                     className="text-[10px] font-bold"
-                    style={{ color: session?.attended ? '#30D158' : session ? '#FF453A' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}
+                    style={{ color: attended ? '#30D158' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}
                   >
                     {day.getDate()}
                   </span>
@@ -170,7 +210,6 @@ export default function Gym() {
 function NewSessionModal({ open, onClose, onSaved }) {
   const [date, setDate] = useState(todayISO())
   const [routine, setRoutine] = useState('')
-  const [attended, setAttended] = useState(true)
   const [exercises, setExercises] = useState([{ exercise_name: '', sets: 3, reps: 10, weight_kg: 0 }])
 
   function addRow() { setExercises([...exercises, { exercise_name: '', sets: 3, reps: 10, weight_kg: 0 }]) }
@@ -180,7 +219,7 @@ function NewSessionModal({ open, onClose, onSaved }) {
 
   async function save() {
     try {
-      await createGymSession({ date, routine_name: routine.trim() || null, attended, exercises: exercises.filter((e) => e.exercise_name.trim()) })
+      await createGymSession({ date, routine_name: routine.trim() || null, attended: true, exercises: exercises.filter((e) => e.exercise_name.trim()) })
       toast.success('Sesión guardada ✓')
       onSaved(); onClose()
       setRoutine(''); setExercises([{ exercise_name: '', sets: 3, reps: 10, weight_kg: 0 }])
@@ -191,13 +230,9 @@ function NewSessionModal({ open, onClose, onSaved }) {
     <Modal open={open} onClose={onClose} title="Nueva sesión de gym" size="lg"
       footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button onClick={save}>Guardar</Button></div>}
     >
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div><label className="label">Fecha</label><input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         <div><label className="label">Rutina</label><input className="input" value={routine} onChange={(e) => setRoutine(e.target.value)} placeholder="Push / Pull / Legs" /></div>
-        <div>
-          <label className="label">Asistí</label>
-          <button onClick={() => setAttended(!attended)} className={`input text-left font-semibold ${attended ? 'text-[#30D158]' : 'text-[#FF453A]'}`}>{attended ? '✓ Sí' : '✗ No'}</button>
-        </div>
       </div>
       <label className="label">Ejercicios</label>
       <div className="space-y-2">

@@ -5,6 +5,7 @@ import Modal from '../../components/Modal.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
 import { fetchMMASessions, createMMASession, deleteMMASession } from './queries.js'
+import { fetchLinkedModuleHabit, fetchHabitLogsRange, toggleHabitLog } from '../dashboard/queries.js'
 import { fmt, monthRange, todayISO, isSameDay, format, weekRange, eachDayOfInterval } from '../../lib/dates.js'
 
 const TYPES = ['técnica', 'sparring', 'grappling', 'libre']
@@ -15,9 +16,20 @@ export default function MMA() {
   const [adding, setAdding] = useState(false)
   const [refDate, setRefDate] = useState(new Date())
 
+  // Hábito vinculado al módulo mma (sync con dashboard)
+  const mmaHabitQ = useAsync(() => fetchLinkedModuleHabit('mma'), [])
+  const mmaHabit = mmaHabitQ.data
+
   const { days: monthDays, start } = monthRange(refDate)
   const { start: wStart, end: wEnd } = weekRange()
   const weekDays = eachDayOfInterval({ start: wStart, end: wEnd })
+  const startISO = format(wStart, 'yyyy-MM-dd')
+  const endISO = format(wEnd, 'yyyy-MM-dd')
+
+  const weekHabitLogsQ = useAsync(
+    () => mmaHabit ? fetchHabitLogsRange(startISO, endISO) : Promise.resolve([]),
+    [mmaHabit?.id, startISO, endISO]
+  )
 
   const sessionsByDate = useMemo(() => {
     const m = {}
@@ -25,24 +37,45 @@ export default function MMA() {
     return m
   }, [sessionsQ.data])
 
+  const attendedDates = useMemo(() => {
+    const s = new Set()
+    if (mmaHabit) {
+      ;(weekHabitLogsQ.data || [])
+        .filter((l) => l.habit_id === mmaHabit.id && l.completed)
+        .forEach((l) => s.add(l.date))
+    } else {
+      ;(sessionsQ.data || []).filter((sess) => sess.attended).forEach((sess) => s.add(sess.date))
+    }
+    return s
+  }, [mmaHabit, weekHabitLogsQ.data, sessionsQ.data])
+
   const monthSessions = useMemo(() => {
-    const startISO = start.toISOString().slice(0, 10)
-    return (sessionsQ.data || []).filter((s) => s.date >= startISO && s.date <= monthDays[monthDays.length - 1].toISOString().slice(0, 10))
+    const mStart = start.toISOString().slice(0, 10)
+    return (sessionsQ.data || []).filter((s) => s.date >= mStart && s.date <= monthDays[monthDays.length - 1].toISOString().slice(0, 10))
   }, [sessionsQ.data, start, monthDays])
 
-  async function quickToggle(dateISO, existing) {
+  async function quickToggle(dateISO) {
     try {
-      if (existing) {
-        const { supabase } = await import('../../lib/supabase.js')
-        const newAttended = !existing.attended
-        const { error } = await supabase.from('mma_sessions').update({ attended: newAttended }).eq('id', existing.id)
-        if (error) throw error
-        toast.success(newAttended ? '¡Estuvo presente! ✓' : 'Marcado como ausente')
+      if (mmaHabit) {
+        const log = (weekHabitLogsQ.data || []).find((l) => l.date === dateISO && l.habit_id === mmaHabit.id)
+        const next = !log?.completed
+        await toggleHabitLog({ habit_id: mmaHabit.id, date: dateISO, completed: next })
+        toast.success(next ? '¡MMA completado! ✓' : 'Desmarcado')
+        weekHabitLogsQ.refetch()
       } else {
-        await createMMASession({ date: dateISO, attended: true, session_type: 'técnica' })
-        toast.success('Sesión registrada ✓')
+        const existing = sessionsByDate[dateISO]
+        if (existing) {
+          const { supabase } = await import('../../lib/supabase.js')
+          const newAttended = !existing.attended
+          const { error } = await supabase.from('mma_sessions').update({ attended: newAttended }).eq('id', existing.id)
+          if (error) throw error
+          toast.success(newAttended ? '¡Estuvo presente! ✓' : 'Desmarcado')
+        } else {
+          await createMMASession({ date: dateISO, attended: true, session_type: 'técnica' })
+          toast.success('Sesión registrada ✓')
+        }
+        sessionsQ.refetch()
       }
-      sessionsQ.refetch()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -52,25 +85,29 @@ export default function MMA() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="lg:col-span-2 space-y-4">
         {/* Weekly quick-check */}
-        <Card title="Esta semana" emoji="📅">
+        <Card
+          title="Esta semana"
+          emoji="📅"
+          subtitle={mmaHabit ? `Sincronizado con hábito "${mmaHabit.name}"` : 'Vincular hábito en Dashboard → + Hábito'}
+        >
           <div className="grid grid-cols-7 gap-1.5">
             {weekDays.map((day, i) => {
               const iso = format(day, 'yyyy-MM-dd')
-              const session = sessionsByDate[iso]
+              const attended = attendedDates.has(iso)
               const isToday = iso === todayISO()
               return (
                 <button
                   key={iso}
-                  onClick={() => quickToggle(iso, session)}
+                  onClick={() => quickToggle(iso)}
                   className="flex flex-col items-center gap-1 py-3 rounded-[14px] transition-all active:scale-95"
                   style={{
-                    background: session?.attended ? '#30D15822' : session ? '#FF453A11' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${session?.attended ? '#30D15840' : session ? '#FF453A30' : isToday ? 'rgba(10,132,255,0.5)' : 'rgba(255,255,255,0.06)'}`
+                    background: attended ? '#30D15822' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${attended ? '#30D15840' : isToday ? 'rgba(10,132,255,0.5)' : 'rgba(255,255,255,0.06)'}`
                   }}
                 >
                   <span className="text-[10px] font-semibold text-white/40">{DOW[i]}</span>
-                  <span className="text-base">{session?.attended ? '✓' : session ? '✗' : '○'}</span>
-                  <span className="text-[10px] font-bold" style={{ color: session?.attended ? '#30D158' : session ? '#FF453A' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}>{day.getDate()}</span>
+                  <span className="text-base">{attended ? '✓' : '○'}</span>
+                  <span className="text-[10px] font-bold" style={{ color: attended ? '#30D158' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}>{day.getDate()}</span>
                 </button>
               )
             })}
@@ -99,7 +136,7 @@ export default function MMA() {
               return (
                 <button
                   key={iso}
-                  onClick={() => quickToggle(iso, session)}
+                  onClick={() => quickToggle(iso)}
                   className="aspect-square rounded-xl text-[11px] grid place-items-center transition"
                   style={{
                     background: session?.attended ? '#30D15820' : session ? '#FF453A15' : isToday ? '#0A84FF15' : 'rgba(255,255,255,0.03)',
@@ -141,12 +178,11 @@ export default function MMA() {
 function NewMMAModal({ open, onClose, onSaved }) {
   const [date, setDate] = useState(todayISO())
   const [type, setType] = useState('técnica')
-  const [attended, setAttended] = useState(true)
   const [notes, setNotes] = useState('')
 
   async function save() {
     try {
-      await createMMASession({ date, session_type: type, attended, notes: notes.trim() || null })
+      await createMMASession({ date, session_type: type, attended: true, notes: notes.trim() || null })
       toast.success('Sesión guardada ✓')
       setNotes(''); onSaved(); onClose()
     } catch (e) { toast.error('Error: ' + e.message) }
@@ -165,10 +201,6 @@ function NewMMAModal({ open, onClose, onSaved }) {
               {TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
-        </div>
-        <div>
-          <label className="label">¿Asistí?</label>
-          <button onClick={() => setAttended(!attended)} className={`input text-left font-semibold ${attended ? 'text-[#30D158]' : 'text-[#FF453A]'}`}>{attended ? '✓ Sí' : '✗ No'}</button>
         </div>
         <div><label className="label">Notas</label><textarea className="input min-h-[80px]" value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
       </div>

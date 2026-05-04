@@ -1,13 +1,26 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function RoutineItem({ item, done, onToggle, onEdit }) {
-  const [tapping, setTapping] = useState(false)
+  const [localDone, setLocalDone] = useState(done)
+  const [busy, setBusy] = useState(false)
+  const color = item.color || '#30D158'
+
+  // Sync cuando cambia desde afuera (refetch del padre)
+  useEffect(() => { setLocalDone(done) }, [done])
 
   async function handleToggle() {
-    setTapping(true)
-    await onToggle()
-    setTimeout(() => setTapping(false), 300)
+    if (busy) return
+    const next = !localDone
+    setLocalDone(next)      // optimistic: UI responde de inmediato
+    setBusy(true)
+    try {
+      await onToggle()
+    } catch {
+      setLocalDone(localDone) // revertir si falla
+    } finally {
+      setBusy(false)
+    }
   }
 
   const timeLabel = item.hour_start != null
@@ -15,36 +28,35 @@ export default function RoutineItem({ item, done, onToggle, onEdit }) {
     : item.start_time?.slice(0, 5) ?? ''
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: done ? 0.5 : 1, y: 0 }}
-      className="group flex items-center gap-3 px-3 py-3 rounded-[14px] hover:bg-white/[0.04] transition-colors cursor-pointer"
+    <div
+      className="group flex items-center gap-3 px-3 py-3 rounded-[14px] hover:bg-white/[0.04] transition-colors cursor-pointer select-none"
       onClick={handleToggle}
     >
-      {/* Checkbox */}
-      <div className="shrink-0">
-        <motion.div
-          animate={{
-            scale: tapping ? [1, 1.25, 1] : 1,
-            backgroundColor: done ? item.color : 'transparent'
-          }}
-          transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-          className="w-6 h-6 rounded-full border-2 grid place-items-center ios-checkbox"
-          style={{ borderColor: done ? item.color : 'rgba(255,255,255,0.2)' }}
-        >
-          {done && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 600, damping: 20 }}
-              className="text-white text-[11px] font-bold"
+      {/* Checkbox animado */}
+      <motion.div
+        className="shrink-0 w-6 h-6 rounded-full border-2 grid place-items-center"
+        animate={{
+          borderColor: localDone ? color : 'rgba(255,255,255,0.2)',
+          backgroundColor: localDone ? color : 'rgba(0,0,0,0)',
+          scale: busy ? 0.9 : 1,
+        }}
+        transition={{ type: 'spring', stiffness: 480, damping: 26 }}
+      >
+        <AnimatePresence initial={false}>
+          {localDone && (
+            <motion.svg
+              key="check"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 22 }}
+              width="11" height="11" viewBox="0 0 12 12" fill="none"
             >
-              ✓
-            </motion.span>
+              <path d="M2.5 6l2.8 2.8 4.2-4.8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </motion.svg>
           )}
-        </motion.div>
-      </div>
+        </AnimatePresence>
+      </motion.div>
 
       {/* Hora */}
       {timeLabel && (
@@ -55,15 +67,15 @@ export default function RoutineItem({ item, done, onToggle, onEdit }) {
       {item.emoji && <span className="text-base leading-none shrink-0">{item.emoji}</span>}
 
       {/* Nombre */}
-      <span className={`flex-1 text-sm font-medium ${done ? 'line-through text-white/30' : 'text-white/90'}`}>
+      <span className={`flex-1 text-sm font-medium transition-colors duration-200 ${localDone ? 'line-through text-white/30' : 'text-white/90'}`}>
         {item.activity ?? item.name}
       </span>
 
-      {/* Categoría / color pill */}
+      {/* Categoría pill */}
       {item.category && (
         <span
           className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-          style={{ background: `${item.color}22`, color: item.color }}
+          style={{ background: `${color}22`, color }}
         >
           {item.category}
         </span>
@@ -77,6 +89,6 @@ export default function RoutineItem({ item, done, onToggle, onEdit }) {
       >
         ✎
       </button>
-    </motion.div>
+    </div>
   )
 }
