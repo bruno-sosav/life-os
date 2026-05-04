@@ -211,6 +211,25 @@ create table if not exists list_items (
   created_at timestamptz default now()
 );
 
+-- ─── Finanzas ───────────────────────────────────────────────
+create table if not exists finance_income (
+  id uuid primary key default gen_random_uuid(),
+  month date not null,           -- primer día del mes: 2025-05-01
+  amount numeric not null,
+  source text,                   -- 'sueldo', 'freelance', 'otro'
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists finance_expenses (
+  id uuid primary key default gen_random_uuid(),
+  date date not null,
+  amount numeric not null,
+  category text not null,        -- 'comida', 'transporte', 'salud', etc.
+  description text,
+  created_at timestamptz default now()
+);
+
 -- ─── Índices ────────────────────────────────────────────────
 create index if not exists idx_habit_logs_date on habit_logs(date);
 create index if not exists idx_routine_completions_date on routine_completions(date);
@@ -220,5 +239,7 @@ create index if not exists idx_weight_logs_date on weight_logs(date);
 create index if not exists idx_nutrition_logs_date on nutrition_logs(date);
 create index if not exists idx_mood_logs_date on mood_logs(date);
 create index if not exists idx_journal_entries_date on journal_entries(date);
+create index if not exists idx_finance_expenses_date on finance_expenses(date);
+create index if not exists idx_finance_income_month on finance_income(month);
 create index if not exists idx_stratus_tasks_status on stratus_tasks(status);
 create index if not exists idx_stratus_tasks_project_id on stratus_tasks(project_id);

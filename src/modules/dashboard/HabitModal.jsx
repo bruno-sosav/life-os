@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
+import DrumPicker from '../../components/DrumPicker.jsx'
 import { createHabit, updateHabit, deleteHabit } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
 const COLORS = ['#30D158', '#BF5AF2', '#FF9F0A', '#FF453A', '#0A84FF', '#5AC8FA']
 const EMOJIS = ['✨', '💧', '🏋️', '🥊', '📖', '🧘', '🍳', '💼', '🛌', '🏃', '🎯', '☕']
 const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-const TIME_PRESETS = [
-  { label: '🌅 Mañana', value: '08:00' },
-  { label: '☀️ Tarde', value: '14:00' },
-  { label: '🌙 Noche', value: '20:00' },
-  { label: '🕐 Específica', value: 'custom' }
-]
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
-const empty = { name: '', color: COLORS[0], emoji: '', days_of_week: null, timeMode: 'mañana', start_time: '08:00', duration_min: 30, linked_module: null }
+const empty = { name: '', color: COLORS[0], emoji: '', days_of_week: null, hasTime: false, hour: 8, minute: 0, duration_min: 30, linked_module: null }
 
 export default function HabitModal({ open, onClose, initial, onSaved }) {
   const [form, setForm] = useState(empty)
@@ -22,14 +19,15 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
   useEffect(() => {
     if (!open) return
     if (initial) {
-      const hasTime = !!initial.start_time
+      const parts = initial.start_time?.slice(0, 5).split(':').map(Number)
       setForm({
         name: initial.name || '',
         color: initial.color || COLORS[0],
         emoji: initial.emoji || '',
         days_of_week: initial.days_of_week || null,
-        timeMode: hasTime ? 'custom' : 'sin',
-        start_time: initial.start_time?.slice(0, 5) || '08:00',
+        hasTime: !!initial.start_time,
+        hour: parts?.[0] ?? 8,
+        minute: parts?.[1] ?? 0,
         duration_min: initial.duration_min || 30,
         linked_module: initial.linked_module || null
       })
@@ -46,7 +44,9 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
 
   async function save() {
     if (!form.name.trim()) return
-    const startTime = form.timeMode === 'sin' ? null : form.start_time
+    const startTime = form.hasTime
+      ? `${String(form.hour).padStart(2, '0')}:${String(form.minute).padStart(2, '0')}`
+      : null
     const payload = {
       name: form.name.trim(),
       color: form.color,
@@ -123,30 +123,22 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
         </div>
 
         <div>
-          <label className="label">Horario</label>
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
-            {[{ label: '🌅 Mañana', value: '08:00' }, { label: '☀️ Tarde', value: '14:00' }, { label: '🌙 Noche', value: '20:00' }, { label: '🕐 Hora', value: 'custom' }].map((p) => (
-              <button
-                key={p.value} type="button"
-                onClick={() => setForm({ ...form, timeMode: p.value === 'custom' ? 'custom' : 'preset', start_time: p.value === 'custom' ? form.start_time : p.value })}
-                className={`py-2 px-1 rounded-xl text-[11px] font-semibold transition ${form.start_time === p.value || (p.value === 'custom' && form.timeMode === 'custom') ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/50'}`}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <label className="label mb-0">Horario</label>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, hasTime: !form.hasTime })}
+              className={`text-xs px-3 py-1 rounded-full font-semibold transition ${form.hasTime ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.08] text-white/40'}`}
+            >
+              {form.hasTime ? 'Con horario' : 'Sin horario fijo'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, timeMode: 'sin', start_time: '' })}
-            className={`text-xs px-3 py-1.5 rounded-lg mb-2 transition ${!form.start_time ? 'bg-white/[0.12] text-white' : 'text-white/30 hover:text-white/60'}`}
-          >
-            Sin horario fijo
-          </button>
-          {form.start_time && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Hora inicio</label>
-                <input type="time" className="input" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+          {form.hasTime && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <DrumPicker values={HOURS} selected={form.hour} onChange={(h) => setForm({ ...form, hour: h })} label="Hora" />
+                <span className="text-2xl font-bold text-white/40 mt-5">:</span>
+                <DrumPicker values={MINUTES} selected={form.minute} onChange={(m) => setForm({ ...form, minute: m })} label="Min" />
               </div>
               <div>
                 <label className="label">Duración (min)</label>
