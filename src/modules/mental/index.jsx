@@ -23,7 +23,7 @@ export default function Mental() {
     <div>
       <PageHeader
         title="Mental"
-        emoji="🧠"
+       
         subtitle="Libros, diario, ideas y estado de ánimo"
         actions={<Tabs items={TABS} value={tab} onChange={setTab} />}
       />

@@ -80,7 +80,7 @@ export default function Ideas() {
         <div className="space-y-3">
           <div>
             <label className="label">Título</label>
-            <input autoFocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            <input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </div>
           <div>
             <label className="label">Cuerpo</label>

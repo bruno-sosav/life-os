@@ -70,7 +70,7 @@ export default function Finanzas() {
     <div>
       <PageHeader
         title="Finanzas"
-        emoji="💰"
+       
         subtitle="Ingresos, gastos y ahorro"
         actions={
           <div className="flex gap-1">
@@ -121,7 +121,7 @@ export default function Finanzas() {
         {/* Ingresos */}
         <Card
           title="Ingresos"
-          emoji="💵"
+         
           action={<Button size="sm" color="green" onClick={() => setAddingIncome(true)}>+ Ingreso</Button>}
         >
           {!income.length ? (
@@ -146,7 +146,7 @@ export default function Finanzas() {
         </Card>
 
         {/* Por categoría */}
-        <Card title="Por categoría" emoji="🗂">
+        <Card title="Por categoría">
           {!byCategory.length ? (
             <EmptyState icon="🗂" title="Sin gastos" description="Agregá gastos para ver el desglose." />
           ) : (
@@ -172,7 +172,7 @@ export default function Finanzas() {
         {/* Gastos */}
         <Card
           title="Gastos"
-          emoji="💸"
+         
           action={<Button size="sm" color="red" onClick={() => setAddingExpense(true)}>+ Gasto</Button>}
           className="lg:col-span-2"
         >
@@ -234,7 +234,7 @@ function IncomeModal({ open, onClose, refDate, onSaved }) {
       <div className="space-y-3">
         <div>
           <label className="label">Monto ($)</label>
-          <input autoFocus type="number" min={0} className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="50000" />
+          <input type="number" min={0} className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="50000" />
         </div>
         <div>
           <label className="label">Fuente</label>
@@ -285,7 +285,7 @@ function ExpenseModal({ open, onClose, onSaved }) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Monto ($)</label>
-            <input autoFocus type="number" min={0} className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1500" />
+            <input type="number" min={0} className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="1500" />
           </div>
           <div>
             <label className="label">Fecha</label>

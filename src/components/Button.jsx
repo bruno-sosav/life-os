@@ -15,9 +15,9 @@ export default function Button({
   }
 
   const variants = {
-    primary:   `text-white font-semibold shadow-ios`,
-    secondary: `bg-white/[0.08] hover:bg-white/[0.12] border border-white/[0.1] text-white font-semibold`,
-    ghost:     `hover:bg-white/[0.07] text-white/70 hover:text-white`,
+    primary:   `text-white font-semibold`,
+    secondary: `bg-white/[0.08] hover:bg-white/[0.12] border border-white/[0.1] text-white/90 font-semibold`,
+    ghost:     `hover:bg-white/[0.07] text-white/60 hover:text-white/90`,
     danger:    `text-[#FF453A] hover:bg-[#FF453A]/10 font-semibold`
   }
 

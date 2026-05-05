@@ -27,14 +27,14 @@ export default function Analytics() {
 
   if (dataQ.loading) return (
     <div>
-      <PageHeader title="Stats" emoji="📊" subtitle="Tu vida en números" />
+      <PageHeader title="Stats" subtitle="Tu vida en números" />
       <div className="text-sm text-white/30 mt-8 text-center">Cargando datos…</div>
     </div>
   )
 
   return (
     <div>
-      <PageHeader title="Stats" emoji="📊" subtitle="Datos reales de los últimos 30 días" />
+      <PageHeader title="Stats" subtitle="Datos reales de los últimos 30 días" />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">

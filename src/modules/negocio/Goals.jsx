@@ -28,7 +28,7 @@ export default function Goals() {
   }
 
   return (
-    <Card title={`Objetivos · ${fmt(new Date(), "MMMM").replace(/^\w/, c => c.toUpperCase())}`} emoji="🎯">
+    <Card title={`Objetivos · ${fmt(new Date(), "MMMM").replace(/^\w/, c => c.toUpperCase())}`}>
       <div className="flex gap-2 mb-4">
         <input className="input" placeholder="Nuevo objetivo del mes…" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
         <Button onClick={add}>+</Button>

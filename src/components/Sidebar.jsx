@@ -5,19 +5,11 @@ import { NAV_ITEMS } from './navItems.jsx'
 export default function Sidebar() {
   const { theme, toggleTheme } = useUIStore()
   return (
-    <aside
-      className="hidden md:flex fixed inset-y-0 left-0 w-56 flex-col z-30"
-      style={{
-        background: 'rgba(10,10,20,0.85)',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(30px)',
-        WebkitBackdropFilter: 'blur(30px)'
-      }}
-    >
+    <aside className="hidden md:flex fixed inset-y-0 left-0 w-56 flex-col z-30 sidebar-surface">
       {/* Logo */}
       <div className="px-4 py-5 flex items-center gap-2.5 border-b border-white/[0.05]">
         <div
-          className="w-9 h-9 rounded-[11px] grid place-items-center shadow-ios shrink-0"
+          className="w-9 h-9 rounded-[11px] grid place-items-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #BF5AF2, #0A84FF)' }}
         >
           <span className="text-white text-base font-black">L</span>
@@ -43,7 +35,7 @@ export default function Sidebar() {
               }`
             }
           >
-            <span className="text-base leading-none">{item.icon}</span>
+            {item.icon}
             <span>{item.label}</span>
           </NavLink>
         ))}
@@ -56,7 +48,7 @@ export default function Sidebar() {
           className="w-full text-xs text-white/30 hover:text-white/60 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] flex items-center justify-between transition"
         >
           <span>Apariencia</span>
-          <span>{theme === 'dark' ? '🌙' : '☀️'}</span>
+          <span>{theme === 'dark' ? 'Oscuro' : 'Claro'}</span>
         </button>
       </div>
     </aside>

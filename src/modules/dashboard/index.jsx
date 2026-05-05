@@ -8,12 +8,14 @@ import DayStrip from './DayStrip.jsx'
 import RoutineList from './RoutineList.jsx'
 import EditRoutineModal from './EditRoutineModal.jsx'
 import HabitModal from './HabitModal.jsx'
+import WeeklyReview from './WeeklyReview.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
 import {
   fetchActiveHabits, fetchHabitLogsRange,
   fetchRoutineBlocks, fetchRoutineCompletions,
-  toggleHabitLog, toggleRoutineCompletion
+  toggleHabitLog, toggleRoutineCompletion,
+  fetchStreakRawData, calcGlobalStreak
 } from './queries.js'
 import { weekRange } from '../../lib/dates.js'
 
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const [editBlock, setEditBlock] = useState(null)
   const [blockModalOpen, setBlockModalOpen] = useState(false)
   const [habitModal, setHabitModal] = useState({ open: false, initial: null })
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   const selectedDateISO = dateISO(selectedDow)
   const { start, end } = weekRange()
@@ -48,14 +51,15 @@ export default function Dashboard() {
   const habitLogsQ = useAsync(() => fetchHabitLogsRange(startISO, endISO), [startISO, endISO])
   const blocksQ = useAsync(() => fetchRoutineBlocks(), [])
   const completionsQ = useAsync(() => fetchRoutineCompletions(selectedDateISO), [selectedDateISO])
+  const streakQ = useAsync(() => fetchStreakRawData(), [])
 
   const habits = habitsQ.data || []
   const blocks = blocksQ.data || []
 
   const dayBlocks = useMemo(() => blocks.filter((b) => {
-    if (b.repeat_weekly && b.day_of_week === selectedDow) return true
-    if (!b.repeat_weekly && b.specific_date === selectedDateISO) return true
-    return false
+    if (!b.repeat_weekly) return b.specific_date === selectedDateISO
+    if (b.days_of_week?.length) return b.days_of_week.includes(selectedDow)
+    return b.day_of_week === selectedDow
   }), [blocks, selectedDow, selectedDateISO])
 
   const dayHabits = useMemo(() => habits.filter((h) => {
@@ -74,12 +78,18 @@ export default function Dashboard() {
   const completedCount = completedBlocksSet.size + completedHabitsCount
   const pct = totalItems ? Math.round((completedCount / totalItems) * 100) : 0
 
+  const globalStreak = useMemo(() => {
+    if (!streakQ.data) return null
+    return calcGlobalStreak(blocks, habits, streakQ.data.completions, streakQ.data.habitLogs)
+  }, [blocks, habits, streakQ.data])
+
   async function handleToggleBlock(block) {
     const done = completedBlocksSet.has(block.id)
     try {
       await toggleRoutineCompletion({ block_id: block.id, date: selectedDateISO, completed: !done })
       toast.success(done ? 'Marcado como pendiente' : '¡Completado! ✓')
       completionsQ.refetch()
+      streakQ.refetch()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -92,6 +102,7 @@ export default function Dashboard() {
       await toggleHabitLog({ habit_id: habit.id, date: selectedDateISO, completed: !done })
       toast.success(done ? 'Marcado como pendiente' : '¡Hábito completado! ✓')
       habitLogsQ.refetch()
+      streakQ.refetch()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -102,6 +113,7 @@ export default function Dashboard() {
     habitLogsQ.refetch()
     blocksQ.refetch()
     completionsQ.refetch()
+    streakQ.refetch()
   }
 
   return (
@@ -109,6 +121,11 @@ export default function Dashboard() {
       <PageHeader
         title={format(new Date(), "EEEE, d 'de' MMMM", { locale: es }).replace(/^\w/, c => c.toUpperCase())}
         subtitle={greeting()}
+        actions={
+          <Button size="sm" variant="secondary" onClick={() => setReviewOpen(true)}>
+            Revisión semanal
+          </Button>
+        }
       />
 
       {/* Day selector */}
@@ -134,15 +151,20 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <Card><div className="text-[11px] text-white/35">Completadas</div><div className="stat-num text-[#30D158]">{completedCount}/{totalItems}</div></Card>
-        <Card><div className="text-[11px] text-white/35">Progreso</div><div className="stat-num">{pct}%</div></Card>
-        <Card><div className="text-[11px] text-white/35">Ahora</div><div className="stat-num">{new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div></Card>
+        <Card>
+          <div className="text-[11px] text-white/35">Hoy</div>
+          <div className="stat-num text-[#30D158]">{completedCount}/{totalItems}</div>
+        </Card>
+        <StreakCard streak={globalStreak} />
+        <Card>
+          <div className="text-[11px] text-white/35">Hora</div>
+          <div className="stat-num">{new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div>
+        </Card>
       </div>
 
       {/* Routine list */}
       <Card
         title="Agenda del día"
-        emoji="🗓"
         action={
           <div className="flex gap-1.5">
             <Button size="sm" variant="secondary" onClick={() => { setEditBlock(null); setBlockModalOpen(true) }}>+ Actividad</Button>
@@ -176,6 +198,22 @@ export default function Dashboard() {
         initial={habitModal.initial}
         onSaved={refetchAll}
       />
+      <WeeklyReview open={reviewOpen} onClose={() => setReviewOpen(false)} />
     </div>
+  )
+}
+
+function StreakCard({ streak }) {
+  const color = streak >= 7 ? '#FF9F0A' : streak >= 3 ? '#30D158' : '#0A84FF'
+  return (
+    <Card>
+      <div className="text-[11px] text-white/35">Racha</div>
+      <div className="stat-num" style={{ color }}>
+        {streak === null ? '—' : streak}
+      </div>
+      <div className="text-[10px] text-white/25 mt-0.5">
+        {streak === null ? '' : streak === 0 ? 'hoy es el día' : streak === 1 ? 'día seguido' : 'días seguidos'}
+      </div>
+    </Card>
   )
 }

@@ -94,7 +94,7 @@ export default function ListView() {
                       {editingNote === it.id ? (
                         <div className="mt-1.5 flex gap-2">
                           <input
-                            autoFocus
+                           
                             className="input text-xs !py-1"
                             value={noteVal}
                             onChange={(e) => setNoteVal(e.target.value)}

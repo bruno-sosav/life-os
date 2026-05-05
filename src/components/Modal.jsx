@@ -15,7 +15,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
         >
@@ -24,15 +24,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            className={`w-full ${sizes[size]} overflow-hidden`}
-            style={{
-              background: 'rgba(20,20,30,0.92)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '24px',
-              backdropFilter: 'blur(40px)',
-              WebkitBackdropFilter: 'blur(40px)',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.6)'
-            }}
+            className={`modal-surface w-full ${sizes[size]} overflow-hidden rounded-[24px]`}
             onClick={(e) => e.stopPropagation()}
           >
             {title && (

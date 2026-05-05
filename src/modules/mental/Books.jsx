@@ -131,7 +131,7 @@ function BookModal({ open, onClose, initial, onSaved, onDeleted }) {
       <div className="space-y-3">
         <div>
           <label className="label">Título</label>
-          <input autoFocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

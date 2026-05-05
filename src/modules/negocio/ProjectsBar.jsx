@@ -62,7 +62,7 @@ export default function ProjectsBar({ projects, selected, onSelect, onRefetch })
         footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save} color="blue">Crear</Button></div>}
       >
         <div className="space-y-3">
-          <div><label className="label">Nombre</label><input autoFocus className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi proyecto" /></div>
+          <div><label className="label">Nombre</label><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi proyecto" /></div>
           <div>
             <label className="label">Emoji</label>
             <div className="flex gap-1.5 flex-wrap">

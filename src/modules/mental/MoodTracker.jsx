@@ -52,7 +52,7 @@ export default function MoodTracker() {
 
   return (
     <div className="space-y-4">
-      <Card title="Estado de hoy" emoji="📊" subtitle={`Mood promedio 7d: ${avgMood}/5`}>
+      <Card title="Estado de hoy" subtitle={`Mood promedio 7d: ${avgMood}/5`}>
         <div className="space-y-4">
           <div>
             <label className="label">Mood</label>
@@ -92,7 +92,7 @@ export default function MoodTracker() {
         </div>
       </Card>
 
-      <Card title="Últimos 14 días" emoji="📈">
+      <Card title="Últimos 14 días">
         <div className="h-48">
           {chartData.length > 1 ? (
             <ResponsiveContainer>

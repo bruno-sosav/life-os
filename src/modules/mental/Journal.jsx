@@ -33,7 +33,7 @@ export default function Journal() {
   return (
     <div className="space-y-4">
       {/* New entry */}
-      <Card title="Nueva entrada" emoji="✏️">
+      <Card title="Nueva entrada">
         <div className="mb-3">
           <label className="label">¿Cómo fue el día?</label>
           <div className="flex gap-2 mb-3">
@@ -56,7 +56,7 @@ export default function Journal() {
       </Card>
 
       {/* Entry list */}
-      <Card title="Entradas" emoji="📓">
+      <Card title="Entradas">
         {!(entriesQ.data || []).length ? (
           <EmptyState icon="📓" title="Sin entradas" description="Empezá a escribir tu diario hoy." />
         ) : (

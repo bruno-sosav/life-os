@@ -105,7 +105,7 @@ function NewListModal({ open, onClose, form, setForm, onSave }) {
       <div className="space-y-3">
         <div>
           <label className="label">Nombre</label>
-          <input autoFocus className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Compras, Películas, Viajes…" />
+          <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Compras, Películas, Viajes…" />
         </div>
         <div>
           <label className="label">Ícono</label>

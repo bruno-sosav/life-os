@@ -14,7 +14,7 @@ export default function Negocio() {
 
   return (
     <div>
-      <PageHeader title="Negocio" emoji="🏢" subtitle="Tareas, proyectos, ideas y objetivos" />
+      <PageHeader title="Negocio" subtitle="Tareas, proyectos, ideas y objetivos" />
 
       <ProjectsBar
         projects={projectsQ.data || []}

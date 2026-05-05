@@ -194,7 +194,7 @@ function TaskModal({ open, onClose, initial, defaultStatus, projects, onSaved, o
       }
     >
       <div className="space-y-3">
-        <div><label className="label">Título</label><input autoFocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+        <div><label className="label">Título</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
         <div><label className="label">Descripción</label><textarea className="input min-h-[80px]" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         <div className="grid grid-cols-2 gap-3">
           <div>

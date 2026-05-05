@@ -50,6 +50,7 @@ alter table routine_blocks add column if not exists repeat_weekly boolean defaul
 alter table routine_blocks add column if not exists specific_date date;
 alter table routine_blocks add column if not exists emoji text;
 alter table routine_blocks add column if not exists hour_min int default 0;
+alter table routine_blocks add column if not exists days_of_week integer[]; -- null o [] = un solo día (usa day_of_week). Array = múltiples días
 
 -- ─── Completions de rutina (por día) ────────────────────────
 create table if not exists routine_completions (
@@ -227,6 +228,15 @@ create table if not exists finance_expenses (
   amount numeric not null,
   category text not null,        -- 'comida', 'transporte', 'salud', etc.
   description text,
+  created_at timestamptz default now()
+);
+
+-- ─── Cierre semanal ─────────────────────────────────────────
+create table if not exists weekly_reviews (
+  id uuid primary key default gen_random_uuid(),
+  week_start date not null unique,  -- lunes de esa semana
+  went_well text,
+  would_change text,
   created_at timestamptz default now()
 );
 

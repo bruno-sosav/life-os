@@ -58,7 +58,7 @@ export default function MentalIdeas() {
 
       <Card
         title="Frases & Ideas"
-        emoji="💡"
+       
         action={<Button size="sm" color="purple" onClick={() => setAdding(true)}>+ Nueva</Button>}
       >
         {!filtered.length ? (
@@ -92,7 +92,7 @@ export default function MentalIdeas() {
         footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save} color="purple">Guardar</Button></div>}
       >
         <div className="space-y-3">
-          <div><label className="label">Texto</label><textarea autoFocus className="input min-h-[100px]" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder='"La disciplina es hacer lo que tenés que hacer..."' /></div>
+          <div><label className="label">Texto</label><textarea className="input min-h-[100px]" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder='"La disciplina es hacer lo que tenés que hacer..."' /></div>
           <div><label className="label">Autor (opcional)</label><input className="input" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} placeholder="Nombre del autor" /></div>
           <div>
             <label className="label">Tipo</label>

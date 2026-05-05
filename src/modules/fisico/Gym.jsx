@@ -105,7 +105,7 @@ export default function Gym() {
         {/* Weekly check */}
         <Card
           title="Semana"
-          emoji="📅"
+         
           subtitle={gymHabit ? `Sincronizado con hábito "${gymHabit.name}"` : 'Vincular hábito en Dashboard → + Hábito'}
         >
           <div className="grid grid-cols-7 gap-1.5">
@@ -140,7 +140,7 @@ export default function Gym() {
         {/* Session log */}
         <Card
           title="Sesiones"
-          emoji="🏋️"
+         
           action={<Button size="sm" onClick={() => setAdding(true)}>+ Sesión</Button>}
         >
           {!(sessionsQ.data || []).length ? (
@@ -173,7 +173,7 @@ export default function Gym() {
       </div>
 
       <div className="space-y-4">
-        <Card title="Progresión" emoji="📈">
+        <Card title="Progresión">
           <select className="input mb-3 text-sm" value={exerciseFilter} onChange={(e) => setExerciseFilter(e.target.value)}>
             <option value="">Elegí un ejercicio…</option>
             {(exerciseNamesQ.data || []).map((n) => <option key={n} value={n}>{n}</option>)}

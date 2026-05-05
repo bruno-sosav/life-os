@@ -87,7 +87,7 @@ export default function MMA() {
         {/* Weekly quick-check */}
         <Card
           title="Esta semana"
-          emoji="📅"
+         
           subtitle={mmaHabit ? `Sincronizado con hábito "${mmaHabit.name}"` : 'Vincular hábito en Dashboard → + Hábito'}
         >
           <div className="grid grid-cols-7 gap-1.5">
@@ -153,7 +153,7 @@ export default function MMA() {
         </Card>
       </div>
 
-      <Card title="Recientes" emoji="🥊">
+      <Card title="Recientes">
         <ul className="divide-y divide-white/[0.04]">
           {(sessionsQ.data || []).slice(0, 10).map((s) => (
             <li key={s.id} className="py-2.5 flex items-center gap-2 group">

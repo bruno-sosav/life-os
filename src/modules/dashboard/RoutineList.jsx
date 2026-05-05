@@ -3,10 +3,10 @@ import RoutineItem from './RoutineItem.jsx'
 import { CATEGORY_COLORS } from '../../lib/constants.js'
 
 const SECTIONS = [
-  { label: '🌅 Mañana',  start: 0,  end: 12 * 60 },
-  { label: '☀️ Tarde',   start: 12 * 60, end: 20 * 60 },
-  { label: '🌙 Noche',   start: 20 * 60, end: 24 * 60 },
-  { label: '⏳ Sin hora', start: -1, end: -1 }
+  { label: 'Mañana',   start: 0,  end: 12 * 60 },
+  { label: 'Tarde',    start: 12 * 60, end: 20 * 60 },
+  { label: 'Noche',    start: 20 * 60, end: 24 * 60 },
+  { label: 'Sin hora', start: -1, end: -1 }
 ]
 
 function toMinutes(item) {
@@ -94,14 +94,14 @@ export default function RoutineList({
         if (!items.length) return null
         return (
           <div key={sec.label}>
-            <div className="section-header mt-4 first:mt-0">{sec.label}</div>
+            <div className="section-header mt-5 first:mt-0">{sec.label}</div>
             {items.map(renderItem)}
           </div>
         )
       })}
       {withoutTime.length > 0 && (
         <div>
-          <div className="section-header mt-4">⏳ Sin horario</div>
+          <div className="section-header mt-5">Sin horario</div>
           {withoutTime.map(renderItem)}
         </div>
       )}

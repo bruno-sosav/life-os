@@ -99,7 +99,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
       <div className="space-y-4">
         <div>
           <label className="label">Nombre</label>
-          <input autoFocus className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Meditar, Leer, Tomar agua…" />
+          <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Meditar, Leer, Tomar agua…" />
         </div>
 
         <div>

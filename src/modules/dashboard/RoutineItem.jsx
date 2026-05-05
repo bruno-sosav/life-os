@@ -29,7 +29,7 @@ export default function RoutineItem({ item, done, onToggle, onEdit }) {
 
   return (
     <div
-      className="group flex items-center gap-3 px-3 py-3 rounded-[14px] hover:bg-white/[0.04] transition-colors cursor-pointer select-none"
+      className="group flex items-center gap-3 px-3 py-3.5 rounded-[14px] active:bg-white/[0.06] hover:bg-white/[0.04] transition-colors cursor-pointer select-none"
       onClick={handleToggle}
     >
       {/* Checkbox animado */}
@@ -60,21 +60,21 @@ export default function RoutineItem({ item, done, onToggle, onEdit }) {
 
       {/* Hora */}
       {timeLabel && (
-        <span className="text-xs font-semibold text-white/30 w-10 shrink-0 tabular-nums">{timeLabel}</span>
+        <span className="text-[11px] font-semibold text-white/35 w-10 shrink-0 tabular-nums">{timeLabel}</span>
       )}
 
       {/* Emoji */}
-      {item.emoji && <span className="text-base leading-none shrink-0">{item.emoji}</span>}
+      {item.emoji && <span className="text-lg leading-none shrink-0">{item.emoji}</span>}
 
       {/* Nombre */}
-      <span className={`flex-1 text-sm font-medium transition-colors duration-200 ${localDone ? 'line-through text-white/30' : 'text-white/90'}`}>
+      <span className={`flex-1 text-[15px] font-medium leading-snug transition-colors duration-200 ${localDone ? 'line-through text-white/25' : 'text-white/90'}`}>
         {item.activity ?? item.name}
       </span>
 
       {/* Categoría pill */}
       {item.category && (
         <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 hidden sm:inline"
           style={{ background: `${color}22`, color }}
         >
           {item.category}

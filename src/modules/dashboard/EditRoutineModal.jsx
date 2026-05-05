@@ -6,12 +6,13 @@ import { CATEGORY_COLORS, DAYS_LONG } from '../../lib/constants.js'
 import { upsertRoutineBlock, deleteRoutineBlock } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
+const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
 const EMOJIS = ['🏋️', '🥊', '📖', '💼', '🍳', '🧘', '🏃', '☕', '💻', '🎯', '🛌', '🎵']
 const empty = {
-  day_of_week: 0, hour_start: 7, hour_min: 0, hour_end: 8, activity: '',
+  days_of_week: [], hour_start: 7, hour_min: 0, hour_end: 8, activity: '',
   category: 'personal', emoji: '', repeat_weekly: true, specific_date: ''
 }
 
@@ -21,8 +22,11 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
   useEffect(() => {
     if (!open) return
     if (initial) {
+      const dow = initial.days_of_week?.length
+        ? initial.days_of_week
+        : initial.day_of_week != null ? [initial.day_of_week] : [selectedDow]
       setForm({
-        day_of_week: initial.day_of_week ?? selectedDow,
+        days_of_week: dow,
         hour_start: initial.hour_start ?? 7,
         hour_min: initial.hour_min ?? 0,
         hour_end: initial.hour_end ?? 8,
@@ -33,16 +37,25 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
         specific_date: initial.specific_date ?? ''
       })
     } else {
-      setForm({ ...empty, day_of_week: selectedDow })
+      setForm({ ...empty, days_of_week: [selectedDow] })
     }
   }, [open, initial?.id, selectedDow])
 
+  function toggleDay(i) {
+    const cur = form.days_of_week
+    const next = cur.includes(i) ? cur.filter(d => d !== i) : [...cur, i].sort((a, b) => a - b)
+    setForm({ ...form, days_of_week: next.length ? next : [i] })
+  }
+
   async function save() {
     if (!form.activity.trim()) return
+    if (form.repeat_weekly && !form.days_of_week.length) return
+    const daysToSave = form.repeat_weekly ? form.days_of_week : null
     try {
       await upsertRoutineBlock({
         ...(initial?.id ? { id: initial.id } : {}),
-        day_of_week: form.repeat_weekly ? form.day_of_week : null,
+        day_of_week: daysToSave?.length === 1 ? daysToSave[0] : null,
+        days_of_week: daysToSave,
         specific_date: !form.repeat_weekly && form.specific_date ? form.specific_date : null,
         repeat_weekly: form.repeat_weekly,
         hour_start: Number(form.hour_start),
@@ -90,7 +103,7 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
       <div className="space-y-3">
         <div>
           <label className="label">Actividad</label>
-          <input autoFocus className="input" value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })} placeholder="Gym, MMA, Trabajo…" />
+          <input className="input" value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })} placeholder="Gym, MMA, Trabajo…" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -137,7 +150,7 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
               onClick={() => setForm({ ...form, repeat_weekly: true })}
               className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${form.repeat_weekly ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/50'}`}
             >
-              Semanal ({DAYS_LONG[form.day_of_week]})
+              Semanal
             </button>
             <button
               type="button"
@@ -151,10 +164,21 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
 
         {form.repeat_weekly ? (
           <div>
-            <label className="label">Día de la semana</label>
-            <select className="input" value={form.day_of_week} onChange={(e) => setForm({ ...form, day_of_week: Number(e.target.value) })}>
-              {DAYS_LONG.map((d, i) => <option key={i} value={i}>{d}</option>)}
-            </select>
+            <label className="label">Días</label>
+            <div className="flex gap-1.5">
+              {DAYS_SHORT.map((d, i) => {
+                const active = form.days_of_week.includes(i)
+                return (
+                  <button
+                    key={i} type="button"
+                    onClick={() => toggleDay(i)}
+                    className={`flex-1 h-9 rounded-xl text-xs font-bold transition ${active ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/40'}`}
+                  >
+                    {d}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         ) : (
           <div>

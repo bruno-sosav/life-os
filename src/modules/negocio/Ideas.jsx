@@ -30,7 +30,7 @@ export default function Ideas() {
   }
 
   return (
-    <Card title="Ideas" emoji="💡" action={<Button size="sm" onClick={() => setAdding(true)}>+ Idea</Button>}>
+    <Card title="Ideas" action={<Button size="sm" onClick={() => setAdding(true)}>+ Idea</Button>}>
       {!(ideasQ.data || []).length ? (
         <p className="text-sm text-white/30 text-center py-6">Sin ideas todavía.</p>
       ) : (
@@ -64,7 +64,7 @@ export default function Ideas() {
         footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save} color="purple">Guardar</Button></div>}
       >
         <div className="space-y-3">
-          <div><label className="label">Título</label><input autoFocus className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+          <div><label className="label">Título</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
           <div><label className="label">Desarrollo</label><textarea className="input min-h-[120px]" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} /></div>
           <div><label className="label">Tags (separados por coma)</label><input className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="producto, growth" /></div>
         </div>
