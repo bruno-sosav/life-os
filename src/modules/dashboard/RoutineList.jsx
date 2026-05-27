@@ -20,7 +20,7 @@ function toMinutes(item) {
 
 export default function RoutineList({
   blocks, blockCompletions, habits, habitLogs, dateISO,
-  onToggleBlock, onToggleHabit, onEditBlock, onEditHabit
+  onToggleBlock, onToggleHabit, onEditBlock, onEditHabit, onDeleteHabit
 }) {
   const completedBlocks = useMemo(
     () => new Set((blockCompletions || []).map((c) => c.block_id)),
@@ -74,6 +74,7 @@ export default function RoutineList({
         done={it._done}
         onToggle={() => it._type === 'block' ? onToggleBlock(it) : onToggleHabit(it)}
         onEdit={() => it._type === 'block' ? onEditBlock?.(it) : onEditHabit?.(it)}
+        onDelete={it._type === 'habit' ? () => onDeleteHabit?.(it) : undefined}
       />
     )
   }

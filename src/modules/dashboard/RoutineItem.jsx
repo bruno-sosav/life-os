@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function RoutineItem({ item, done, onToggle, onEdit }) {
+export default function RoutineItem({ item, done, onToggle, onEdit, onDelete }) {
   const [localDone, setLocalDone] = useState(done)
   const [busy, setBusy] = useState(false)
   const color = item.color || '#30D158'
@@ -81,14 +81,21 @@ export default function RoutineItem({ item, done, onToggle, onEdit }) {
         </span>
       )}
 
-      {/* Editar */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onEdit?.() }}
-        className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-white/60 text-xs transition-opacity"
-        title="Editar"
-      >
-        ✎
-      </button>
+      {/* Acciones */}
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit?.() }}
+          className="w-7 h-7 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.07] text-sm grid place-items-center transition"
+          title="Editar"
+        >✎</button>
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete?.() }}
+            className="w-7 h-7 rounded-lg text-white/25 hover:text-red-400 hover:bg-white/[0.07] text-sm grid place-items-center transition"
+            title="Eliminar"
+          >✕</button>
+        )}
+      </div>
     </div>
   )
 }

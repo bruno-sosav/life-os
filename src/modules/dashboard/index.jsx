@@ -15,7 +15,8 @@ import {
   fetchActiveHabits, fetchHabitLogsRange,
   fetchRoutineBlocks, fetchRoutineCompletions,
   toggleHabitLog, toggleRoutineCompletion,
-  fetchStreakRawData, calcGlobalStreak
+  fetchStreakRawData, calcGlobalStreak,
+  deleteHabit,
 } from './queries.js'
 import { weekRange } from '../../lib/dates.js'
 
@@ -108,6 +109,17 @@ export default function Dashboard() {
     }
   }
 
+  async function handleDeleteHabit(habit) {
+    if (!confirm(`¿Eliminar "${habit.name}"?`)) return
+    try {
+      await deleteHabit(habit.id)
+      toast.success('Hábito eliminado')
+      refetchAll()
+    } catch (e) {
+      toast.error('Error: ' + e.message)
+    }
+  }
+
   function refetchAll() {
     habitsQ.refetch()
     habitLogsQ.refetch()
@@ -182,6 +194,7 @@ export default function Dashboard() {
           onToggleHabit={handleToggleHabit}
           onEditBlock={(b) => { setEditBlock(b); setBlockModalOpen(true) }}
           onEditHabit={(h) => setHabitModal({ open: true, initial: h })}
+          onDeleteHabit={handleDeleteHabit}
         />
       </Card>
 
