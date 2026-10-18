@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { format } from 'date-fns'
+import { addDays, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import PageHeader from '../../components/PageHeader.jsx'
 import Card from '../../components/Card.jsx'
@@ -15,7 +15,7 @@ import {
   fetchActiveHabits, fetchHabitLogsRange,
   fetchRoutineBlocks, fetchRoutineCompletions,
   toggleHabitLog, toggleRoutineCompletion,
-  fetchStreakRawData, calcGlobalStreak,
+  fetchGlobalStreak,
   deleteHabit,
 } from './queries.js'
 import { weekRange } from '../../lib/dates.js'
@@ -27,12 +27,11 @@ function greeting() {
   return 'Buenas noches, Bruno 🌙'
 }
 
+// Fecha local (no UTC) del día `dow` de la semana actual
 function dateISO(dow) {
   const today = new Date()
   const todayDow = (today.getDay() + 6) % 7
-  const d = new Date(today)
-  d.setDate(today.getDate() + (dow - todayDow))
-  return d.toISOString().slice(0, 10)
+  return format(addDays(today, dow - todayDow), 'yyyy-MM-dd')
 }
 
 export default function Dashboard() {
@@ -45,14 +44,14 @@ export default function Dashboard() {
 
   const selectedDateISO = dateISO(selectedDow)
   const { start, end } = weekRange()
-  const startISO = start.toISOString().slice(0, 10)
-  const endISO = end.toISOString().slice(0, 10)
+  const startISO = format(start, 'yyyy-MM-dd')
+  const endISO = format(end, 'yyyy-MM-dd')
 
   const habitsQ = useAsync(() => fetchActiveHabits(), [])
   const habitLogsQ = useAsync(() => fetchHabitLogsRange(startISO, endISO), [startISO, endISO])
   const blocksQ = useAsync(() => fetchRoutineBlocks(), [])
   const completionsQ = useAsync(() => fetchRoutineCompletions(selectedDateISO), [selectedDateISO])
-  const streakQ = useAsync(() => fetchStreakRawData(), [])
+  const streakQ = useAsync(() => fetchGlobalStreak(), [])
 
   const habits = habitsQ.data || []
   const blocks = blocksQ.data || []
@@ -79,10 +78,7 @@ export default function Dashboard() {
   const completedCount = completedBlocksSet.size + completedHabitsCount
   const pct = totalItems ? Math.round((completedCount / totalItems) * 100) : 0
 
-  const globalStreak = useMemo(() => {
-    if (!streakQ.data) return null
-    return calcGlobalStreak(blocks, habits, streakQ.data.completions, streakQ.data.habitLogs)
-  }, [blocks, habits, streakQ.data])
+  const globalStreak = streakQ.data ?? null
 
   async function handleToggleBlock(block) {
     const done = completedBlocksSet.has(block.id)

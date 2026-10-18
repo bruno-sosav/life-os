@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # mysql+pymysql://usuario:contraseña@host:puerto/base
     database_url: str = "mysql+pymysql://lifeos:lifeos@localhost:3306/lifeos?charset=utf8mb4"
 
+    # Orígenes del frontend autorizados (JSON en .env: '["http://localhost:5173"]')
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 
 @lru_cache
 def get_settings() -> Settings:

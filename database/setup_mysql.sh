@@ -7,7 +7,7 @@ set -euo pipefail
 MYSQL="${MYSQL:-/usr/local/mysql/bin/mysql}"
 DB_NAME="lifeos"
 DB_USER="lifeos"
-BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+BACKEND_DIR="$(cd "$(dirname "$0")/../backend" && pwd)"
 ENV_FILE="$BACKEND_DIR/.env"
 
 if [[ -f "$ENV_FILE" ]]; then

@@ -9,22 +9,6 @@ import {
   fetchWeeklyReviewStats, fetchWeeklyReview, saveWeeklyReview, getWeekBounds
 } from './queries.js'
 
-function habitPctForWeek(logs, habits, startISO, endISO) {
-  let expected = 0, done = 0
-  const d = new Date(startISO + 'T12:00:00')
-  const end = new Date(endISO + 'T12:00:00')
-  const today = new Date(); today.setHours(23, 59, 59)
-  while (d <= end && d <= today) {
-    const iso = d.toISOString().slice(0, 10)
-    const dow = (d.getDay() + 6) % 7
-    const active = habits.filter(h => !h.days_of_week?.length || h.days_of_week.includes(dow))
-    expected += active.length
-    done += logs.filter(l => l.date === iso && l.completed).length
-    d.setDate(d.getDate() + 1)
-  }
-  return expected > 0 ? Math.round((done / expected) * 100) : 0
-}
-
 function fmt(d) {
   return format(new Date(d + 'T12:00:00'), "d 'de' MMM", { locale: es })
 }
@@ -43,12 +27,8 @@ function Delta({ current, prev }) {
 
 export default function WeeklyReview({ open, onClose }) {
   const thisWeek = useMemo(() => getWeekBounds(0), [])
-  const prevWeek = useMemo(() => getWeekBounds(1), [])
 
-  const statsQ = useAsync(
-    () => fetchWeeklyReviewStats(thisWeek.start, thisWeek.end, prevWeek.start, prevWeek.end),
-    [thisWeek.start]
-  )
+  const statsQ = useAsync(() => fetchWeeklyReviewStats(thisWeek.start), [thisWeek.start])
   const reviewQ = useAsync(() => fetchWeeklyReview(thisWeek.start), [thisWeek.start])
 
   const [wentWell, setWentWell] = useState('')
@@ -63,18 +43,15 @@ export default function WeeklyReview({ open, onClose }) {
     }
   }, [open, reviewQ.data])
 
+  // Las estadísticas vienen calculadas desde el backend
   const stats = useMemo(() => {
     if (!statsQ.data) return null
-    const { thisLogs, prevLogs, habits, gym, mma, mood } = statsQ.data
-    const thisHabitPct = habitPctForWeek(thisLogs, habits, thisWeek.start, thisWeek.end)
-    const prevHabitPct = habitPctForWeek(prevLogs, habits, prevWeek.start, prevWeek.end)
-    const gymDays = gym.filter(g => g.attended).length
-    const mmaDays = mma.filter(m => m.attended).length
-    const avgMood = mood.filter(m => m.mood_score).length
-      ? mood.reduce((s, m) => s + (m.mood_score || 0), 0) / mood.filter(m => m.mood_score).length
-      : 0
-    return { thisHabitPct, prevHabitPct, gymDays, mmaDays, avgMood }
-  }, [statsQ.data, thisWeek, prevWeek])
+    const { habit_pct, prev_habit_pct, gym_days, mma_days, avg_mood } = statsQ.data
+    return {
+      thisHabitPct: habit_pct, prevHabitPct: prev_habit_pct,
+      gymDays: gym_days, mmaDays: mma_days, avgMood: avg_mood ?? 0,
+    }
+  }, [statsQ.data])
 
   async function handleSave() {
     setSaving(true)
