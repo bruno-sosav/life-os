@@ -1,90 +1,30 @@
-import { supabase } from '../../lib/supabase.js'
-import { startOfMonth } from 'date-fns'
+import { api } from '../../lib/api.js'
+import { format } from 'date-fns'
 
 // ─── Proyectos ──────────────────────────────────────────────
-export async function fetchProjects() {
-  const { data, error } = await supabase.from('projects').select('*').order('created_at')
-  if (error) throw error
-  return data ?? []
-}
-
-export async function createProject(payload) {
-  const { data, error } = await supabase.from('projects').insert(payload).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function deleteProject(id) {
-  const { error } = await supabase.from('projects').delete().eq('id', id)
-  if (error) throw error
-}
+export const fetchProjects = () => api('/projects')
+export const createProject = (payload) => api('/projects', { method: 'POST', body: payload })
+export const deleteProject = (id) => api(`/projects/${id}`, { method: 'DELETE' })
 
 // ─── Tareas ─────────────────────────────────────────────────
-export async function fetchTasks(projectId) {
-  let q = supabase.from('stratus_tasks').select('*').order('created_at', { ascending: false })
-  if (projectId) q = q.eq('project_id', projectId)
-  const { data, error } = await q
-  if (error) throw error
-  return data ?? []
-}
-
-export async function createTask(payload) {
-  const { data, error } = await supabase.from('stratus_tasks').insert(payload).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function updateTask(id, patch) {
-  const { data, error } = await supabase.from('stratus_tasks').update(patch).eq('id', id).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function deleteTask(id) {
-  const { error } = await supabase.from('stratus_tasks').delete().eq('id', id)
-  if (error) throw error
-}
+// completed_at lo maneja el backend según el status
+export const fetchTasks = (projectId) => api('/tasks', { params: { project_id: projectId } })
+export const createTask = (payload) => api('/tasks', { method: 'POST', body: payload })
+export const updateTask = (id, patch) => api(`/tasks/${id}`, { method: 'PATCH', body: patch })
+export const deleteTask = (id) => api(`/tasks/${id}`, { method: 'DELETE' })
 
 // ─── Ideas ──────────────────────────────────────────────────
-export async function fetchIdeas() {
-  const { data, error } = await supabase.from('stratus_ideas').select('*').order('created_at', { ascending: false })
-  if (error) throw error
-  return data ?? []
-}
-
-export async function createIdea({ title, body, tags }) {
-  const { data, error } = await supabase.from('stratus_ideas').insert({ title, body, tags }).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function deleteIdea(id) {
-  const { error } = await supabase.from('stratus_ideas').delete().eq('id', id)
-  if (error) throw error
-}
+export const fetchIdeas = () => api('/business-ideas')
+export const createIdea = ({ title, body, tags }) =>
+  api('/business-ideas', { method: 'POST', body: { title, body, tags } })
+export const deleteIdea = (id) => api(`/business-ideas/${id}`, { method: 'DELETE' })
 
 // ─── Objetivos ──────────────────────────────────────────────
-export async function fetchGoals(month = new Date()) {
-  const monthStart = startOfMonth(month).toISOString().slice(0, 10)
-  const { data, error } = await supabase.from('stratus_goals').select('*').eq('month', monthStart).order('created_at')
-  if (error) throw error
-  return data ?? []
-}
+// El backend normaliza `month` al día 1 del mes
+const monthISO = (month) => format(month, 'yyyy-MM-dd')
 
-export async function createGoal({ title, month = new Date() }) {
-  const monthStart = startOfMonth(month).toISOString().slice(0, 10)
-  const { data, error } = await supabase.from('stratus_goals').insert({ title, month: monthStart, progress: 0 }).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function updateGoal(id, patch) {
-  const { data, error } = await supabase.from('stratus_goals').update(patch).eq('id', id).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function deleteGoal(id) {
-  const { error } = await supabase.from('stratus_goals').delete().eq('id', id)
-  if (error) throw error
-}
+export const fetchGoals = (month = new Date()) => api('/goals', { params: { month: monthISO(month) } })
+export const createGoal = ({ title, month = new Date() }) =>
+  api('/goals', { method: 'POST', body: { title, month: monthISO(month) } })
+export const updateGoal = (id, patch) => api(`/goals/${id}`, { method: 'PATCH', body: patch })
+export const deleteGoal = (id) => api(`/goals/${id}`, { method: 'DELETE' })

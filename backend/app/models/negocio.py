@@ -34,7 +34,6 @@ class StratusTask(UUIDPk, CreatedAt, Base):
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(STATUS), default="pendiente", index=True)
     priority: Mapped[str] = mapped_column(String(STATUS), default="media")
-    project: Mapped[str | None] = mapped_column(String(NAME))  # legado, previo a project_id
     project_id: Mapped[str | None] = mapped_column(
         CHAR(36), ForeignKey("projects.id", ondelete="SET NULL"), index=True
     )

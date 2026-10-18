@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import dashboard, fisico, rutina
+from app.routers import analytics, dashboard, finanzas, fisico, mental, negocio, rutina
 
 settings = get_settings()
 
@@ -17,6 +17,10 @@ app.add_middleware(
 app.include_router(rutina.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(fisico.router, prefix="/api")
+app.include_router(mental.router, prefix="/api")
+app.include_router(negocio.router, prefix="/api")
+app.include_router(finanzas.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 
 
 @app.get("/health")

@@ -24,10 +24,11 @@ export default defineConfig({
         ],
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.origin.includes('supabase.co'),
+            // GETs a la API: red primero, cache como respaldo sin conexión
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'api-cache',
               networkTimeoutSeconds: 5,
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 }
             }

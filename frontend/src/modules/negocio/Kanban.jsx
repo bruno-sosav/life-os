@@ -28,7 +28,7 @@ export default function Kanban({ tasks, projects, projectFilter, onChange }) {
     if (!destination || destination.droppableId === source.droppableId) return
     const newStatus = destination.droppableId
     try {
-      await updateTask(draggableId, { status: newStatus, completed_at: newStatus === 'hecho' ? new Date().toISOString() : null })
+      await updateTask(draggableId, { status: newStatus })
       toast.success(`Movida a "${STATUS_LABELS[newStatus]}"`)
       onChange()
     } catch (e) { toast.error(e.message) }
@@ -37,7 +37,7 @@ export default function Kanban({ tasks, projects, projectFilter, onChange }) {
   async function quickDone(task) {
     const newStatus = task.status === 'hecho' ? 'pendiente' : 'hecho'
     try {
-      await updateTask(task.id, { status: newStatus, completed_at: newStatus === 'hecho' ? new Date().toISOString() : null })
+      await updateTask(task.id, { status: newStatus })
       toast.success(newStatus === 'hecho' ? '¡Tarea completada! ✓' : 'Movida a pendiente')
       onChange()
     } catch (e) { toast.error(e.message) }

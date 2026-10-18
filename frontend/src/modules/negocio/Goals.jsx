@@ -22,7 +22,7 @@ export default function Goals() {
 
   async function setProgress(id, val) {
     try {
-      await updateGoal(id, { progress: val, completed: val >= 100 })
+      await updateGoal(id, { progress: val })
       goalsQ.refetch()
     } catch (e) { toast.error(e.message) }
   }

@@ -1,14 +1,12 @@
-from datetime import date, datetime, time
+from datetime import date, time
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
+from app.schemas.common import ORMModel, UTCDateTime
 
 DayOfWeek = Annotated[int, Field(ge=0, le=6)]  # 0 = lunes … 6 = domingo
 LinkedModule = Literal["gym", "mma"]
-
-
-class ORMModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
 
 
 # ─── Hábitos ────────────────────────────────────────────────
@@ -44,7 +42,7 @@ class HabitUpdate(BaseModel):
 class HabitOut(HabitBase, ORMModel):
     id: str
     active: bool
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class HabitLogUpsert(BaseModel):
@@ -59,7 +57,7 @@ class HabitLogOut(ORMModel):
     date: date
     completed: bool
     note: str | None
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 # ─── Rutina ─────────────────────────────────────────────────
@@ -92,7 +90,7 @@ class RoutineCompletionOut(ORMModel):
     block_id: str
     date: date
     completed: bool
-    completed_at: datetime
+    completed_at: UTCDateTime
 
 
 # ─── Cierre semanal ─────────────────────────────────────────
@@ -104,7 +102,7 @@ class WeeklyReviewIn(BaseModel):
 class WeeklyReviewOut(WeeklyReviewIn, ORMModel):
     id: str
     week_start: date
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 # ─── Estadísticas ───────────────────────────────────────────

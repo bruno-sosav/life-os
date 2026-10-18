@@ -2,7 +2,7 @@ import datetime as dt
 
 from pydantic import BaseModel, Field
 
-from app.schemas.rutina import ORMModel
+from app.schemas.common import ORMModel, UTCDateTime
 
 # Los decimales (kg, litros) viajan como número JSON, no como string.
 
@@ -42,7 +42,7 @@ class GymSessionOut(ORMModel):
     attended: bool
     routine_name: str | None
     notes: str | None
-    created_at: dt.datetime
+    created_at: UTCDateTime
     exercises: list[GymExerciseOut]
 
 
@@ -70,7 +70,7 @@ class MmaSessionUpdate(BaseModel):
 class MmaSessionOut(MmaSessionCreate, ORMModel):
     id: str
     attended: bool
-    created_at: dt.datetime
+    created_at: UTCDateTime
 
 
 # ─── Peso / Nutrición ───────────────────────────────────────
@@ -82,7 +82,7 @@ class WeightLogIn(BaseModel):
 class WeightLogOut(WeightLogIn, ORMModel):
     id: str
     date: dt.date
-    created_at: dt.datetime
+    created_at: UTCDateTime
 
 
 class NutritionLogIn(BaseModel):
@@ -95,4 +95,4 @@ class NutritionLogIn(BaseModel):
 class NutritionLogOut(NutritionLogIn, ORMModel):
     id: str
     date: dt.date
-    created_at: dt.datetime
+    created_at: UTCDateTime
