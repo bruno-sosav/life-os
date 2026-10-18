@@ -129,3 +129,24 @@ def test_docs_hidden_in_production() -> None:
         [sys.executable, "-c", script], env=env, capture_output=True, text=True, check=True
     )
     assert result.stdout.strip() == "[404, 404, 404, 200]"
+
+
+@pytest.mark.parametrize(
+    ("origin", "allowed"),
+    [
+        ("http://localhost:5176", True),
+        ("http://127.0.0.1:5173", True),
+        ("https://evil.example", False),
+        ("http://localhost.evil.example:5173", False),
+    ],
+)
+def test_cors_in_development(anon_client: TestClient, origin: str, allowed: bool) -> None:
+    response = anon_client.options(
+        "/api/auth/login",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert (response.status_code == 200) is allowed
