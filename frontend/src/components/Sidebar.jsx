@@ -1,9 +1,11 @@
 import { NavLink } from 'react-router-dom'
 import { useUIStore } from '../store/uiStore.js'
+import { useAuthStore } from '../store/authStore.js'
 import { NAV_ITEMS } from './navItems.jsx'
 
 export default function Sidebar() {
   const { theme, toggleTheme } = useUIStore()
+  const logout = useAuthStore((s) => s.logout)
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-56 flex-col z-30 sidebar-surface">
       {/* Logo */}
@@ -49,6 +51,12 @@ export default function Sidebar() {
         >
           <span>Apariencia</span>
           <span>{theme === 'dark' ? 'Oscuro' : 'Claro'}</span>
+        </button>
+        <button
+          onClick={logout}
+          className="w-full text-xs text-white/30 hover:text-[#FF453A] px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-left transition"
+        >
+          Cerrar sesión
         </button>
       </div>
     </aside>

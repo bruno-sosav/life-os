@@ -1,4 +1,15 @@
 import { useUIStore } from '../store/uiStore.js'
+import { useAuthStore } from '../store/authStore.js'
+
+function LogoutIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  )
+}
 
 function SunIcon() {
   return (
@@ -26,6 +37,7 @@ function MoonIcon() {
 
 export default function PageHeader({ title, subtitle, actions }) {
   const { theme, toggleTheme } = useUIStore()
+  const logout = useAuthStore((s) => s.logout)
 
   return (
     <div className="mb-6">
@@ -44,6 +56,13 @@ export default function PageHeader({ title, subtitle, actions }) {
             title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
+          <button
+            onClick={logout}
+            className="md:hidden w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] grid place-items-center text-white/50 hover:text-[#FF453A] transition"
+            title="Cerrar sesión"
+          >
+            <LogoutIcon />
           </button>
         </div>
       </div>

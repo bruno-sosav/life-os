@@ -27,6 +27,20 @@ uv run ruff format .    # formateo
 uv run mypy app tests   # tipos
 ```
 
+## Autenticación
+
+Toda la API bajo `/api` exige `Authorization: Bearer <token>`, salvo `POST /api/auth/login`. Hay un único usuario y no existe registro público: se crea desde la terminal.
+
+```bash
+uv run python -m app.cli create-user     # pide usuario y contraseña (mín. 12 caracteres)
+uv run python -m app.cli set-password    # cambia la contraseña y cierra todas las sesiones
+```
+
+- Contraseña guardada con Argon2id; nunca en texto plano.
+- Tokens JWT firmados con `JWT_SECRET`, válidos `ACCESS_TOKEN_DAYS` días (30 por defecto).
+- 5 logins fallidos por IP bloquean el login 15 minutos.
+- En producción (`ENVIRONMENT=production`) no se publican `/docs`, `/redoc` ni `/openapi.json`.
+
 ## Migraciones
 
 ```bash
@@ -47,3 +61,8 @@ Variables del servicio:
 | `DATABASE_URL` | `${{MySQL.MYSQL_URL}}` (referencia al servicio MySQL; `mysql://` se convierte solo a `mysql+pymysql://`) |
 | `CORS_ORIGINS` | `["https://<tu-app>.vercel.app"]` |
 | `ENVIRONMENT` | `production` |
+| `JWT_SECRET` | clave aleatoria propia (≥ 32 caracteres), distinta de la local |
+
+Crear el usuario en producción, una vez desplegado: `railway ssh` en el servicio del backend y ahí `python -m app.cli create-user`.
+
+La base MySQL de Railway debe quedar solo en la red privada: no actives su *TCP Proxy* público.

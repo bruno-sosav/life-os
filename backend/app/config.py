@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     # Orígenes del frontend autorizados (JSON en .env: '["http://localhost:5173"]')
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+    # Clave para firmar los tokens de sesión. Obligatoria, sin valor por defecto.
+    # Generar con: python3 -c "import secrets; print(secrets.token_urlsafe(64))"
+    jwt_secret: SecretStr = Field(min_length=32)
+    access_token_days: int = Field(default=30, ge=1, le=365)
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
     @field_validator("database_url")
     @classmethod
     def use_pymysql_driver(cls, url: str) -> str:
@@ -30,4 +39,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # jwt_secret viene del entorno (.env o variable)
