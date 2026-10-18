@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
 import DrumPicker from '../../components/DrumPicker.jsx'
-import { CATEGORY_COLORS, DAYS_LONG } from '../../lib/constants.js'
+import { CATEGORY_COLORS } from '../../lib/constants.js'
 import { upsertRoutineBlock, deleteRoutineBlock } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 

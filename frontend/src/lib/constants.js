@@ -7,8 +7,6 @@ export const CATEGORY_COLORS = {
   default: '#5b5b68'
 }
 
-export const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-export const DAYS_LONG = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
 export const HOURS = Array.from({ length: 18 }, (_, i) => i + 6) // 6am → 23
 
