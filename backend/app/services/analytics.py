@@ -312,7 +312,7 @@ def gym_vs_mma(inp: StatsInput) -> dict[str, int]:
     return {"gym": int(counts.get("gym", 0)), "mma": int(counts.get("mma", 0))}
 
 
-def _months_back(today: date, months: int) -> date:
+def months_back(today: date, months: int) -> date:
     total = today.year * 12 + today.month - 1 - months
     return date(total // 12, total % 12 + 1, 1)
 
@@ -323,7 +323,7 @@ def finance_monthly(inp: StatsInput) -> list[dict[str, Any]]:
     expenses = inp.expenses.groupby(inp.expenses["date"].dt.to_period("M"))["amount"].sum()
     months = []
     for back in range(FINANCE_MONTHS - 1, -1, -1):
-        first = _months_back(inp.today, back)
+        first = months_back(inp.today, back)
         period = pd.Period(first, freq="M")
         inc = float(income.get(period, 0.0))
         exp = float(expenses.get(period, 0.0))

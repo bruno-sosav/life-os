@@ -1,9 +1,9 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, timedelta
 from typing import Annotated, Any
 
 import pandas as pd
 from fastapi import APIRouter, Query
-from sqlalchemy import Select, select
+from sqlalchemy import select
 
 from app.db import SessionDep
 from app.models import (
@@ -16,56 +16,14 @@ from app.models import (
     JournalEntry,
     MmaSession,
     MoodLog,
-    NutritionLog,
     RoutineBlock,
     RoutineCompletion,
     WeightLog,
 )
-from app.schemas.analytics import AnalyticsData, AnalyticsSummary
+from app.schemas.analytics import AnalyticsSummary
 from app.services import analytics as stats
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
-
-
-def _months_back(today: date, months: int) -> date:
-    """Primer día del mes, `months` meses antes del actual."""
-    total = today.year * 12 + today.month - 1 - months
-    return date(total // 12, total % 12 + 1, 1)
-
-
-@router.get("/data", response_model=AnalyticsData)
-def analytics_data(today: date, session: SessionDep) -> AnalyticsData:
-    start90 = today - timedelta(days=90)
-    start30 = today - timedelta(days=30)
-    start6m = _months_back(today, 5)
-
-    def rows(query: Select[Any]) -> list[Any]:
-        return list(session.scalars(query))
-
-    return AnalyticsData.model_validate(
-        {
-            "habits": rows(select(Habit).where(Habit.active.is_(True))),
-            "habit_logs": rows(select(HabitLog).where(HabitLog.date >= start90)),
-            "routine_blocks": rows(select(RoutineBlock)),
-            "routine_completions": rows(
-                select(RoutineCompletion).where(RoutineCompletion.date >= start90)
-            ),
-            "gym": rows(select(GymSession).where(GymSession.date >= start90)),
-            "mma": rows(select(MmaSession).where(MmaSession.date >= start90)),
-            "weight": rows(select(WeightLog).order_by(WeightLog.date)),
-            "mood": rows(select(MoodLog).where(MoodLog.date >= start30).order_by(MoodLog.date)),
-            "nutrition": rows(select(NutritionLog).where(NutritionLog.date >= start90)),
-            "books": rows(select(Book)),
-            "finance_income": rows(select(FinanceIncome).where(FinanceIncome.month >= start6m)),
-            "finance_expenses": rows(select(FinanceExpense).where(FinanceExpense.date >= start6m)),
-            "journal_entries": rows(
-                select(JournalEntry).where(
-                    JournalEntry.created_at >= datetime.combine(start90, time.min)
-                )
-            ),
-        },
-        from_attributes=True,
-    )
 
 
 def _frame(rows: list[tuple[Any, ...]], columns: list[str], dates: tuple[str, ...]) -> pd.DataFrame:
@@ -81,7 +39,7 @@ def analytics_summary(
 ) -> AnalyticsSummary:
     """Todo lo de la pantalla Stats, calculado. `week_offset` mueve la semana del Score/radar."""
     start = stats.earliest_needed(today, week_offset)
-    finance_start = stats._months_back(today, stats.FINANCE_MONTHS - 1)
+    finance_start = stats.months_back(today, stats.FINANCE_MONTHS - 1)
 
     habits = list(session.scalars(select(Habit).where(Habit.active.is_(True))))
     habit_logs = session.execute(
