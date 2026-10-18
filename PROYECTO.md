@@ -17,6 +17,16 @@
 
 ## Estructura
 
+El repo está dividido en tres carpetas:
+
+```
+frontend/   App React + Vite (PWA, deploy en Vercel)
+backend/    API en Python (en construcción)
+database/   schema.sql de Supabase
+```
+
+Dentro de `frontend/`:
+
 ```
 src/
   components/        Componentes UI reutilizables (Button, Card, Modal, Badge, Tabs, Layout, Sidebar, BottomNav, EmptyState, PageHeader)
@@ -32,7 +42,6 @@ src/
   hooks/             useAsync (queries declarativas con refetch)
   styles/            index.css (Tailwind + utilities + tema claro)
 public/              icon.svg, pwa-192x192.png, pwa-512x512.png (placeholder)
-supabase/            schema.sql (pegar en Supabase SQL editor)
 scripts/             gen-icons.mjs (placeholder PNGs)
 ```
 
@@ -52,10 +61,11 @@ Cada módulo:
 
 ## Setup local
 
-1. Copiar `.env.example` → `.env` y completar con tus credenciales de Supabase.
-2. En Supabase, abrir el SQL editor y ejecutar `supabase/schema.sql`.
+1. En `frontend/`, copiar `.env.example` → `.env` y completar con tus credenciales de Supabase.
+2. En Supabase, abrir el SQL editor y ejecutar `database/schema.sql`.
 3. Instalar deps y arrancar:
    ```bash
+   cd frontend
    npm install
    npm run dev
    ```
