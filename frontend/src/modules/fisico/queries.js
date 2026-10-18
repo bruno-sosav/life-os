@@ -1,121 +1,45 @@
-import { supabase } from '../../lib/supabase.js'
+import { api } from '../../lib/api.js'
+import { format, subDays } from 'date-fns'
+
+const daysAgoISO = (n) => format(subDays(new Date(), n), 'yyyy-MM-dd')
 
 // ─── Gym ────────────────────────────────────────────────────
-export async function fetchGymSessions(limit = 50) {
-  const { data, error } = await supabase
-    .from('gym_sessions')
-    .select('*, gym_exercises(*)')
-    .order('date', { ascending: false })
-    .limit(limit)
-  if (error) throw error
-  return data ?? []
-}
+// Cada sesión trae sus ejercicios en `exercises`
+export const fetchGymSessions = (limit = 50) => api('/gym/sessions', { params: { limit } })
 
-export async function createGymSession({ date, routine_name, attended = true, notes, exercises = [] }) {
-  const { data: session, error } = await supabase
-    .from('gym_sessions')
-    .insert({ date, routine_name, attended, notes })
-    .select()
-    .single()
-  if (error) throw error
+export const createGymSession = ({ date, routine_name, attended = true, notes, exercises = [] }) =>
+  api('/gym/sessions', { method: 'POST', body: { date, routine_name, attended, notes, exercises } })
 
-  if (exercises.length) {
-    const rows = exercises.map((e) => ({ ...e, session_id: session.id }))
-    const { error: e2 } = await supabase.from('gym_exercises').insert(rows)
-    if (e2) throw e2
-  }
-  return session
-}
+export const updateGymSession = (id, patch) =>
+  api(`/gym/sessions/${id}`, { method: 'PATCH', body: patch })
 
-export async function deleteGymSession(id) {
-  const { error } = await supabase.from('gym_sessions').delete().eq('id', id)
-  if (error) throw error
-}
+export const deleteGymSession = (id) => api(`/gym/sessions/${id}`, { method: 'DELETE' })
 
-export async function fetchExerciseProgression(exerciseName) {
-  const { data, error } = await supabase
-    .from('gym_exercises')
-    .select('exercise_name, weight_kg, reps, sets, gym_sessions!inner(date)')
-    .ilike('exercise_name', exerciseName)
-    .order('date', { foreignTable: 'gym_sessions', ascending: true })
-  if (error) throw error
-  return data ?? []
-}
+// Un punto por sesión: { date, max_weight_kg, volume_kg }
+export const fetchExerciseProgression = (exerciseName) =>
+  api('/gym/exercises/progression', { params: { name: exerciseName } })
 
-export async function fetchAllExerciseNames() {
-  const { data, error } = await supabase
-    .from('gym_exercises')
-    .select('exercise_name')
-  if (error) throw error
-  return Array.from(new Set((data ?? []).map((d) => d.exercise_name))).sort()
-}
+export const fetchAllExerciseNames = () => api('/gym/exercises/names')
 
 // ─── MMA ────────────────────────────────────────────────────
-export async function fetchMMASessions() {
-  const { data, error } = await supabase
-    .from('mma_sessions')
-    .select('*')
-    .order('date', { ascending: false })
-  if (error) throw error
-  return data ?? []
-}
+export const fetchMMASessions = () => api('/mma/sessions')
 
-export async function createMMASession(payload) {
-  const { data, error } = await supabase
-    .from('mma_sessions')
-    .insert(payload)
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
+export const createMMASession = (payload) => api('/mma/sessions', { method: 'POST', body: payload })
 
-export async function deleteMMASession(id) {
-  const { error } = await supabase.from('mma_sessions').delete().eq('id', id)
-  if (error) throw error
-}
+export const updateMMASession = (id, patch) =>
+  api(`/mma/sessions/${id}`, { method: 'PATCH', body: patch })
+
+export const deleteMMASession = (id) => api(`/mma/sessions/${id}`, { method: 'DELETE' })
 
 // ─── Peso / Nutrición ───────────────────────────────────────
-export async function fetchWeightLogs(rangeDays = 90) {
-  const start = new Date()
-  start.setDate(start.getDate() - rangeDays)
-  const { data, error } = await supabase
-    .from('weight_logs')
-    .select('*')
-    .gte('date', start.toISOString().slice(0, 10))
-    .order('date', { ascending: true })
-  if (error) throw error
-  return data ?? []
-}
+export const fetchWeightLogs = (rangeDays = 90) =>
+  api('/weight-logs', { params: { start: daysAgoISO(rangeDays) } })
 
-export async function upsertWeightLog({ date, weight_kg, notes }) {
-  const { data, error } = await supabase
-    .from('weight_logs')
-    .upsert({ date, weight_kg, notes }, { onConflict: 'date' })
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
+export const upsertWeightLog = ({ date, weight_kg, notes }) =>
+  api(`/weight-logs/${date}`, { method: 'PUT', body: { weight_kg, notes } })
 
-export async function fetchNutritionLogs(rangeDays = 30) {
-  const start = new Date()
-  start.setDate(start.getDate() - rangeDays)
-  const { data, error } = await supabase
-    .from('nutrition_logs')
-    .select('*')
-    .gte('date', start.toISOString().slice(0, 10))
-    .order('date', { ascending: true })
-  if (error) throw error
-  return data ?? []
-}
+export const fetchNutritionLogs = (rangeDays = 30) =>
+  api('/nutrition-logs', { params: { start: daysAgoISO(rangeDays) } })
 
-export async function upsertNutritionLog(payload) {
-  const { data, error } = await supabase
-    .from('nutrition_logs')
-    .upsert(payload, { onConflict: 'date' })
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
+export const upsertNutritionLog = ({ date, ...payload }) =>
+  api(`/nutrition-logs/${date}`, { method: 'PUT', body: payload })

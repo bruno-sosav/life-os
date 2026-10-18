@@ -12,7 +12,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 from app.models.common import NAME, CreatedAt, UUIDPk
@@ -25,6 +25,10 @@ class GymSession(UUIDPk, CreatedAt, Base):
     attended: Mapped[bool] = mapped_column(Boolean, default=True)
     routine_name: Mapped[str | None] = mapped_column(String(NAME))
     notes: Mapped[str | None] = mapped_column(Text)
+
+    exercises: Mapped[list["GymExercise"]] = relationship(
+        cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class GymExercise(UUIDPk, Base):

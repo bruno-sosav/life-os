@@ -1,10 +1,11 @@
 from datetime import date
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Response, status
 from sqlalchemy import select
 
-from app.db import Base, SessionDep
+from app.db import SessionDep
 from app.models import Habit, HabitLog, RoutineBlock, RoutineCompletion, WeeklyReview
+from app.routers.common import get_or_404
 from app.schemas.rutina import (
     HabitCreate,
     HabitLogOut,
@@ -21,13 +22,6 @@ from app.schemas.rutina import (
 )
 
 router = APIRouter(tags=["rutina"])
-
-
-def get_or_404[T: Base](session: SessionDep, model: type[T], id_: str) -> T:
-    obj = session.get(model, id_)
-    if obj is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"{model.__name__} {id_} no existe")
-    return obj
 
 
 # ─── Hábitos ────────────────────────────────────────────────

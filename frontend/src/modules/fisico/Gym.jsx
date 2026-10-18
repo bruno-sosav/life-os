@@ -6,7 +6,7 @@ import EmptyState from '../../components/EmptyState.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
 import {
-  fetchGymSessions, createGymSession, deleteGymSession,
+  fetchGymSessions, createGymSession, updateGymSession, deleteGymSession,
   fetchExerciseProgression, fetchAllExerciseNames
 } from './queries.js'
 import {
@@ -78,10 +78,8 @@ export default function Gym() {
         // Sin hábito vinculado: fallback a gym_sessions
         const existing = sessionsByDate[dateISO]
         if (existing) {
-          const { supabase } = await import('../../lib/supabase.js')
           const newAttended = !existing.attended
-          const { error } = await supabase.from('gym_sessions').update({ attended: newAttended }).eq('id', existing.id)
-          if (error) throw error
+          await updateGymSession(existing.id, { attended: newAttended })
           toast.success(newAttended ? 'Asistencia registrada ✓' : 'Desmarcado')
         } else {
           await createGymSession({ date: dateISO, attended: true, routine_name: null, exercises: [] })
@@ -94,10 +92,11 @@ export default function Gym() {
     }
   }
 
+  // Un punto por sesión con la carga máxima del ejercicio
   const chartData = useMemo(() => (progressionQ.data || []).map((row) => ({
-    date: row.gym_sessions?.date?.slice(5),
-    weight: Number(row.weight_kg) || 0
-  })).filter((d) => d.date), [progressionQ.data])
+    date: row.date.slice(5),
+    weight: row.max_weight_kg ?? 0
+  })), [progressionQ.data])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -159,7 +158,7 @@ export default function Gym() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold">{s.routine_name || 'Sesión'}</div>
-                    <div className="text-xs text-white/35">{fmt(s.date, "EEE d 'de' MMM")} · {(s.gym_exercises || []).length} ejercicios</div>
+                    <div className="text-xs text-white/35">{fmt(s.date, "EEE d 'de' MMM")} · {(s.exercises || []).length} ejercicios</div>
                   </div>
                   <button
                     onClick={() => deleteGymSession(s.id).then(() => { toast.success('Eliminado'); sessionsQ.refetch() })}

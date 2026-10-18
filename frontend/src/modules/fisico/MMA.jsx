@@ -4,7 +4,7 @@ import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
-import { fetchMMASessions, createMMASession, deleteMMASession } from './queries.js'
+import { fetchMMASessions, createMMASession, updateMMASession, deleteMMASession } from './queries.js'
 import { fetchLinkedModuleHabit, fetchHabitLogsRange, toggleHabitLog } from '../dashboard/queries.js'
 import { fmt, monthRange, todayISO, isSameDay, format, weekRange, eachDayOfInterval } from '../../lib/dates.js'
 
@@ -50,8 +50,9 @@ export default function MMA() {
   }, [mmaHabit, weekHabitLogsQ.data, sessionsQ.data])
 
   const monthSessions = useMemo(() => {
-    const mStart = start.toISOString().slice(0, 10)
-    return (sessionsQ.data || []).filter((s) => s.date >= mStart && s.date <= monthDays[monthDays.length - 1].toISOString().slice(0, 10))
+    const mStart = format(start, 'yyyy-MM-dd')
+    const mEnd = format(monthDays[monthDays.length - 1], 'yyyy-MM-dd')
+    return (sessionsQ.data || []).filter((s) => s.date >= mStart && s.date <= mEnd)
   }, [sessionsQ.data, start, monthDays])
 
   async function quickToggle(dateISO) {
@@ -65,10 +66,8 @@ export default function MMA() {
       } else {
         const existing = sessionsByDate[dateISO]
         if (existing) {
-          const { supabase } = await import('../../lib/supabase.js')
           const newAttended = !existing.attended
-          const { error } = await supabase.from('mma_sessions').update({ attended: newAttended }).eq('id', existing.id)
-          if (error) throw error
+          await updateMMASession(existing.id, { attended: newAttended })
           toast.success(newAttended ? '¡Estuvo presente! ✓' : 'Desmarcado')
         } else {
           await createMMASession({ date: dateISO, attended: true, session_type: 'técnica' })
