@@ -37,10 +37,8 @@ def test_mood_log_upsert_and_weekly_stats(client: TestClient) -> None:
     ]
     assert client.put("/api/mood-logs/2026-10-14", json={"mood_score": 0}).status_code == 422
 
-    weekly = client.get(
-        "/api/dashboard/weekly-stats", params={"week_start": "2026-10-12", "today": "2026-10-14"}
-    ).json()
-    assert weekly["avg_mood"] == 4.5
+    weekly = client.get("/api/dashboard/weekly-review", params={"today": "2026-10-14"}).json()
+    assert (weekly["avg_mood"], weekly["mood_level"]) == (4.5, "excelente")
 
 
 def test_journal_entries(client: TestClient) -> None:

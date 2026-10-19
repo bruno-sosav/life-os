@@ -36,10 +36,10 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
     }
   }, [open, initial?.id])
 
+  // El backend normaliza: días únicos y ordenados; ninguno o los 7 = todos los días
   function toggleDay(d) {
     const cur = form.days_of_week || []
-    const next = cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()
-    setForm({ ...form, days_of_week: next.length === 7 || next.length === 0 ? null : next })
+    setForm({ ...form, days_of_week: cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d] })
   }
 
   async function save() {
@@ -106,7 +106,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
           <label className="label">Días</label>
           <div className="flex gap-1.5">
             {DAYS_SHORT.map((d, i) => {
-              const active = !form.days_of_week || activeDays.includes(i)
+              const active = activeDays.length === 0 || activeDays.includes(i)
               return (
                 <button
                   key={i} type="button"

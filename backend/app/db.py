@@ -7,8 +7,6 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import get_settings
 
-# create_engine no abre conexiones: la primera se abre al usar una sesión.
-# La sesión de MySQL trabaja en UTC para que CURRENT_TIMESTAMP sea consistente.
 engine = create_engine(
     get_settings().database_url,
     pool_pre_ping=True,
@@ -17,7 +15,6 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
-# Nombres de constraints estables para que Alembic genere migraciones predecibles.
 NAMING_CONVENTION = {
     "ix": "ix_%(table_name)s_%(column_0_N_name)s",
     "uq": "uq_%(table_name)s_%(column_0_N_name)s",

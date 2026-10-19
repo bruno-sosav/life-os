@@ -27,9 +27,15 @@ export async function api(path, { method = 'GET', params, body } = {}) {
     let detail = res.statusText
     try {
       const data = await res.json()
-      detail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)
+      detail = typeof data.detail === 'string' ? data.detail : validationMessage(data.detail)
     } catch { /* respuesta sin JSON */ }
     throw new Error(detail || `HTTP ${res.status}`)
   }
   return res.status === 204 ? null : res.json()
+}
+
+// Errores 422 de FastAPI: lista de { msg } → texto legible
+function validationMessage(detail) {
+  if (!Array.isArray(detail)) return JSON.stringify(detail)
+  return detail.map((d) => String(d.msg ?? '').replace(/^Value error, /, '')).join(' · ')
 }

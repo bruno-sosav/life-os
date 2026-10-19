@@ -1,4 +1,3 @@
-"""Autenticación de un solo usuario: contraseña con Argon2 y tokens JWT (Bearer)."""
 
 import time
 from collections import defaultdict, deque
@@ -18,8 +17,6 @@ from app.models import User
 ALGORITHM = "HS256"
 password_hash = PasswordHash.recommended()  # Argon2id
 
-# Hash de una contraseña cualquiera: se verifica contra él cuando el usuario no existe,
-# para que la respuesta tarde lo mismo y no revele qué usuarios existen.
 _DUMMY_HASH = password_hash.hash("dummy-password-for-timing")
 
 bearer = HTTPBearer(auto_error=False)
@@ -80,7 +77,6 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 class LoginThrottle:
-    """Límite de intentos fallidos por IP (en memoria; alcanza para una sola instancia)."""
 
     def __init__(self, max_failures: int = 5, window_seconds: int = 15 * 60) -> None:
         self.max_failures = max_failures

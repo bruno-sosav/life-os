@@ -4,7 +4,6 @@ Las funciones son puras: reciben los registros ya leídos de la base (en DataFra
 una columna `date` de tipo datetime64) y devuelven estructuras listas para serializar.
 """
 
-import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -13,7 +12,7 @@ from typing import Any, Literal
 import pandas as pd
 
 from app.models import Habit, RoutineBlock
-from app.services.dashboard import expected_per_day
+from app.services.dashboard import expected_per_day, js_round
 
 BruceLevel = Literal["elite", "modo_bruce", "activando", "apagado"]
 
@@ -23,11 +22,6 @@ HEATMAP_DAYS = 90
 HISTORY_WEEKS = 12
 HABIT_WEEKS = 8
 FINANCE_MONTHS = 6
-
-
-def js_round(value: float) -> int:
-    """Redondeo como Math.round de JS (2.5 → 3), para no cambiar los números históricos."""
-    return math.floor(value + 0.5)
 
 
 @dataclass(frozen=True)

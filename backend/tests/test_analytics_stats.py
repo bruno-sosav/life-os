@@ -4,6 +4,7 @@ import pandas as pd
 
 from app.models import Habit, RoutineBlock
 from app.services import analytics as stats
+from app.services.dashboard import js_round
 
 TODAY = date(2026, 10, 18)  # domingo
 MONDAY = date(2026, 10, 12)
@@ -26,7 +27,7 @@ def logs(*items: tuple[str, date]) -> pd.DataFrame:
 
 
 def test_js_round_and_week_bounds() -> None:
-    assert (stats.js_round(2.5), stats.js_round(2.4), stats.js_round(-0.5)) == (3, 2, 0)
+    assert (js_round(2.5), js_round(2.4), js_round(-0.5)) == (3, 2, 0)
     assert stats.week_bounds(TODAY) == stats.Week(MONDAY, TODAY)
     assert stats.week_bounds(TODAY, 1).start == MONDAY - timedelta(days=7)
 

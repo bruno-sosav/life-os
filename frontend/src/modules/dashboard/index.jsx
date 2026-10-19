@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { addDays, format } from 'date-fns'
+import { useState } from 'react'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import PageHeader from '../../components/PageHeader.jsx'
 import Card from '../../components/Card.jsx'
@@ -12,13 +12,10 @@ import WeeklyReview from './WeeklyReview.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
 import {
-  fetchActiveHabits, fetchHabitLogsRange,
-  fetchRoutineBlocks, fetchRoutineCompletions,
-  toggleHabitLog, toggleRoutineCompletion,
-  fetchGlobalStreak,
-  deleteHabit,
+  fetchAgenda, fetchGlobalStreak,
+  toggleHabitLog, toggleRoutineCompletion, deleteHabit,
 } from './queries.js'
-import { weekRange } from '../../lib/dates.js'
+import { todayISO } from '../../lib/dates.js'
 
 function greeting() {
   const h = new Date().getHours()
@@ -27,79 +24,34 @@ function greeting() {
   return 'Buenas noches, Bruno 🌙'
 }
 
-// Fecha local (no UTC) del día `dow` de la semana actual
-function dateISO(dow) {
-  const today = new Date()
-  const todayDow = (today.getDay() + 6) % 7
-  return format(addDays(today, dow - todayDow), 'yyyy-MM-dd')
-}
-
 export default function Dashboard() {
-  const todayDow = (new Date().getDay() + 6) % 7
-  const [selectedDow, setSelectedDow] = useState(todayDow)
+  const [selectedDate, setSelectedDate] = useState(todayISO)
   const [editBlock, setEditBlock] = useState(null)
   const [blockModalOpen, setBlockModalOpen] = useState(false)
   const [habitModal, setHabitModal] = useState({ open: false, initial: null })
   const [reviewOpen, setReviewOpen] = useState(false)
 
-  const selectedDateISO = dateISO(selectedDow)
-  const { start, end } = weekRange()
-  const startISO = format(start, 'yyyy-MM-dd')
-  const endISO = format(end, 'yyyy-MM-dd')
-
-  const habitsQ = useAsync(() => fetchActiveHabits(), [])
-  const habitLogsQ = useAsync(() => fetchHabitLogsRange(startISO, endISO), [startISO, endISO])
-  const blocksQ = useAsync(() => fetchRoutineBlocks(), [])
-  const completionsQ = useAsync(() => fetchRoutineCompletions(selectedDateISO), [selectedDateISO])
+  // La agenda llega armada: secciones, estado de cada ítem y progreso del día
+  const agendaQ = useAsync(() => fetchAgenda(selectedDate), [selectedDate])
   const streakQ = useAsync(() => fetchGlobalStreak(), [])
-
-  const habits = habitsQ.data || []
-  const blocks = blocksQ.data || []
-
-  const dayBlocks = useMemo(() => blocks.filter((b) => {
-    if (!b.repeat_weekly) return b.specific_date === selectedDateISO
-    if (b.days_of_week?.length) return b.days_of_week.includes(selectedDow)
-    return b.day_of_week === selectedDow
-  }), [blocks, selectedDow, selectedDateISO])
-
-  const dayHabits = useMemo(() => habits.filter((h) => {
-    if (!h.days_of_week || h.days_of_week.length === 0) return true
-    return h.days_of_week.includes(selectedDow)
-  }), [habits, selectedDow])
-
-  const totalItems = dayBlocks.length + dayHabits.length
-  const completedBlocksSet = useMemo(
-    () => new Set((completionsQ.data || []).map((c) => c.block_id)),
-    [completionsQ.data]
-  )
-  const completedHabitsCount = useMemo(() => {
-    return (habitLogsQ.data || []).filter((l) => l.date === selectedDateISO && l.completed).length
-  }, [habitLogsQ.data, selectedDateISO])
-  const completedCount = completedBlocksSet.size + completedHabitsCount
-  const pct = totalItems ? Math.round((completedCount / totalItems) * 100) : 0
-
+  const agenda = agendaQ.data
   const globalStreak = streakQ.data ?? null
 
-  async function handleToggleBlock(block) {
-    const done = completedBlocksSet.has(block.id)
-    try {
-      await toggleRoutineCompletion({ block_id: block.id, date: selectedDateISO, completed: !done })
-      toast.success(done ? 'Marcado como pendiente' : '¡Completado! ✓')
-      completionsQ.refetch()
-      streakQ.refetch()
-    } catch (e) {
-      toast.error('Error: ' + e.message)
-    }
+  function refetchAll() {
+    agendaQ.refetch()
+    streakQ.refetch()
   }
 
-  async function handleToggleHabit(habit) {
-    const curLog = (habitLogsQ.data || []).find((l) => l.date === selectedDateISO && l.habit_id === habit.id)
-    const done = !!curLog?.completed
+  async function handleToggle(item) {
+    const completed = !item.done
     try {
-      await toggleHabitLog({ habit_id: habit.id, date: selectedDateISO, completed: !done })
-      toast.success(done ? 'Marcado como pendiente' : '¡Hábito completado! ✓')
-      habitLogsQ.refetch()
-      streakQ.refetch()
+      if (item.kind === 'block') {
+        await toggleRoutineCompletion({ block_id: item.id, date: selectedDate, completed })
+      } else {
+        await toggleHabitLog({ habit_id: item.id, date: selectedDate, completed })
+      }
+      toast.success(completed ? '¡Completado! ✓' : 'Marcado como pendiente')
+      refetchAll()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -116,14 +68,6 @@ export default function Dashboard() {
     }
   }
 
-  function refetchAll() {
-    habitsQ.refetch()
-    habitLogsQ.refetch()
-    blocksQ.refetch()
-    completionsQ.refetch()
-    streakQ.refetch()
-  }
-
   return (
     <div>
       <PageHeader
@@ -138,20 +82,20 @@ export default function Dashboard() {
 
       {/* Day selector */}
       <Card className="mb-4">
-        <DayStrip selected={selectedDow} onChange={setSelectedDow} />
+        <DayStrip week={agenda?.week || []} selected={selectedDate} onChange={setSelectedDate} />
       </Card>
 
       {/* Progress */}
-      {totalItems > 0 && (
+      {agenda?.total > 0 && (
         <div className="mb-4 px-1">
           <div className="flex items-center justify-between text-xs text-white/40 mb-1.5">
-            <span>{completedCount} de {totalItems} completadas</span>
-            <span className="font-semibold text-white/70">{pct}%</span>
+            <span>{agenda.completed} de {agenda.total} completadas</span>
+            <span className="font-semibold text-white/70">{agenda.pct}%</span>
           </div>
           <div className="h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${pct}%`, background: '#30D158' }}
+              style={{ width: `${agenda.pct}%`, background: '#30D158' }}
             />
           </div>
         </div>
@@ -161,7 +105,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <Card>
           <div className="text-[11px] text-white/35">Hoy</div>
-          <div className="stat-num text-[#30D158]">{completedCount}/{totalItems}</div>
+          <div className="stat-num text-[#30D158]">{agenda ? `${agenda.completed}/${agenda.total}` : '—'}</div>
         </Card>
         <StreakCard streak={globalStreak} />
         <Card>
@@ -181,13 +125,8 @@ export default function Dashboard() {
         }
       >
         <RoutineList
-          blocks={dayBlocks}
-          blockCompletions={completionsQ.data || []}
-          habits={dayHabits}
-          habitLogs={habitLogsQ.data || []}
-          dateISO={selectedDateISO}
-          onToggleBlock={handleToggleBlock}
-          onToggleHabit={handleToggleHabit}
+          sections={agenda?.sections || []}
+          onToggle={handleToggle}
           onEditBlock={(b) => { setEditBlock(b); setBlockModalOpen(true) }}
           onEditHabit={(h) => setHabitModal({ open: true, initial: h })}
           onDeleteHabit={handleDeleteHabit}
@@ -198,7 +137,7 @@ export default function Dashboard() {
         open={blockModalOpen}
         onClose={() => setBlockModalOpen(false)}
         initial={editBlock}
-        selectedDow={selectedDow}
+        selectedWeekday={agenda?.weekday ?? 0}
         onSaved={refetchAll}
       />
       <HabitModal

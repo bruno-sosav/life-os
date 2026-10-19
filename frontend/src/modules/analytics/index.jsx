@@ -1,8 +1,5 @@
-import { useState, useMemo } from 'react'
-import {
-  format, subDays, subMonths, startOfMonth, endOfMonth,
-  eachDayOfInterval,
-} from 'date-fns'
+import { useState } from 'react'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
   ResponsiveContainer,
@@ -16,7 +13,9 @@ import {
 import PageHeader from '../../components/PageHeader.jsx'
 import Card from '../../components/Card.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
-import { fetchAnalyticsData } from './queries.js'
+import { fetchAnalyticsSummary } from './queries.js'
+
+// Todos los números vienen calculados desde /api/analytics/summary: acá solo se dibujan.
 
 const HABIT_COLORS = ['#BF5AF2', '#0A84FF', '#30D158', '#FF9F0A', '#FF453A', '#5AC8FA', '#FFD700', '#FF2D55', '#34C759', '#AF52DE']
 const TT = {
@@ -25,254 +24,23 @@ const TT = {
 const AX = { stroke: 'rgba(255,255,255,0.13)', fontSize: 11 }
 const GR = { stroke: 'rgba(255,255,255,0.04)', vertical: false }
 
-// ─── Date helpers ─────────────────────────────────────────────
-function fmtISO(d) { return format(d, 'yyyy-MM-dd') }
-function fmtLabel(isoDate, pattern) { return format(new Date(isoDate + 'T12:00:00'), pattern, { locale: es }) }
-
-function getWeekRange(offsetWeeks = 0) {
-  const today = new Date()
-  const dow = (today.getDay() + 6) % 7
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - dow - offsetWeeks * 7)
-  monday.setHours(0, 0, 0, 0)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return { start: fmtISO(monday), end: fmtISO(sunday) }
+const BRUCE_LEVELS = {
+  elite: { text: 'Elite ⚡', color: '#FFD700' },
+  modo_bruce: { text: 'Modo Bruce', color: '#30D158' },
+  activando: { text: 'Activando', color: '#FF9F0A' },
+  apagado: { text: 'Modo apagado', color: '#8E8E93' },
 }
 
-function daysInRange(startISO, endISO) {
-  return eachDayOfInterval({
-    start: new Date(startISO + 'T12:00:00'),
-    end: new Date(endISO + 'T12:00:00'),
-  }).map(d => fmtISO(d))
-}
+// Formato de fechas para mostrar (yyyy-MM-dd → "12 oct")
+const fmtDay = (iso) => format(new Date(iso + 'T12:00:00'), 'd MMM', { locale: es })
+const fmtMonth = (iso) => format(new Date(iso + 'T12:00:00'), 'MMM yy', { locale: es })
+const fmtShort = (iso) => iso.slice(5)
 
-function getDow(isoDate) {
-  const d = new Date(isoDate + 'T12:00:00')
-  return (d.getDay() + 6) % 7
-}
-
-// ─── Calc: Score Bruce ────────────────────────────────────────
-function calcBruceScore(d, weekOffset) {
-  const empty = { total: 0, habitScore: 0, workoutScore: 0, stratusScore: 0, completedHabits: 0, expectedHabits: 0, workoutsThisWeek: 0, stratusDays: 0 }
-  if (!d) return empty
-
-  const { start, end } = getWeekRange(weekOffset)
-  const days = daysInRange(start, end)
-
-  let expectedHabits = 0
-  days.forEach(dt => {
-    const dow = getDow(dt)
-    expectedHabits += (d.habits || []).filter(h => !h.days_of_week?.length || h.days_of_week.includes(dow)).length
-  })
-
-  const weekLogs = (d.habitLogs || []).filter(l => l.completed && l.date >= start && l.date <= end)
-  const completedHabits = weekLogs.length
-  const habitScore = expectedHabits > 0 ? Math.round(Math.min(completedHabits / expectedHabits, 1) * 50) : 0
-
-  const gymW = (d.gym || []).filter(g => g.attended && g.date >= start && g.date <= end).length
-  const mmaW = (d.mma || []).filter(m => m.attended && m.date >= start && m.date <= end).length
-  const workoutsThisWeek = gymW + mmaW
-  const workoutScore = Math.round(Math.min(workoutsThisWeek / 5, 1) * 30)
-
-  const stratusHabitIds = new Set((d.habits || []).filter(h => h.name?.toLowerCase().includes('stratus')).map(h => h.id))
-  const stratusBlockIds = new Set((d.routineBlocks || []).filter(b => b.activity?.toLowerCase().includes('stratus')).map(b => b.id))
-  const stratusDaysSet = new Set([
-    ...weekLogs.filter(l => stratusHabitIds.has(l.habit_id)).map(l => l.date),
-    ...((d.routineCompletions || []).filter(c => c.date >= start && c.date <= end && stratusBlockIds.has(c.block_id)).map(c => c.date)),
-  ])
-  const stratusDays = stratusDaysSet.size
-  const stratusScore = Math.round(Math.min(stratusDays / 5, 1) * 20)
-
-  return { total: habitScore + workoutScore + stratusScore, habitScore, workoutScore, stratusScore, completedHabits, expectedHabits, workoutsThisWeek, stratusDays }
-}
-
-function bruceLabel(score) {
-  if (score >= 91) return { text: 'Elite ⚡', color: '#FFD700' }
-  if (score >= 71) return { text: 'Modo Bruce', color: '#30D158' }
-  if (score >= 41) return { text: 'Activando', color: '#FF9F0A' }
-  return { text: 'Modo apagado', color: '#8E8E93' }
-}
-
-// ─── Calc: KPI Cards ──────────────────────────────────────────
-function calcKPI(d) {
-  if (!d) return {}
-
-  const today = fmtISO(new Date())
-  const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd')
-
-  const logsByDate = {}
-  ;(d.habitLogs || []).filter(l => l.completed).forEach(l => { logsByDate[l.date] = (logsByDate[l.date] || 0) + 1 })
-
-  let currentStreak = 0, run = 0, inCurrent = true
-  let bestStreak = 0, bRun = 0
-  for (let i = 0; i <= 89; i++) {
-    const iso = fmtISO(subDays(new Date(), i))
-    if (logsByDate[iso] > 0) {
-      run++
-      if (inCurrent) currentStreak = run
-    } else {
-      if (i === 0) { /* today may not be done yet */ }
-      else { inCurrent = false; run = 0 }
-    }
-  }
-  for (let i = 89; i >= 0; i--) {
-    const iso = fmtISO(subDays(new Date(), i))
-    if (logsByDate[iso] > 0) { bRun++; bestStreak = Math.max(bestStreak, bRun) }
-    else { bRun = 0 }
-  }
-
-  const gymMonth = (d.gym || []).filter(g => g.attended && g.date >= monthStart).length
-  const mmaMonth = (d.mma || []).filter(m => m.attended && m.date >= monthStart).length
-
-  const monthDays = daysInRange(monthStart, today)
-  let expMonth = 0
-  monthDays.forEach(dt => {
-    const dow = getDow(dt)
-    expMonth += (d.habits || []).filter(h => !h.days_of_week?.length || h.days_of_week.includes(dow)).length
-  })
-  const doneMonth = (d.habitLogs || []).filter(l => l.completed && l.date >= monthStart).length
-  const habitMonthPct = expMonth > 0 ? Math.min(100, Math.round((doneMonth / expMonth) * 100)) : 0
-
-  const sortedW = [...(d.weight || [])].sort((a, b) => a.date.localeCompare(b.date))
-  const lastWeight = sortedW.length ? Number(sortedW[sortedW.length - 1].weight_kg) : null
-  const date30ago = fmtISO(subDays(new Date(), 30))
-  const weight30 = sortedW.filter(w => w.date <= date30ago).pop()
-  const weightTrend = lastWeight != null && weight30 ? +(lastWeight - Number(weight30.weight_kg)).toFixed(1) : null
-
-  const books2026 = (d.books || []).filter(b => b.status === 'leido' && b.finished_at?.startsWith('2026')).length
-
-  return {
-    currentStreak, bestStreak,
-    workoutsMonth: gymMonth + mmaMonth,
-    habitMonthPct, lastWeight, weightTrend, books2026,
-  }
-}
-
-// ─── Calc: Habits by week ─────────────────────────────────────
-function buildHabitsByWeek(d) {
-  if (!d || !d.habits?.length) return { data: [], habits: [] }
-  const weeks = []
-  for (let w = 7; w >= 0; w--) {
-    const endDate = subDays(new Date(), w * 7)
-    const startDate = subDays(endDate, 6)
-    const startISO = fmtISO(startDate)
-    const endISO = fmtISO(endDate)
-    const row = { week: format(startDate, 'd MMM', { locale: es }) }
-    d.habits.forEach(h => {
-      row[h.name] = (d.habitLogs || []).filter(
-        l => l.habit_id === h.id && l.completed && l.date >= startISO && l.date <= endISO
-      ).length
-    })
-    weeks.push(row)
-  }
-  return { data: weeks, habits: d.habits }
-}
-
-// ─── Calc: Bruce history ──────────────────────────────────────
-function buildBruceHistory(d) {
-  if (!d) return []
-  return Array.from({ length: 12 }, (_, i) => {
-    const offset = 11 - i
-    const { start } = getWeekRange(offset)
-    const score = calcBruceScore(d, offset)
-    return { week: fmtLabel(start, 'd MMM'), score: score.total, isCurrent: offset === 0 }
-  })
-}
-
-// ─── Calc: Radar ──────────────────────────────────────────────
-function buildRadarData(d, weekOffset) {
-  if (!d) return []
-  function metrics(offset) {
-    const { start, end } = getWeekRange(offset)
-    const days = daysInRange(start, end)
-    let expH = 0
-    days.forEach(dt => {
-      const dow = getDow(dt)
-      expH += (d.habits || []).filter(h => !h.days_of_week?.length || h.days_of_week.includes(dow)).length
-    })
-    const doneH = (d.habitLogs || []).filter(l => l.completed && l.date >= start && l.date <= end).length
-    const habitPct = expH > 0 ? Math.round((doneH / expH) * 100) : 0
-
-    const gym = (d.gym || []).filter(g => g.attended && g.date >= start && g.date <= end).length
-    const mma = (d.mma || []).filter(m => m.attended && m.date >= start && m.date <= end).length
-    const workoutPct = Math.round(Math.min((gym + mma) / 5, 1) * 100)
-
-    const stratusIds = new Set((d.habits || []).filter(h => h.name?.toLowerCase().includes('stratus')).map(h => h.id))
-    const stratusDays = new Set((d.habitLogs || []).filter(l => l.date >= start && l.date <= end && stratusIds.has(l.habit_id) && l.completed).map(l => l.date)).size
-    const stratusPct = Math.round(Math.min(stratusDays / 5, 1) * 100)
-
-    const mentalDates = new Set([
-      ...(d.journalEntries || []).map(j => j.created_at?.slice(0, 10)).filter(dt => dt && dt >= start && dt <= end),
-      ...(d.mood || []).filter(m => m.date >= start && m.date <= end).map(m => m.date),
-    ])
-    const mentalPct = Math.round(Math.min(mentalDates.size / 7, 1) * 100)
-
-    const hasFinance =
-      (d.financeExpenses || []).some(e => e.date >= start && e.date <= end) ||
-      (d.financeIncome || []).some(inc => inc.month >= start && inc.month <= end)
-
-    return { habitPct, workoutPct, stratusPct, mentalPct, financePct: hasFinance ? 100 : 0 }
-  }
-  const cur = metrics(weekOffset)
-  const prev = metrics(weekOffset + 1)
-  return [
-    { axis: 'Hábitos', semana: cur.habitPct, anterior: prev.habitPct },
-    { axis: 'Entrenos', semana: cur.workoutPct, anterior: prev.workoutPct },
-    { axis: 'Stratus', semana: cur.stratusPct, anterior: prev.stratusPct },
-    { axis: 'Mental', semana: cur.mentalPct, anterior: prev.mentalPct },
-    { axis: 'Finanzas', semana: cur.financePct, anterior: prev.financePct },
-  ]
-}
-
-// ─── Calc: Heatmap 90 days ────────────────────────────────────
-function buildHeatmap90(d) {
-  if (!d) return []
-  const counts = {}
-  ;(d.habitLogs || []).filter(l => l.completed).forEach(l => { counts[l.date] = (counts[l.date] || 0) + 1 })
-
-  const today = new Date()
-  const startDate = subDays(today, 89)
-  const startDow = (startDate.getDay() + 6) % 7
-
-  const cells = []
-  for (let i = 0; i < startDow; i++) cells.push({ date: null, count: -1 })
-  for (let i = 0; i < 90; i++) {
-    const dt = subDays(today, 89 - i)
-    const iso = fmtISO(dt)
-    cells.push({ date: iso, count: counts[iso] || 0 })
-  }
-  const rem = cells.length % 7
-  if (rem > 0) for (let i = 0; i < 7 - rem; i++) cells.push({ date: null, count: -1 })
-  return cells
-}
-
-// ─── Calc: Finance monthly ────────────────────────────────────
-function buildFinanceMonthly(d) {
-  if (!d) return []
-  return Array.from({ length: 6 }, (_, i) => {
-    const date = subMonths(new Date(), 5 - i)
-    const mStart = format(startOfMonth(date), 'yyyy-MM-dd')
-    const mEnd = format(endOfMonth(date), 'yyyy-MM-dd')
-    const label = format(date, 'MMM yy', { locale: es })
-    const income = (d.financeIncome || []).filter(r => r.month === mStart).reduce((s, r) => s + (r.amount || 0), 0)
-    const expenses = (d.financeExpenses || []).filter(e => e.date >= mStart && e.date <= mEnd).reduce((s, e) => s + (e.amount || 0), 0)
-    const savings = income > 0 ? Math.round(((income - expenses) / income) * 100) : null
-    return { month: label, income: Math.round(income), expenses: Math.round(expenses), savings }
-  })
-}
-
-// ─── Calc: Gym vs MMA ─────────────────────────────────────────
-function buildGymVsMMA(d) {
-  if (!d) return []
-  const start30 = fmtISO(subDays(new Date(), 30))
-  const gym = (d.gym || []).filter(g => g.attended && g.date >= start30).length
-  const mma = (d.mma || []).filter(m => m.attended && m.date >= start30).length
-  if (!gym && !mma) return []
-  return [
-    { name: 'Gym', value: gym, color: '#30D158' },
-    { name: 'MMA', value: mma, color: '#FF9F0A' },
-  ]
+function weightNote(trend) {
+  if (trend == null) return 'sin datos recientes'
+  if (trend > 0) return `↑ +${trend} kg vs 30d`
+  if (trend < 0) return `↓ ${trend} kg vs 30d`
+  return 'sin cambio vs 30d'
 }
 
 // ─── Sub-components ───────────────────────────────────────────
@@ -329,25 +97,17 @@ function KPICard({ label, value, suffix, color, note }) {
   )
 }
 
-function HeatmapGrid({ days }) {
-  const maxCount = Math.max(1, ...days.filter(c => c.count > 0).map(c => c.count))
-  function cellColor(count) {
-    if (count < 0) return 'transparent'
-    if (count === 0) return 'rgba(255,255,255,0.04)'
-    const pct = count / maxCount
-    if (pct <= 0.25) return 'rgba(30,144,255,0.25)'
-    if (pct <= 0.5) return 'rgba(30,144,255,0.45)'
-    if (pct <= 0.75) return 'rgba(30,144,255,0.65)'
-    return 'rgba(30,144,255,0.9)'
-  }
+const HEAT_COLORS = ['rgba(255,255,255,0.04)', 'rgba(30,144,255,0.25)', 'rgba(30,144,255,0.45)', 'rgba(30,144,255,0.65)', 'rgba(30,144,255,0.9)']
+
+function HeatmapGrid({ cells }) {
   return (
     <div className="overflow-x-auto">
       <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 13px)', gridAutoFlow: 'column', gridAutoColumns: '13px', gap: '3px' }}>
-        {days.map((cell, i) => (
+        {cells.map((cell, i) => (
           <div
             key={i}
             title={cell.date ? `${cell.date}: ${cell.count} hábitos` : ''}
-            style={{ width: 13, height: 13, borderRadius: 3, backgroundColor: cellColor(cell.count) }}
+            style={{ width: 13, height: 13, borderRadius: 3, backgroundColor: cell.date ? HEAT_COLORS[cell.level] : 'transparent' }}
           />
         ))}
       </div>
@@ -358,30 +118,26 @@ function HeatmapGrid({ days }) {
 // ─── Main ─────────────────────────────────────────────────────
 export default function Analytics() {
   const [weekOffset, setWeekOffset] = useState(0)
-  const dataQ = useAsync(() => fetchAnalyticsData(), [])
-  const d = dataQ.data
+  const summaryQ = useAsync(() => fetchAnalyticsSummary(weekOffset), [weekOffset])
+  const s = summaryQ.data
 
-  const bruceScore = useMemo(() => calcBruceScore(d, weekOffset), [d, weekOffset])
-  const bruceLabel_ = bruceLabel(bruceScore.total)
-  const bruceHistory = useMemo(() => buildBruceHistory(d), [d])
-  const kpi = useMemo(() => calcKPI(d), [d])
-  const { data: habitWeekData, habits: habitList } = useMemo(() => buildHabitsByWeek(d), [d])
-  const radarData = useMemo(() => buildRadarData(d, weekOffset), [d, weekOffset])
-  const heatmap = useMemo(() => buildHeatmap90(d), [d])
-  const financeData = useMemo(() => buildFinanceMonthly(d), [d])
-  const gymVsMMA = useMemo(() => buildGymVsMMA(d), [d])
-  const weightSeries = useMemo(() => (d?.weight || []).slice(-90).map(w => ({ date: w.date.slice(5), kg: Number(w.weight_kg) })), [d])
-  const moodSeries = useMemo(() => (d?.mood || []).slice(-30).map(m => ({ date: m.date.slice(5), mood: m.mood_score, sueño: Number(m.sleep_hours) })), [d])
-
-  const { start: weekStart, end: weekEnd } = getWeekRange(weekOffset)
-  const hasFin = financeData.some(m => m.income > 0 || m.expenses > 0)
-
-  if (dataQ.loading) return (
+  if (!s) return (
     <div>
       <PageHeader title="Stats" subtitle="Tu vida en números" />
-      <div className="text-sm text-white/30 mt-8 text-center">Cargando datos…</div>
+      <div className="text-sm text-white/30 mt-8 text-center">
+        {summaryQ.error ? 'No se pudieron cargar los datos.' : 'Cargando datos…'}
+      </div>
     </div>
   )
+
+  const { bruce, kpis, habits_by_week: habitsByWeek, gym_vs_mma: gymVsMma } = s
+  const level = BRUCE_LEVELS[bruce.level]
+  const gymVsMmaData = [
+    { name: 'Gym', value: gymVsMma.gym, color: '#30D158' },
+    { name: 'MMA', value: gymVsMma.mma, color: '#FF9F0A' },
+  ]
+  const hasWorkouts = gymVsMma.gym > 0 || gymVsMma.mma > 0
+  const hasFinance = s.finance_monthly.some(m => m.income > 0 || m.expenses > 0)
 
   return (
     <div className="space-y-4">
@@ -393,7 +149,7 @@ export default function Analytics() {
           <div>
             <div className="text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-0.5">Score Bruce</div>
             <div className="text-xs text-white/30">
-              {fmtLabel(weekStart, 'd MMM')} – {fmtLabel(weekEnd, 'd MMM')}
+              {fmtDay(s.week_start)} – {fmtDay(s.week_end)}
               {weekOffset > 0 && <span className="ml-1 text-white/20">(hace {weekOffset} sem.)</span>}
             </div>
           </div>
@@ -412,25 +168,25 @@ export default function Analytics() {
 
         <div className="flex gap-5 items-center">
           <div className="shrink-0">
-            <ArcProgress value={bruceScore.total} color={bruceLabel_.color} size={110} />
+            <ArcProgress value={bruce.total} color={level.color} size={110} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-bold mb-3" style={{ color: bruceLabel_.color }}>{bruceLabel_.text}</div>
+            <div className="text-[15px] font-bold mb-3" style={{ color: level.color }}>{level.text}</div>
             <div className="space-y-2">
               <ScoreBar
                 label="Hábitos"
-                value={bruceScore.habitScore} max={50} color="#BF5AF2"
-                detail={`${bruceScore.completedHabits}/${bruceScore.expectedHabits}`}
+                value={bruce.habit_score} max={50} color="#BF5AF2"
+                detail={`${bruce.completed_habits}/${bruce.expected_habits}`}
               />
               <ScoreBar
                 label="Entrenos"
-                value={bruceScore.workoutScore} max={30} color="#30D158"
-                detail={`${bruceScore.workoutsThisWeek}/5 sesiones`}
+                value={bruce.workout_score} max={30} color="#30D158"
+                detail={`${bruce.workouts}/5 sesiones`}
               />
               <ScoreBar
                 label="Stratus"
-                value={bruceScore.stratusScore} max={20} color="#0A84FF"
-                detail={`${bruceScore.stratusDays}/5 días`}
+                value={bruce.stratus_score} max={20} color="#0A84FF"
+                detail={`${bruce.stratus_days}/5 días`}
               />
             </div>
           </div>
@@ -441,67 +197,40 @@ export default function Analytics() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <KPICard
           label="Racha actual"
-          value={kpi.currentStreak ?? 0}
+          value={kpis.current_streak}
           suffix=" días"
-          color={kpi.currentStreak >= 7 ? '#FF9F0A' : kpi.currentStreak >= 3 ? '#30D158' : '#0A84FF'}
+          color={kpis.current_streak >= 7 ? '#FF9F0A' : kpis.current_streak >= 3 ? '#30D158' : '#0A84FF'}
           note="consecutivos con hábitos"
         />
-        <KPICard
-          label="Mejor racha"
-          value={kpi.bestStreak ?? 0}
-          suffix=" días"
-          color="#FFD700"
-          note="en los últimos 90 días"
-        />
-        <KPICard
-          label="Entrenos (mes)"
-          value={kpi.workoutsMonth ?? 0}
-          color="#30D158"
-          note="gym + MMA este mes"
-        />
-        <KPICard
-          label="Hábitos (mes)"
-          value={`${kpi.habitMonthPct ?? 0}%`}
-          color="#BF5AF2"
-          note="completados del total"
-        />
+        <KPICard label="Mejor racha" value={kpis.best_streak} suffix=" días" color="#FFD700" note="en los últimos 90 días" />
+        <KPICard label="Entrenos (mes)" value={kpis.workouts_month} color="#30D158" note="gym + MMA este mes" />
+        <KPICard label="Hábitos (mes)" value={`${kpis.habit_month_pct}%`} color="#BF5AF2" note="completados del total" />
         <KPICard
           label="Peso actual"
-          value={kpi.lastWeight != null ? kpi.lastWeight.toFixed(1) : '—'}
+          value={kpis.last_weight != null ? kpis.last_weight.toFixed(1) : '—'}
           suffix=" kg"
           color="#FF9F0A"
-          note={
-            kpi.weightTrend != null
-              ? kpi.weightTrend > 0 ? `↑ +${kpi.weightTrend} kg vs 30d`
-                : kpi.weightTrend < 0 ? `↓ ${kpi.weightTrend} kg vs 30d`
-                  : 'sin cambio vs 30d'
-              : 'sin datos recientes'
-          }
+          note={weightNote(kpis.weight_trend)}
         />
-        <KPICard
-          label="Libros 2026"
-          value={kpi.books2026 ?? 0}
-          color="#5AC8FA"
-          note="completados este año"
-        />
+        <KPICard label={`Libros ${kpis.year}`} value={kpis.books_year} color="#5AC8FA" note="completados este año" />
       </div>
 
       {/* ── 3. Hábitos por semana  |  4. Bruce histórico ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Hábitos por semana" subtitle="Días completados · últimas 8 semanas">
           <div className="h-52">
-            {habitWeekData.length > 0 && habitList.length > 0 ? (
+            {habitsByWeek.habits.length > 0 ? (
               <ResponsiveContainer>
-                <BarChart data={habitWeekData} barCategoryGap="30%">
+                <BarChart data={habitsByWeek.weeks} barCategoryGap="30%">
                   <CartesianGrid {...GR} />
-                  <XAxis dataKey="week" {...AX} />
+                  <XAxis dataKey="week_start" tickFormatter={fmtDay} {...AX} />
                   <YAxis {...AX} allowDecimals={false} />
-                  <Tooltip {...TT} />
+                  <Tooltip {...TT} labelFormatter={fmtDay} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
-                  {habitList.map((h, i) => (
+                  {habitsByWeek.habits.map((h, i) => (
                     <Bar
                       key={h.id}
-                      dataKey={h.name}
+                      dataKey={h.id}
                       stackId="a"
                       fill={h.color || HABIT_COLORS[i % HABIT_COLORS.length]}
                       name={h.name}
@@ -517,9 +246,9 @@ export default function Analytics() {
 
         <Card title="Score Bruce histórico" subtitle="Últimas 12 semanas">
           <div className="h-52">
-            {bruceHistory.some(w => w.score > 0) ? (
+            {s.bruce_history.some(w => w.score > 0) ? (
               <ResponsiveContainer>
-                <AreaChart data={bruceHistory}>
+                <AreaChart data={s.bruce_history}>
                   <defs>
                     <linearGradient id="bruceGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#FFD700" stopOpacity={0.25} />
@@ -527,9 +256,9 @@ export default function Analytics() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid {...GR} />
-                  <XAxis dataKey="week" {...AX} />
+                  <XAxis dataKey="week_start" tickFormatter={fmtDay} {...AX} />
                   <YAxis {...AX} domain={[0, 100]} />
-                  <Tooltip {...TT} formatter={(v) => [`${v}%`, 'Score']} />
+                  <Tooltip {...TT} labelFormatter={fmtDay} formatter={(v) => [`${v}%`, 'Score']} />
                   <ReferenceLine y={70} stroke="#FFD700" strokeDasharray="4 3" opacity={0.4}
                     label={{ value: '70%', position: 'insideTopRight', fill: 'rgba(255,215,0,0.6)', fontSize: 10 }} />
                   <Area
@@ -537,11 +266,11 @@ export default function Analytics() {
                     stroke="#FFD700" strokeWidth={2.5}
                     fill="url(#bruceGrad)"
                     dot={({ cx, cy, payload }) => (
-                      <circle key={payload.week} cx={cx} cy={cy}
-                        r={payload.isCurrent ? 5 : 2.5}
+                      <circle key={payload.week_start} cx={cx} cy={cy}
+                        r={payload.is_current ? 5 : 2.5}
                         fill="#FFD700"
-                        stroke={payload.isCurrent ? 'white' : 'none'}
-                        strokeWidth={payload.isCurrent ? 2 : 0}
+                        stroke={payload.is_current ? 'white' : 'none'}
+                        strokeWidth={payload.is_current ? 2 : 0}
                       />
                     )}
                     name="Score"
@@ -559,9 +288,9 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Perfil semanal" subtitle="Esta semana vs semana anterior">
           <div className="h-56">
-            {radarData.some(r => r.semana > 0 || r.anterior > 0) ? (
+            {s.radar.some(r => r.semana > 0 || r.anterior > 0) ? (
               <ResponsiveContainer>
-                <RadarChart data={radarData} outerRadius="70%">
+                <RadarChart data={s.radar} outerRadius="70%">
                   <PolarGrid stroke="rgba(255,255,255,0.07)" />
                   <PolarAngleAxis dataKey="axis" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                   <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
@@ -578,33 +307,25 @@ export default function Analytics() {
         </Card>
 
         <Card title="Heatmap de hábitos" subtitle="Días completados · últimos 90 días">
-          {heatmap.length > 0 ? (
-            <>
-              <HeatmapGrid days={heatmap} />
-              <div className="flex items-center gap-2 mt-3 text-[11px] text-white/30">
-                <span>0</span>
-                {[0, 0.25, 0.45, 0.65, 0.9].map((o, i) => (
-                  <div key={i} className="w-3 h-3 rounded-sm"
-                    style={{ background: i === 0 ? 'rgba(255,255,255,0.04)' : `rgba(30,144,255,${o})` }}
-                  />
-                ))}
-                <span>Máx</span>
-              </div>
-            </>
-          ) : (
-            <div className="h-32 grid place-items-center text-xs text-white/25">Sin datos</div>
-          )}
+          <HeatmapGrid cells={s.heatmap} />
+          <div className="flex items-center gap-2 mt-3 text-[11px] text-white/30">
+            <span>0</span>
+            {HEAT_COLORS.map((color) => (
+              <div key={color} className="w-3 h-3 rounded-sm" style={{ background: color }} />
+            ))}
+            <span>Máx</span>
+          </div>
         </Card>
       </div>
 
       {/* ── 7. Físico expandido ── */}
       <Card title="Peso corporal" subtitle="Kg · últimos 90 días">
         <div className="h-48">
-          {weightSeries.length > 1 ? (
+          {s.weight_series.length > 1 ? (
             <ResponsiveContainer>
-              <LineChart data={weightSeries}>
+              <LineChart data={s.weight_series}>
                 <CartesianGrid {...GR} />
-                <XAxis dataKey="date" {...AX} />
+                <XAxis dataKey="date" tickFormatter={fmtShort} {...AX} />
                 <YAxis {...AX} domain={['dataMin - 1', 'dataMax + 1']} />
                 <Tooltip {...TT} formatter={(v) => [`${v} kg`, 'Peso']} />
                 <Line type="monotone" dataKey="kg" stroke="#FF9F0A" strokeWidth={2.5} dot={{ r: 3, fill: '#FF9F0A' }} name="Peso (kg)" />
@@ -619,16 +340,16 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Mood y sueño" subtitle="Últimos 30 días">
           <div className="h-48">
-            {moodSeries.length > 1 ? (
+            {s.mood_series.length > 1 ? (
               <ResponsiveContainer>
-                <LineChart data={moodSeries}>
+                <LineChart data={s.mood_series}>
                   <CartesianGrid {...GR} />
-                  <XAxis dataKey="date" {...AX} />
+                  <XAxis dataKey="date" tickFormatter={fmtShort} {...AX} />
                   <YAxis {...AX} domain={[0, 5]} />
                   <Tooltip {...TT} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line type="monotone" dataKey="mood" stroke="#BF5AF2" strokeWidth={2.5} dot={{ r: 2 }} name="Mood" />
-                  <Line type="monotone" dataKey="sueño" stroke="#0A84FF" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" name="Sueño (h)" />
+                  <Line type="monotone" dataKey="sleep" stroke="#0A84FF" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" name="Sueño (h)" />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -639,11 +360,11 @@ export default function Analytics() {
 
         <Card title="Gym vs MMA" subtitle="Distribución de entrenos · 30 días">
           <div className="h-48">
-            {gymVsMMA.length > 0 ? (
+            {hasWorkouts ? (
               <ResponsiveContainer>
                 <PieChart>
-                  <Pie data={gymVsMMA} cx="50%" cy="45%" innerRadius={45} outerRadius={72} dataKey="value" paddingAngle={3}>
-                    {gymVsMMA.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  <Pie data={gymVsMmaData} cx="50%" cy="45%" innerRadius={45} outerRadius={72} dataKey="value" paddingAngle={3}>
+                    {gymVsMmaData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
                   <Tooltip {...TT} formatter={(v, n) => [`${v} sesiones`, n]} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -657,15 +378,15 @@ export default function Analytics() {
       </div>
 
       {/* ── 8. Finanzas ── */}
-      {hasFin && (
+      {hasFinance && (
         <Card title="Finanzas" subtitle="Ingresos vs gastos · últimos 6 meses">
           <div className="h-52">
             <ResponsiveContainer>
-              <BarChart data={financeData} barCategoryGap="30%">
+              <BarChart data={s.finance_monthly} barCategoryGap="30%">
                 <CartesianGrid {...GR} />
-                <XAxis dataKey="month" {...AX} />
+                <XAxis dataKey="month" tickFormatter={fmtMonth} {...AX} />
                 <YAxis {...AX} />
-                <Tooltip {...TT} formatter={(v) => [`$${v.toLocaleString()}`, '']} />
+                <Tooltip {...TT} labelFormatter={fmtMonth} formatter={(v) => [`$${v.toLocaleString()}`, '']} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="income" fill="#30D158" radius={[4, 4, 0, 0]} name="Ingresos" />
                 <Bar dataKey="expenses" fill="#FF453A" radius={[4, 4, 0, 0]} name="Gastos" />
@@ -673,11 +394,11 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-4">
-            {financeData.slice(-3).map((m, i) => (
-              <div key={i} className="text-center">
-                <div className="text-[11px] text-white/35">{m.month}</div>
-                <div className="text-xl font-bold" style={{ color: m.savings != null && m.savings >= 0 ? '#30D158' : '#FF453A' }}>
-                  {m.savings != null ? `${m.savings}%` : '—'}
+            {s.finance_monthly.slice(-3).map((m) => (
+              <div key={m.month} className="text-center">
+                <div className="text-[11px] text-white/35">{fmtMonth(m.month)}</div>
+                <div className="text-xl font-bold" style={{ color: m.savings_pct != null && m.savings_pct >= 0 ? '#30D158' : '#FF453A' }}>
+                  {m.savings_pct != null ? `${m.savings_pct}%` : '—'}
                 </div>
                 <div className="text-[10px] text-white/25">ahorro</div>
               </div>

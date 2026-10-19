@@ -1,21 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
-import {
-  fetchWeeklyReviewStats, fetchWeeklyReview, saveWeeklyReview, getWeekBounds
-} from './queries.js'
+import { fetchWeeklyReview, saveWeeklyReview } from './queries.js'
+
+const MOOD_LABELS = {
+  excelente: 'Excelente semana',
+  buena: 'Buena semana',
+  regular: 'Semana regular',
+  dificil: 'Semana difícil',
+}
 
 function fmt(d) {
   return format(new Date(d + 'T12:00:00'), "d 'de' MMM", { locale: es })
 }
 
-function Delta({ current, prev }) {
-  const diff = current - prev
-  if (prev === 0) return null
+// `diff` viene calculado; null = sin datos de la semana anterior
+function Delta({ diff }) {
+  if (diff == null) return null
   const color = diff >= 0 ? '#30D158' : '#FF453A'
   const arrow = diff >= 0 ? '↑' : '↓'
   return (
@@ -26,37 +31,23 @@ function Delta({ current, prev }) {
 }
 
 export default function WeeklyReview({ open, onClose }) {
-  const thisWeek = useMemo(() => getWeekBounds(0), [])
-
-  const statsQ = useAsync(() => fetchWeeklyReviewStats(thisWeek.start), [thisWeek.start])
-  const reviewQ = useAsync(() => fetchWeeklyReview(thisWeek.start), [thisWeek.start])
+  // Estadísticas, límites de la semana y revisión guardada, todo en una llamada
+  const weekQ = useAsync(() => (open ? fetchWeeklyReview() : Promise.resolve(null)), [open])
+  const week = weekQ.data
 
   const [wentWell, setWentWell] = useState('')
   const [wouldChange, setWouldChange] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!open) return
-    if (reviewQ.data) {
-      setWentWell(reviewQ.data.went_well || '')
-      setWouldChange(reviewQ.data.would_change || '')
-    }
-  }, [open, reviewQ.data])
-
-  // Las estadísticas vienen calculadas desde el backend
-  const stats = useMemo(() => {
-    if (!statsQ.data) return null
-    const { habit_pct, prev_habit_pct, gym_days, mma_days, avg_mood } = statsQ.data
-    return {
-      thisHabitPct: habit_pct, prevHabitPct: prev_habit_pct,
-      gymDays: gym_days, mmaDays: mma_days, avgMood: avg_mood ?? 0,
-    }
-  }, [statsQ.data])
+    setWentWell(week?.review?.went_well || '')
+    setWouldChange(week?.review?.would_change || '')
+  }, [week])
 
   async function handleSave() {
     setSaving(true)
     try {
-      await saveWeeklyReview({ week_start: thisWeek.start, went_well: wentWell.trim(), would_change: wouldChange.trim() })
+      await saveWeeklyReview({ week_start: week.week_start, went_well: wentWell.trim(), would_change: wouldChange.trim() })
       toast.success('Revisión guardada ✓')
       onClose()
     } catch (e) {
@@ -64,7 +55,7 @@ export default function WeeklyReview({ open, onClose }) {
     } finally { setSaving(false) }
   }
 
-  const weekLabel = `${fmt(thisWeek.start)} – ${fmt(thisWeek.end)}`
+  const weekLabel = week ? `${fmt(week.week_start)} – ${fmt(week.week_end)}` : ''
 
   return (
     <Modal
@@ -73,7 +64,7 @@ export default function WeeklyReview({ open, onClose }) {
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</Button>
+          <Button onClick={handleSave} disabled={saving || !week}>{saving ? 'Guardando…' : 'Guardar'}</Button>
         </div>
       }
     >
@@ -82,24 +73,24 @@ export default function WeeklyReview({ open, onClose }) {
         <p className="text-xs text-white/35 -mt-1">{weekLabel}</p>
 
         {/* KPIs */}
-        {statsQ.loading ? (
+        {weekQ.loading ? (
           <div className="text-sm text-white/30 text-center py-4">Cargando datos…</div>
-        ) : stats ? (
+        ) : week ? (
           <div className="grid grid-cols-2 gap-2.5">
             <KPITile
               label="Hábitos"
-              value={`${stats.thisHabitPct}%`}
-              color={stats.thisHabitPct >= 70 ? '#30D158' : stats.thisHabitPct >= 50 ? '#FF9F0A' : '#FF453A'}
-              sub={<Delta current={stats.thisHabitPct} prev={stats.prevHabitPct} />}
+              value={`${week.habit_pct}%`}
+              color={week.habit_pct >= 70 ? '#30D158' : week.habit_pct >= 50 ? '#FF9F0A' : '#FF453A'}
+              sub={<Delta diff={week.habit_pct_delta} />}
             />
             <KPITile
               label="Mood promedio"
-              value={stats.avgMood > 0 ? `${stats.avgMood.toFixed(1)}/5` : '—'}
+              value={week.avg_mood != null ? `${week.avg_mood.toFixed(1)}/5` : '—'}
               color="#BF5AF2"
-              sub={moodLabel(stats.avgMood)}
+              sub={MOOD_LABELS[week.mood_level] ?? ''}
             />
-            <KPITile label="Días de Gym" value={stats.gymDays} color="#30D158" />
-            <KPITile label="Días de MMA" value={stats.mmaDays} color="#FF9F0A" />
+            <KPITile label="Días de Gym" value={week.gym_days} color="#30D158" />
+            <KPITile label="Días de MMA" value={week.mma_days} color="#FF9F0A" />
           </div>
         ) : (
           <div className="text-sm text-white/30 text-center py-2">Sin datos por ahora.</div>
@@ -137,12 +128,4 @@ function KPITile({ label, value, color, sub }) {
       {sub && <div className="text-[11px] text-white/40 mt-0.5">{sub}</div>}
     </div>
   )
-}
-
-function moodLabel(avg) {
-  if (!avg) return ''
-  if (avg >= 4.5) return 'Excelente semana'
-  if (avg >= 3.5) return 'Buena semana'
-  if (avg >= 2.5) return 'Semana regular'
-  return 'Semana difícil'
 }

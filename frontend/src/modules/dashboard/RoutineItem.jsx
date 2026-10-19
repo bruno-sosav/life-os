@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function RoutineItem({ item, done, onToggle, onEdit, onDelete }) {
+export default function RoutineItem({ item, color, onToggle, onEdit, onDelete }) {
+  const done = item.done
   const [localDone, setLocalDone] = useState(done)
   const [busy, setBusy] = useState(false)
-  const color = item.color || '#30D158'
 
   // Sync cuando cambia desde afuera (refetch del padre)
   useEffect(() => { setLocalDone(done) }, [done])
@@ -22,10 +22,6 @@ export default function RoutineItem({ item, done, onToggle, onEdit, onDelete }) 
       setBusy(false)
     }
   }
-
-  const timeLabel = item.hour_start != null
-    ? `${String(item.hour_start).padStart(2, '0')}:${String(item.hour_min ?? 0).padStart(2, '0')}`
-    : item.start_time?.slice(0, 5) ?? ''
 
   return (
     <div
@@ -59,8 +55,8 @@ export default function RoutineItem({ item, done, onToggle, onEdit, onDelete }) 
       </motion.div>
 
       {/* Hora */}
-      {timeLabel && (
-        <span className="text-[11px] font-semibold text-white/35 w-10 shrink-0 tabular-nums">{timeLabel}</span>
+      {item.time && (
+        <span className="text-[11px] font-semibold text-white/35 w-10 shrink-0 tabular-nums">{item.time}</span>
       )}
 
       {/* Emoji */}
@@ -68,7 +64,7 @@ export default function RoutineItem({ item, done, onToggle, onEdit, onDelete }) 
 
       {/* Nombre */}
       <span className={`flex-1 text-[15px] font-medium leading-snug transition-colors duration-200 ${localDone ? 'line-through text-white/25' : 'text-white/90'}`}>
-        {item.activity ?? item.name}
+        {item.title}
       </span>
 
       {/* Categoría pill */}

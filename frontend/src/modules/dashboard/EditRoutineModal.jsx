@@ -16,17 +16,14 @@ const empty = {
   category: 'personal', emoji: '', repeat_weekly: true, specific_date: ''
 }
 
-export default function EditRoutineModal({ open, onClose, initial, selectedDow, onSaved }) {
+export default function EditRoutineModal({ open, onClose, initial, selectedWeekday, onSaved }) {
   const [form, setForm] = useState(empty)
 
   useEffect(() => {
     if (!open) return
     if (initial) {
-      const dow = initial.days_of_week?.length
-        ? initial.days_of_week
-        : initial.day_of_week != null ? [initial.day_of_week] : [selectedDow]
       setForm({
-        days_of_week: dow,
+        days_of_week: initial.days_of_week ?? [selectedWeekday],
         hour_start: initial.hour_start ?? 7,
         hour_min: initial.hour_min ?? 0,
         hour_end: initial.hour_end ?? 8,
@@ -37,26 +34,23 @@ export default function EditRoutineModal({ open, onClose, initial, selectedDow, 
         specific_date: initial.specific_date ?? ''
       })
     } else {
-      setForm({ ...empty, days_of_week: [selectedDow] })
+      setForm({ ...empty, days_of_week: [selectedWeekday] })
     }
-  }, [open, initial?.id, selectedDow])
+  }, [open, initial?.id, selectedWeekday])
 
   function toggleDay(i) {
     const cur = form.days_of_week
-    const next = cur.includes(i) ? cur.filter(d => d !== i) : [...cur, i].sort((a, b) => a - b)
-    setForm({ ...form, days_of_week: next.length ? next : [i] })
+    setForm({ ...form, days_of_week: cur.includes(i) ? cur.filter(d => d !== i) : [...cur, i] })
   }
 
   async function save() {
     if (!form.activity.trim()) return
-    if (form.repeat_weekly && !form.days_of_week.length) return
-    const daysToSave = form.repeat_weekly ? form.days_of_week : null
+    // El backend valida y normaliza días/fecha según repeat_weekly
     try {
       await upsertRoutineBlock({
         ...(initial?.id ? { id: initial.id } : {}),
-        day_of_week: daysToSave?.length === 1 ? daysToSave[0] : null,
-        days_of_week: daysToSave,
-        specific_date: !form.repeat_weekly && form.specific_date ? form.specific_date : null,
+        days_of_week: form.days_of_week,
+        specific_date: form.specific_date || null,
         repeat_weekly: form.repeat_weekly,
         hour_start: Number(form.hour_start),
         hour_min: Number(form.hour_min),

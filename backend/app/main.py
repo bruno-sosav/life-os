@@ -27,7 +27,7 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def security_headers(request, call_next):  # type: ignore[no-untyped-def]
+async def security_headers(request, call_next): 
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -36,7 +36,6 @@ async def security_headers(request, call_next):  # type: ignore[no-untyped-def]
     return response
 
 
-# Pública: solo el login. Todo lo demás exige un token válido.
 app.include_router(auth.router, prefix="/api")
 
 protected = [Depends(get_current_user)]
