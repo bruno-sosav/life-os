@@ -1,4 +1,6 @@
-from fastapi import Depends, FastAPI
+from collections.abc import Awaitable, Callable
+
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
@@ -27,7 +29,9 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def security_headers(request, call_next): 
+async def security_headers(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"

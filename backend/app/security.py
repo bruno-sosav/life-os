@@ -1,4 +1,3 @@
-
 import time
 from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
@@ -77,7 +76,6 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 class LoginThrottle:
-
     def __init__(self, max_failures: int = 5, window_seconds: int = 15 * 60) -> None:
         self.max_failures = max_failures
         self.window = window_seconds
