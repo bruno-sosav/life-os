@@ -4,7 +4,7 @@ from fastapi import APIRouter, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.core.conexion_database import SessionDep
+from app.core.database.conexion_database import SessionDep
 from app.core.errores_util import get_or_404
 from app.models import GymExercise, GymSession, MmaSession, NutritionLog, WeightLog
 from app.schemas.fisico import (

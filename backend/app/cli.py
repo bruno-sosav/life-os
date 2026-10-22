@@ -10,8 +10,8 @@ import sys
 
 from sqlalchemy import select
 
-from app.core.conexion_database import SessionLocal
-from app.core.contrasena_util import hash_password
+from app.core.database.conexion_database import SessionLocal
+from app.core.seguridad.contrasena_util import hash_password
 from app.models import User
 
 MIN_PASSWORD_LENGTH = 12

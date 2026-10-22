@@ -5,7 +5,7 @@ import pandas as pd
 from fastapi import APIRouter, Query
 from sqlalchemy import select
 
-from app.core.conexion_database import SessionDep
+from app.core.database.conexion_database import SessionDep
 from app.models import (
     Book,
     FinanceExpense,

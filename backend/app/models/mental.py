@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import CheckConstraint, Date, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import EMOJI, NAME, STATUS, Base, CreatedAt, UUIDPk
+from app.core.database.base_model import EMOJI, NAME, STATUS, Base, CreatedAt, UUIDPk
 
 
 class Book(UUIDPk, CreatedAt, Base):

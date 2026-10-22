@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.app_config import get_settings
-from app.core.conexion_database import SessionDep
+from app.core.database.conexion_database import SessionDep
 from app.models import User
 
 ALGORITHM = "HS256"

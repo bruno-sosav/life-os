@@ -2,7 +2,7 @@ from datetime import date
 
 from fastapi import APIRouter, Response, status
 
-from app.core.conexion_database import SessionDep
+from app.core.database.conexion_database import SessionDep
 from app.modules.finanzas import finanzas_service as service
 from app.modules.finanzas.finanzas_model import FinanceExpense, FinanceIncome
 from app.modules.finanzas.finanzas_schema import ExpenseIn, ExpenseOut, IncomeIn, IncomeOut

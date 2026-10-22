@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import Date, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import NAME, Base, CreatedAt, UUIDPk
+from app.core.database.base_model import NAME, Base, CreatedAt, UUIDPk
 
 
 class FinanceIncome(UUIDPk, CreatedAt, Base):

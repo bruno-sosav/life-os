@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base_model import NAME, Base, CreatedAt, UUIDPk
+from app.core.database.base_model import NAME, Base, CreatedAt, UUIDPk
 
 
 class GymSession(UUIDPk, CreatedAt, Base):

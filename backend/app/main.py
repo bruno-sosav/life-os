@@ -2,8 +2,8 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.app_config import get_settings
-from app.core.seguridad_middleware import security_headers
-from app.core.sesion_dependency import get_current_user
+from app.core.seguridad.seguridad_middleware import security_headers
+from app.core.seguridad.sesion_dependency import get_current_user
 from app.modules import finanzas
 from app.routers import analytics, auth, dashboard, fisico, mental, negocio, rutina
 

@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app import models  # noqa: F401  registra las tablas en Base.metadata
 from app.core.app_config import get_settings
-from app.core.base_model import Base
+from app.core.database.base_model import Base
 
 config = context.config
 # La URL sale de DATABASE_URL (.env o variable de entorno), no de alembic.ini

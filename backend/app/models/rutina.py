@@ -16,7 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import COLOR, EMOJI, NAME, Base, CreatedAt, UUIDPk
+from app.core.database.base_model import COLOR, EMOJI, NAME, Base, CreatedAt, UUIDPk
 
 
 class Habit(UUIDPk, CreatedAt, Base):

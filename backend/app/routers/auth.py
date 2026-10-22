@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.core.conexion_database import SessionDep
-from app.core.contrasena_util import verify_password
-from app.core.limite_intentos_util import login_throttle
-from app.core.sesion_dependency import CurrentUser, create_access_token
+from app.core.database.conexion_database import SessionDep
+from app.core.seguridad.contrasena_util import verify_password
+from app.core.seguridad.limite_intentos_util import login_throttle
+from app.core.seguridad.sesion_dependency import CurrentUser, create_access_token
 from app.models import User
 from app.schemas.auth import LoginIn, MeOut, TokenOut
 

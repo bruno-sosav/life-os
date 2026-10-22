@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.conexion_database import SessionDep
+from app.core.database.conexion_database import SessionDep
 from app.core.errores_util import get_or_404
 from app.models import Project, StratusGoal, StratusIdea, StratusTask
 from app.schemas.negocio import (

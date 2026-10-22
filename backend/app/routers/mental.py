@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Response, status
 from sqlalchemy import select
 
-from app.core.conexion_database import SessionDep
+from app.core.database.conexion_database import SessionDep
 from app.core.errores_util import get_or_404
 from app.models import Book, Idea, JournalEntry, MoodLog
 from app.schemas.mental import (
