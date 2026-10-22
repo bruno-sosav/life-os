@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import ORMModel, UTCDateTime
+from app.core.base_schema import ORMModel, UTCDateTime
 
 # Deben coincidir con CATEGORIES e INCOME_SOURCES de frontend/src/modules/finanzas
 ExpenseCategory = Literal[

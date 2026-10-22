@@ -13,10 +13,12 @@ from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from app import models  # noqa: E402, F401  registra las tablas
-from app.db import Base, get_session  # noqa: E402
+from app.core.base_model import Base  # noqa: E402
+from app.core.conexion_database import get_session  # noqa: E402
+from app.core.contrasena_util import hash_password  # noqa: E402
+from app.core.limite_intentos_util import login_throttle  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
-from app.security import hash_password, login_throttle  # noqa: E402
 
 USERNAME = "bruno"
 PASSWORD = "una-clave-de-prueba-larga"

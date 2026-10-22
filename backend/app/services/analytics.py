@@ -11,8 +11,9 @@ from typing import Any, Literal
 
 import pandas as pd
 
+from app.core.numeros_util import js_round
 from app.models import Habit, RoutineBlock
-from app.services.dashboard import expected_per_day, js_round
+from app.services.dashboard import expected_per_day
 
 BruceLevel = Literal["elite", "modo_bruce", "activando", "apagado"]
 

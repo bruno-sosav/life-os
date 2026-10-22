@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 
-from app.schemas.common import ORMModel, UTCDateTime
+from app.core.base_schema import ORMModel, UTCDateTime
 
 DayOfWeek = Annotated[int, Field(ge=0, le=6)]  # 0 = lunes … 6 = domingo
 LinkedModule = Literal["gym", "mma"]

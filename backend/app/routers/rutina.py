@@ -3,9 +3,9 @@ from datetime import date
 from fastapi import APIRouter, Response, status
 from sqlalchemy import select
 
-from app.db import SessionDep
+from app.core.conexion_database import SessionDep
+from app.core.errores_util import get_or_404
 from app.models import Habit, HabitLog, RoutineBlock, RoutineCompletion, WeeklyReview
-from app.routers.common import get_or_404
 from app.schemas.rutina import (
     HabitCreate,
     HabitLogOut,

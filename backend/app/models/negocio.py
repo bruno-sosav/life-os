@@ -14,8 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db import Base
-from app.models.common import COLOR, EMOJI, NAME, STATUS, CreatedAt, UUIDPk
+from app.core.base_model import COLOR, EMOJI, NAME, STATUS, Base, CreatedAt, UUIDPk
 
 
 class Project(UUIDPk, CreatedAt, Base):

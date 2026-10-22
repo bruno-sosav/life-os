@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db import Base
+from app.core.base_model import Base
 
 
 def get_or_404[T: Base](session: Session, model: type[T], id_: str) -> T:

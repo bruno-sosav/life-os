@@ -1,22 +1,17 @@
 """Cálculos del dashboard (racha y cierre semanal) sobre los registros ya leídos de la base."""
 
-import math
 from collections.abc import Iterable, Sequence
 from datetime import date, timedelta
 from typing import Any
 
 import pandas as pd
 
+from app.core.numeros_util import js_round
 from app.models import Habit, RoutineBlock
 from app.schemas.rutina import MoodLevel
 
 STREAK_WINDOW_DAYS = 60
 STREAK_THRESHOLD = 0.7  # un día cuenta si se completó al menos el 70 % de lo esperado
-
-
-def js_round(value: float) -> int:
-    """Redondeo como Math.round de JS (2.5 → 3), igual que los cálculos originales del frontend."""
-    return math.floor(value + 0.5)
 
 
 def _habit_runs_on(habit: Habit, dow: int) -> bool:

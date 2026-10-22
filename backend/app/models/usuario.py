@@ -1,8 +1,7 @@
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db import Base
-from app.models.common import CreatedAt, UUIDPk
+from app.core.base_model import Base, CreatedAt, UUIDPk
 
 
 class User(UUIDPk, CreatedAt, Base):

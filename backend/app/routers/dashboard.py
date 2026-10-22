@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter
 from sqlalchemy import func, select
 
-from app.db import SessionDep
+from app.core.conexion_database import SessionDep
 from app.models import (
     GymSession,
     Habit,

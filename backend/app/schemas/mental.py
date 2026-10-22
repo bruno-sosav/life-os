@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import ORMModel, UTCDateTime
+from app.core.base_schema import ORMModel, UTCDateTime
 
 BookStatus = Literal["pendiente", "leyendo", "leido"]
 IdeaTag = Literal["idea", "frase", "idea de negocio", "aprendizaje", "meta"]

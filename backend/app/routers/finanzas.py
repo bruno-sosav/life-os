@@ -4,9 +4,9 @@ from datetime import date
 from fastapi import APIRouter, Response, status
 from sqlalchemy import select
 
-from app.db import SessionDep
+from app.core.conexion_database import SessionDep
+from app.core.errores_util import get_or_404
 from app.models import FinanceExpense, FinanceIncome
-from app.routers.common import get_or_404
 from app.schemas.finanzas import ExpenseIn, ExpenseOut, IncomeIn, IncomeOut
 
 router = APIRouter(prefix="/finance", tags=["finanzas"])

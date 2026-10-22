@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import ORMModel, UTCDateTime
+from app.core.base_schema import ORMModel, UTCDateTime
 
 TaskStatus = Literal["pendiente", "en_progreso", "hecho"]
 TaskPriority = Literal["alta", "media", "baja"]

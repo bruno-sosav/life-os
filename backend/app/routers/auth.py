@@ -1,10 +1,21 @@
 from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import select
 
-from app.db import SessionDep
+from app.core.conexion_database import SessionDep
+from app.core.contrasena_util import verify_password
+from app.core.limite_intentos_util import login_throttle
+from app.core.sesion_dependency import CurrentUser, create_access_token
+from app.models import User
 from app.schemas.auth import LoginIn, MeOut, TokenOut
-from app.security import CurrentUser, authenticate, create_access_token, login_throttle
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def authenticate(session: SessionDep, username: str, password: str) -> User | None:
+    user = session.scalar(select(User).where(User.username == username.strip().lower()))
+    if not verify_password(password, user.password_hash if user else None):
+        return None
+    return user
 
 
 @router.post("/login", response_model=TokenOut)

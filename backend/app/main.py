@@ -1,11 +1,10 @@
-from collections.abc import Awaitable, Callable
-
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import get_settings
+from app.core.app_config import get_settings
+from app.core.seguridad_middleware import security_headers
+from app.core.sesion_dependency import get_current_user
 from app.routers import analytics, auth, dashboard, finanzas, fisico, mental, negocio, rutina
-from app.security import get_current_user
 
 settings = get_settings()
 
@@ -28,17 +27,7 @@ app.add_middleware(
 )
 
 
-@app.middleware("http")
-async def security_headers(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Response:
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
+app.middleware("http")(security_headers)
 
 app.include_router(auth.router, prefix="/api")
 

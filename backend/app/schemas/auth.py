@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from app.schemas.common import UTCDateTime
+from app.core.base_schema import UTCDateTime
 
 
 class LoginIn(BaseModel):

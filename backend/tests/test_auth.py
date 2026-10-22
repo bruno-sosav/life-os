@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.config import get_settings
+from app.core.app_config import get_settings
 from app.main import app
 from app.models import User
 from tests.conftest import PASSWORD, USERNAME
