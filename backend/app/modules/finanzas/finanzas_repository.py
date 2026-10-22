@@ -20,15 +20,3 @@ def list_expenses(session: Session, first: date, last: date) -> list[FinanceExpe
         .order_by(FinanceExpense.date.desc(), FinanceExpense.created_at.desc())
     )
     return list(session.scalars(query))
-
-
-def save[T: FinanceIncome | FinanceExpense](session: Session, record: T) -> T:
-    session.add(record)
-    session.commit()
-    session.refresh(record)
-    return record
-
-
-def delete(session: Session, record: FinanceIncome | FinanceExpense) -> None:
-    session.delete(record)
-    session.commit()
