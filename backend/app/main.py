@@ -3,8 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.app_config import get_settings
 from app.core.seguridad.seguridad_middleware import security_headers
-from app.modules import auth, dashboard, finanzas, fisico, mental, negocio, rutina
-from app.routers import analytics
+from app.modules import analytics, auth, dashboard, finanzas, fisico, mental, negocio, rutina
 
 settings = get_settings()
 

@@ -10,10 +10,13 @@ from datetime import date, timedelta
 from typing import Any, Literal
 
 import pandas as pd
+from sqlalchemy.orm import Session
 
 from app.core.numeros_util import js_round
-from app.models import Habit, RoutineBlock
-from app.modules.rutina import expected_per_day
+from app.modules.analytics import analytics_repository as repository
+from app.modules.analytics.analytics_schema import AnalyticsSummary
+from app.modules.fisico import GymSession, MmaSession
+from app.modules.rutina import Habit, RoutineBlock, expected_per_day
 
 BruceLevel = Literal["elite", "modo_bruce", "activando", "apagado"]
 
@@ -358,3 +361,44 @@ def earliest_needed(today: date, week_offset: int) -> date:
         week_bounds(today, HISTORY_WEEKS - 1).start,
         week_bounds(today, week_offset + 1).start,
     )
+
+
+# ─── Lo que pide el endpoint ────────────────────────────────
+def _frame(rows: list[tuple[Any, ...]], columns: list[str], dates: tuple[str, ...]) -> pd.DataFrame:
+    df = pd.DataFrame(rows, columns=columns)
+    for column in dates:
+        df[column] = pd.to_datetime(df[column])
+    return df
+
+
+def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSummary:
+    start = earliest_needed(today, week_offset)
+    finance_start = min(start, months_back(today, FINANCE_MONTHS - 1))
+    workouts = [("gym", d) for d in repository.attended_dates(session, GymSession, start)] + [
+        ("mma", d) for d in repository.attended_dates(session, MmaSession, start)
+    ]
+    mood_start = min(start, today - timedelta(days=30))
+
+    inp = StatsInput(
+        today=today,
+        habits=repository.active_habits(session),
+        blocks=repository.routine_blocks(session),
+        habit_logs=_frame(
+            repository.habit_logs(session, start, today), ["habit_id", "date"], ("date",)
+        ),
+        completions=_frame(
+            repository.block_completions(session, start, today), ["block_id", "date"], ("date",)
+        ),
+        workouts=_frame(workouts, ["kind", "date"], ("date",)),
+        weights=_frame(repository.weights(session), ["date", "kg"], ("date",)),
+        moods=_frame(
+            repository.moods(session, mood_start, today), ["date", "mood", "sleep"], ("date",)
+        ),
+        journal=_frame(
+            [(d,) for d in repository.journal_dates(session, start)], ["date"], ("date",)
+        ),
+        books_finished=repository.finished_book_dates(session),
+        income=_frame(repository.income(session, finance_start), ["month", "amount"], ("month",)),
+        expenses=_frame(repository.expenses(session, finance_start), ["date", "amount"], ("date",)),
+    )
+    return AnalyticsSummary.model_validate(summary(inp, week_offset))

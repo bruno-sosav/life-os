@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, event  # noqa: E402
 from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
-from app import models  # noqa: E402, F401  registra las tablas
+from app import modules  # noqa: E402, F401  registra las tablas
 from app.core.database.base_model import Base  # noqa: E402
 from app.core.database.conexion_database import get_session  # noqa: E402
 from app.core.seguridad.contrasena_util import hash_password  # noqa: E402

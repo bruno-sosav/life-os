@@ -3,8 +3,8 @@ from datetime import date, timedelta
 import pandas as pd
 
 from app.core.numeros_util import js_round
-from app.models import Habit, RoutineBlock
-from app.services import analytics as stats
+from app.modules.analytics import analytics_service as stats
+from app.modules.rutina import Habit, RoutineBlock
 
 TODAY = date(2026, 10, 18)  # domingo
 MONDAY = date(2026, 10, 12)
