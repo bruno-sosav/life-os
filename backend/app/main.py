@@ -3,9 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.app_config import get_settings
 from app.core.seguridad.seguridad_middleware import security_headers
-from app.core.seguridad.sesion_dependency import get_current_user
-from app.modules import finanzas, fisico, mental, negocio, rutina
-from app.routers import analytics, auth, dashboard
+from app.modules import auth, finanzas, fisico, mental, negocio, rutina
+from app.routers import analytics, dashboard
 
 settings = get_settings()
 
@@ -32,7 +31,7 @@ app.middleware("http")(security_headers)
 
 app.include_router(auth.router, prefix="/api")
 
-protected = [Depends(get_current_user)]
+protected = [Depends(auth.get_current_user)]
 for module in (rutina, dashboard, fisico, mental, negocio, finanzas, analytics):
     app.include_router(module.router, prefix="/api", dependencies=protected)
 

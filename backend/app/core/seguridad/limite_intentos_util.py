@@ -1,7 +1,7 @@
 import time
 from collections import defaultdict, deque
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, status
 
 
 class LoginThrottle:
@@ -16,8 +16,8 @@ class LoginThrottle:
             attempts.popleft()
         return attempts
 
-    def check(self, request: Request) -> str:
-        key = request.client.host if request.client else "unknown"
+    def check(self, key: str) -> None:
+        """Corta con 429 si `key` (la IP) ya acumuló demasiados fallos en la ventana."""
         attempts = self._recent(key)
         if len(attempts) >= self.max_failures:
             retry_after = int(attempts[0] + self.window - time.monotonic()) + 1
@@ -26,7 +26,6 @@ class LoginThrottle:
                 "Demasiados intentos fallidos. Probá más tarde.",
                 headers={"Retry-After": str(retry_after)},
             )
-        return key
 
     def fail(self, key: str) -> None:
         self._failures[key].append(time.monotonic())

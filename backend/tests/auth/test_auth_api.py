@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.app_config import get_settings
 from app.main import app
-from app.models import User
+from app.modules.auth import User
 from tests.conftest import PASSWORD, USERNAME
 
 

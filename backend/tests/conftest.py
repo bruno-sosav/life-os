@@ -18,7 +18,7 @@ from app.core.database.conexion_database import get_session  # noqa: E402
 from app.core.seguridad.contrasena_util import hash_password  # noqa: E402
 from app.core.seguridad.limite_intentos_util import login_throttle  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import User  # noqa: E402
+from app.modules.auth import User  # noqa: E402
 
 USERNAME = "bruno"
 PASSWORD = "una-clave-de-prueba-larga"
