@@ -11,19 +11,9 @@ export async function fetchGlobalStreak() {
 }
 
 // ─── Hábitos ────────────────────────────────────────────────
-export async function fetchLinkedModuleHabit(module) {
-  try {
-    const habits = await api('/habits', { params: { active: true, linked_module: module } })
-    return habits[0] ?? null
-  } catch { return null }
-}
-
 export const createHabit = (payload) => api('/habits', { method: 'POST', body: payload })
 export const updateHabit = (id, patch) => api(`/habits/${id}`, { method: 'PATCH', body: patch })
 export const deleteHabit = (id) => api(`/habits/${id}`, { method: 'DELETE' })
-
-export const fetchHabitLogsRange = (startISO, endISO) =>
-  api('/habit-logs', { params: { start: startISO, end: endISO } })
 
 export const toggleHabitLog = ({ habit_id, date, completed }) =>
   api('/habit-logs', { method: 'PUT', body: { habit_id, date, completed } })

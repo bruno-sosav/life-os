@@ -6,13 +6,10 @@ import EmptyState from '../../components/EmptyState.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
 import {
-  fetchGymSessions, createGymSession, updateGymSession, deleteGymSession,
-  fetchExerciseProgression, fetchAllExerciseNames
+  fetchGymSessions, createGymSession, deleteGymSession,
+  fetchExerciseProgression, fetchAllExerciseNames, fetchAttendanceWeek, toggleAttendance
 } from './queries.js'
-import {
-  fetchLinkedModuleHabit, fetchHabitLogsRange, toggleHabitLog
-} from '../dashboard/queries.js'
-import { fmt, todayISO, weekRange, eachDayOfInterval, format } from '../../lib/dates.js'
+import { fmt, todayISO } from '../../lib/dates.js'
 import {
   ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip
 } from 'recharts'
@@ -25,68 +22,21 @@ export default function Gym() {
   const [exerciseFilter, setExerciseFilter] = useState('')
   const [adding, setAdding] = useState(false)
 
-  // Hábito vinculado al módulo gym (para sync con dashboard)
-  const gymHabitQ = useAsync(() => fetchLinkedModuleHabit('gym'), [])
-  const gymHabit = gymHabitQ.data
-
-  const { start, end } = weekRange()
-  const startISO = format(start, 'yyyy-MM-dd')
-  const endISO = format(end, 'yyyy-MM-dd')
-  const weekDays = eachDayOfInterval({ start, end })
-
-  const weekHabitLogsQ = useAsync(
-    () => gymHabit ? fetchHabitLogsRange(startISO, endISO) : Promise.resolve([]),
-    [gymHabit?.id, startISO, endISO]
-  )
+  // Asistencia de la semana: del hábito vinculado (sync con dashboard) o de las sesiones
+  const weekQ = useAsync(() => fetchAttendanceWeek('gym'), [])
+  const gymHabit = weekQ.data?.habit
 
   const progressionQ = useAsync(
     () => exerciseFilter ? fetchExerciseProgression(exerciseFilter) : Promise.resolve([]),
     [exerciseFilter]
   )
 
-  const sessionsByDate = useMemo(() => {
-    const m = {}
-    ;(sessionsQ.data || []).forEach((s) => { m[s.date] = s })
-    return m
-  }, [sessionsQ.data])
-
-  // Set de fechas asistidas — lee habit_logs si hay hábito vinculado, sino gym_sessions
-  const attendedDates = useMemo(() => {
-    const s = new Set()
-    if (gymHabit) {
-      ;(weekHabitLogsQ.data || [])
-        .filter((l) => l.habit_id === gymHabit.id && l.completed)
-        .forEach((l) => s.add(l.date))
-    } else {
-      ;(sessionsQ.data || [])
-        .filter((sess) => sess.attended)
-        .forEach((sess) => s.add(sess.date))
-    }
-    return s
-  }, [gymHabit, weekHabitLogsQ.data, sessionsQ.data])
-
   async function quickToggle(dateISO) {
     try {
-      if (gymHabit) {
-        // Sync vía habit_logs → mismo dato que el dashboard
-        const log = (weekHabitLogsQ.data || []).find((l) => l.date === dateISO && l.habit_id === gymHabit.id)
-        const next = !log?.completed
-        await toggleHabitLog({ habit_id: gymHabit.id, date: dateISO, completed: next })
-        toast.success(next ? '¡Gym completado! ✓' : 'Desmarcado')
-        weekHabitLogsQ.refetch()
-      } else {
-        // Sin hábito vinculado: fallback a gym_sessions
-        const existing = sessionsByDate[dateISO]
-        if (existing) {
-          const newAttended = !existing.attended
-          await updateGymSession(existing.id, { attended: newAttended })
-          toast.success(newAttended ? 'Asistencia registrada ✓' : 'Desmarcado')
-        } else {
-          await createGymSession({ date: dateISO, attended: true, routine_name: null, exercises: [] })
-          toast.success('Sesión registrada ✓')
-        }
-        sessionsQ.refetch()
-      }
+      const { attended } = await toggleAttendance('gym', dateISO)
+      toast.success(attended ? '¡Gym completado! ✓' : 'Desmarcado')
+      weekQ.refetch()
+      if (!gymHabit) sessionsQ.refetch()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -108,9 +58,7 @@ export default function Gym() {
           subtitle={gymHabit ? `Sincronizado con hábito "${gymHabit.name}"` : 'Vincular hábito en Dashboard → + Hábito'}
         >
           <div className="grid grid-cols-7 gap-1.5">
-            {weekDays.map((day, i) => {
-              const iso = format(day, 'yyyy-MM-dd')
-              const attended = attendedDates.has(iso)
+            {(weekQ.data?.days || []).map(({ date: iso, attended }, i) => {
               const isToday = iso === todayISO()
               return (
                 <button
@@ -128,7 +76,7 @@ export default function Gym() {
                     className="text-[10px] font-bold"
                     style={{ color: attended ? '#30D158' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}
                   >
-                    {day.getDate()}
+                    {fmt(iso, 'd')}
                   </span>
                 </button>
               )

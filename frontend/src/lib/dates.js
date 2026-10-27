@@ -3,10 +3,7 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  startOfMonth,
-  endOfMonth,
   subDays,
-  isSameDay,
   parseISO,
   differenceInCalendarDays
 } from 'date-fns'
@@ -23,21 +20,12 @@ export const weekRange = (date = new Date()) => {
   return { start, end, days: eachDayOfInterval({ start, end }) }
 }
 
-export const monthRange = (date = new Date()) => {
-  const start = startOfMonth(date)
-  const end = endOfMonth(date)
-  return { start, end, days: eachDayOfInterval({ start, end }) }
-}
-
 export {
   format,
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  startOfMonth,
-  endOfMonth,
   subDays,
-  isSameDay,
   parseISO,
   differenceInCalendarDays
 }

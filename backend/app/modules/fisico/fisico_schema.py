@@ -96,3 +96,33 @@ class NutritionLogOut(NutritionLogIn, ORMModel):
     id: str
     date: dt.date
     created_at: UTCDateTime
+
+
+# ─── Asistencia (gym y MMA) ─────────────────────────────────
+class LinkedHabitOut(ORMModel):
+    id: str
+    name: str
+
+
+class AttendanceDay(BaseModel):
+    date: dt.date
+    attended: bool
+
+
+class AttendanceWeek(BaseModel):
+    habit: LinkedHabitOut | None  # con hábito vinculado, la asistencia sale de sus registros
+    days: list[AttendanceDay]  # lunes a domingo
+
+
+class MmaMonthDay(BaseModel):
+    date: dt.date
+    attended: bool | None  # None = sin sesión ese día
+
+
+class MmaMonth(BaseModel):
+    count: int  # sesiones registradas en el mes (asistidas o no)
+    days: list[MmaMonthDay]
+
+
+class NutritionAverage(BaseModel):
+    avg_quality: float | None  # promedio de calidad de los últimos 7 días

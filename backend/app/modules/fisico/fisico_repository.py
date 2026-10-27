@@ -12,6 +12,7 @@ from app.modules.fisico.fisico_model import (
     NutritionLog,
     WeightLog,
 )
+from app.modules.rutina import Habit, HabitLog
 
 
 # ─── Gym ────────────────────────────────────────────────────
@@ -61,6 +62,39 @@ def list_mma_sessions(session: Session) -> list[MmaSession]:
     return list(session.scalars(query))
 
 
+def list_mma_sessions_between(session: Session, start: date, end: date) -> list[MmaSession]:
+    return list(session.scalars(select(MmaSession).where(MmaSession.date.between(start, end))))
+
+
+# ─── Asistencia (gym y MMA) ─────────────────────────────────
+def linked_habit(session: Session, module: str) -> Habit | None:
+    query = select(Habit).where(Habit.active.is_(True), Habit.linked_module == module)
+    return session.scalars(query.order_by(Habit.sort_order, Habit.created_at)).first()
+
+
+def completed_habit_dates(session: Session, habit_id: str, start: date, end: date) -> set[date]:
+    query = select(HabitLog.date).where(
+        HabitLog.habit_id == habit_id,
+        HabitLog.completed.is_(True),
+        HabitLog.date.between(start, end),
+    )
+    return set(session.scalars(query))
+
+
+def attended_dates(
+    session: Session, model: type[GymSession | MmaSession], start: date, end: date
+) -> set[date]:
+    query = select(model.date).where(model.attended.is_(True), model.date.between(start, end))
+    return set(session.scalars(query))
+
+
+def session_of[T: (GymSession, MmaSession)](
+    session: Session, model: type[T], day: date
+) -> T | None:
+    query = select(model).where(model.date == day).order_by(model.created_at.desc())
+    return session.scalars(query).first()
+
+
 # ─── Peso / Nutrición (un registro por día) ─────────────────
 def list_weight_logs(session: Session, start: date | None) -> list[WeightLog]:
     query = select(WeightLog).order_by(WeightLog.date)
@@ -78,6 +112,13 @@ def list_nutrition_logs(session: Session, start: date | None) -> list[NutritionL
     if start is not None:
         query = query.where(NutritionLog.date >= start)
     return list(session.scalars(query))
+
+
+def avg_nutrition_quality(session: Session, start: date, end: date) -> float | None:
+    avg = session.scalar(
+        select(func.avg(NutritionLog.quality_score)).where(NutritionLog.date.between(start, end))
+    )
+    return float(avg) if avg is not None else None
 
 
 def nutrition_log_of(session: Session, day: date) -> NutritionLog | None:

@@ -105,3 +105,49 @@ def test_nutrition_log_upsert(client: TestClient) -> None:
     assert (
         client.put("/api/nutrition-logs/2026-10-13", json={"quality_score": 6}).status_code == 422
     )
+
+
+def test_attendance_week_and_toggle_without_habit(client: TestClient) -> None:
+    # 2026-10-14 es miércoles: la semana va del 12 al 18
+    assert client.put("/api/mma/attendance/2026-10-13").json()["attended"] is True  # crea sesión
+    week = client.get("/api/mma/week", params={"today": "2026-10-14"}).json()
+    assert week["habit"] is None
+    assert [d["date"] for d in week["days"]][0::6] == ["2026-10-12", "2026-10-18"]
+    assert [d["attended"] for d in week["days"]] == [False, True, False, False, False, False, False]
+
+    assert client.put("/api/mma/attendance/2026-10-13").json()["attended"] is False
+    assert client.get("/api/mma/sessions").json()[0]["session_type"] == "técnica"
+
+
+def test_attendance_uses_linked_habit(client: TestClient) -> None:
+    habit = client.post("/api/habits", json={"name": "Gym", "linked_module": "gym"}).json()
+    assert client.put("/api/gym/attendance/2026-10-14").json()["attended"] is True
+    week = client.get("/api/gym/week", params={"today": "2026-10-14"}).json()
+    assert week["habit"] == {"id": habit["id"], "name": "Gym"}
+    assert week["days"][2] == {"date": "2026-10-14", "attended": True}
+    assert client.get("/api/gym/sessions").json() == []  # no toca las sesiones
+
+    client.put("/api/gym/attendance/2026-10-14")
+    logs = client.get("/api/habit-logs", params={"start": "2026-10-14", "end": "2026-10-14"})
+    assert logs.json()[0]["completed"] is False
+
+
+def test_mma_month(client: TestClient) -> None:
+    client.post("/api/mma/sessions", json={"date": "2026-10-03"})
+    client.post("/api/mma/sessions", json={"date": "2026-10-20", "attended": False})
+    client.post("/api/mma/sessions", json={"date": "2026-11-01"})
+    month = client.get("/api/mma/month", params={"month": "2026-10-15"}).json()
+    assert month["count"] == 2 and len(month["days"]) == 31
+    assert (month["days"][2]["attended"], month["days"][19]["attended"]) == (True, False)
+    assert month["days"][0]["attended"] is None
+
+
+def test_nutrition_average_last_7_days(client: TestClient) -> None:
+    assert client.get("/api/nutrition-logs/average", params={"today": "2026-10-14"}).json() == {
+        "avg_quality": None
+    }
+    for day, score in (("2026-10-07", 1), ("2026-10-08", 4), ("2026-10-14", 5)):
+        client.put(f"/api/nutrition-logs/{day}", json={"quality_score": score})
+    client.put("/api/nutrition-logs/2026-10-13", json={"meals_count": 3})  # sin calidad: no cuenta
+    average = client.get("/api/nutrition-logs/average", params={"today": "2026-10-14"}).json()
+    assert average == {"avg_quality": 4.5}  # el 07 queda afuera

@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Card from '../../components/Card.jsx'
 import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
-import { fetchMMASessions, createMMASession, updateMMASession, deleteMMASession } from './queries.js'
-import { fetchLinkedModuleHabit, fetchHabitLogsRange, toggleHabitLog } from '../dashboard/queries.js'
-import { fmt, monthRange, todayISO, isSameDay, format, weekRange, eachDayOfInterval } from '../../lib/dates.js'
+import {
+  fetchMMASessions, createMMASession, deleteMMASession,
+  fetchMMAMonth, fetchAttendanceWeek, toggleAttendance
+} from './queries.js'
+import { fmt, todayISO, format, parseISO } from '../../lib/dates.js'
 
 const TYPES = ['técnica', 'sparring', 'grappling', 'libre']
 const DOW = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
@@ -16,65 +18,25 @@ export default function MMA() {
   const [adding, setAdding] = useState(false)
   const [refDate, setRefDate] = useState(new Date())
 
-  // Hábito vinculado al módulo mma (sync con dashboard)
-  const mmaHabitQ = useAsync(() => fetchLinkedModuleHabit('mma'), [])
-  const mmaHabit = mmaHabitQ.data
+  // Asistencia de la semana: del hábito vinculado (sync con dashboard) o de las sesiones
+  const weekQ = useAsync(() => fetchAttendanceWeek('mma'), [])
+  const mmaHabit = weekQ.data?.habit
 
-  const { days: monthDays, start } = monthRange(refDate)
-  const { start: wStart, end: wEnd } = weekRange()
-  const weekDays = eachDayOfInterval({ start: wStart, end: wEnd })
-  const startISO = format(wStart, 'yyyy-MM-dd')
-  const endISO = format(wEnd, 'yyyy-MM-dd')
+  const monthISO = format(refDate, 'yyyy-MM-01')
+  const monthQ = useAsync(() => fetchMMAMonth(monthISO), [monthISO])
+  const monthDays = monthQ.data?.days || []
 
-  const weekHabitLogsQ = useAsync(
-    () => mmaHabit ? fetchHabitLogsRange(startISO, endISO) : Promise.resolve([]),
-    [mmaHabit?.id, startISO, endISO]
-  )
-
-  const sessionsByDate = useMemo(() => {
-    const m = {}
-    ;(sessionsQ.data || []).forEach((s) => { m[s.date] = s })
-    return m
-  }, [sessionsQ.data])
-
-  const attendedDates = useMemo(() => {
-    const s = new Set()
-    if (mmaHabit) {
-      ;(weekHabitLogsQ.data || [])
-        .filter((l) => l.habit_id === mmaHabit.id && l.completed)
-        .forEach((l) => s.add(l.date))
-    } else {
-      ;(sessionsQ.data || []).filter((sess) => sess.attended).forEach((sess) => s.add(sess.date))
-    }
-    return s
-  }, [mmaHabit, weekHabitLogsQ.data, sessionsQ.data])
-
-  const monthSessions = useMemo(() => {
-    const mStart = format(start, 'yyyy-MM-dd')
-    const mEnd = format(monthDays[monthDays.length - 1], 'yyyy-MM-dd')
-    return (sessionsQ.data || []).filter((s) => s.date >= mStart && s.date <= mEnd)
-  }, [sessionsQ.data, start, monthDays])
+  function refreshSessions() {
+    sessionsQ.refetch()
+    monthQ.refetch()
+  }
 
   async function quickToggle(dateISO) {
     try {
-      if (mmaHabit) {
-        const log = (weekHabitLogsQ.data || []).find((l) => l.date === dateISO && l.habit_id === mmaHabit.id)
-        const next = !log?.completed
-        await toggleHabitLog({ habit_id: mmaHabit.id, date: dateISO, completed: next })
-        toast.success(next ? '¡MMA completado! ✓' : 'Desmarcado')
-        weekHabitLogsQ.refetch()
-      } else {
-        const existing = sessionsByDate[dateISO]
-        if (existing) {
-          const newAttended = !existing.attended
-          await updateMMASession(existing.id, { attended: newAttended })
-          toast.success(newAttended ? '¡Estuvo presente! ✓' : 'Desmarcado')
-        } else {
-          await createMMASession({ date: dateISO, attended: true, session_type: 'técnica' })
-          toast.success('Sesión registrada ✓')
-        }
-        sessionsQ.refetch()
-      }
+      const { attended } = await toggleAttendance('mma', dateISO)
+      toast.success(attended ? '¡MMA completado! ✓' : 'Desmarcado')
+      weekQ.refetch()
+      if (!mmaHabit) refreshSessions()
     } catch (e) {
       toast.error('Error: ' + e.message)
     }
@@ -90,9 +52,7 @@ export default function MMA() {
           subtitle={mmaHabit ? `Sincronizado con hábito "${mmaHabit.name}"` : 'Vincular hábito en Dashboard → + Hábito'}
         >
           <div className="grid grid-cols-7 gap-1.5">
-            {weekDays.map((day, i) => {
-              const iso = format(day, 'yyyy-MM-dd')
-              const attended = attendedDates.has(iso)
+            {(weekQ.data?.days || []).map(({ date: iso, attended }, i) => {
               const isToday = iso === todayISO()
               return (
                 <button
@@ -106,7 +66,7 @@ export default function MMA() {
                 >
                   <span className="text-[10px] font-semibold text-white/40">{DOW[i]}</span>
                   <span className="text-base">{attended ? '✓' : '○'}</span>
-                  <span className="text-[10px] font-bold" style={{ color: attended ? '#30D158' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}>{day.getDate()}</span>
+                  <span className="text-[10px] font-bold" style={{ color: attended ? '#30D158' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}>{fmt(iso, 'd')}</span>
                 </button>
               )
             })}
@@ -116,7 +76,7 @@ export default function MMA() {
         {/* Monthly calendar */}
         <Card
           title={fmt(refDate, "MMMM yyyy").replace(/^\w/, c => c.toUpperCase())}
-          subtitle={`${monthSessions.length} clases este mes`}
+          subtitle={`${monthQ.data?.count ?? 0} clases este mes`}
           action={
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={() => { const d = new Date(refDate); d.setMonth(d.getMonth() - 1); setRefDate(d) }}>◀</Button>
@@ -127,24 +87,23 @@ export default function MMA() {
         >
           <div className="grid grid-cols-7 gap-1">
             {['L','M','M','J','V','S','D'].map((d, i) => <div key={i} className="text-[10px] text-center text-white/30 uppercase py-1">{d}</div>)}
-            {Array.from({ length: (monthDays[0].getDay() + 6) % 7 }).map((_, i) => <div key={`o${i}`} />)}
-            {monthDays.map((d) => {
-              const iso = format(d, 'yyyy-MM-dd')
-              const session = sessionsByDate[iso]
-              const isToday = isSameDay(d, new Date())
+            {monthDays.length > 0 && Array.from({ length: (parseISO(monthDays[0].date).getDay() + 6) % 7 }).map((_, i) => <div key={`o${i}`} />)}
+            {monthDays.map(({ date: iso, attended }) => {
+              const hasSession = attended !== null
+              const isToday = iso === todayISO()
               return (
                 <button
                   key={iso}
                   onClick={() => quickToggle(iso)}
                   className="aspect-square rounded-xl text-[11px] grid place-items-center transition"
                   style={{
-                    background: session?.attended ? '#30D15820' : session ? '#FF453A15' : isToday ? '#0A84FF15' : 'rgba(255,255,255,0.03)',
+                    background: attended ? '#30D15820' : hasSession ? '#FF453A15' : isToday ? '#0A84FF15' : 'rgba(255,255,255,0.03)',
                     border: `1px solid ${isToday ? '#0A84FF50' : 'transparent'}`,
-                    color: session?.attended ? '#30D158' : session ? '#FF453A' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.5)',
-                    fontWeight: (session || isToday) ? 700 : 400
+                    color: attended ? '#30D158' : hasSession ? '#FF453A' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.5)',
+                    fontWeight: (hasSession || isToday) ? 700 : 400
                   }}
                 >
-                  {d.getDate()}
+                  {fmt(iso, 'd')}
                 </button>
               )
             })}
@@ -161,7 +120,7 @@ export default function MMA() {
                 <div className="text-sm font-medium">{s.session_type || 'Sesión'}</div>
                 <div className="text-[11px] text-white/35">{fmt(s.date, 'd MMM')}</div>
               </div>
-              <button onClick={() => deleteMMASession(s.id).then(() => { toast.success('Eliminado'); sessionsQ.refetch() })}
+              <button onClick={() => deleteMMASession(s.id).then(() => { toast.success('Eliminado'); refreshSessions() })}
                 className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs">✕</button>
             </li>
           ))}
@@ -169,7 +128,7 @@ export default function MMA() {
         </ul>
       </Card>
 
-      <NewMMAModal open={adding} onClose={() => setAdding(false)} onSaved={() => sessionsQ.refetch()} />
+      <NewMMAModal open={adding} onClose={() => setAdding(false)} onSaved={refreshSessions} />
     </div>
   )
 }

@@ -8,16 +8,20 @@ from app.modules.rutina.rutina_model import (
     RoutineCompletion,
     WeeklyReview,
 )
+from app.modules.rutina.rutina_schema import HabitLogUpsert, LinkedModule
 from app.modules.rutina.rutina_service import (
     block_runs_on,
     done_per_day,
     expected_per_day,
     habit_runs_on,
+    upsert_habit_log,
 )
 
 __all__ = [
     "Habit",
     "HabitLog",
+    "HabitLogUpsert",
+    "LinkedModule",
     "RoutineBlock",
     "RoutineCompletion",
     "WeeklyReview",
@@ -26,4 +30,5 @@ __all__ = [
     "expected_per_day",
     "habit_runs_on",
     "router",
+    "upsert_habit_log",
 ]

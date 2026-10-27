@@ -7,7 +7,8 @@ import {
   fetchWeightLogs,
   upsertWeightLog,
   fetchNutritionLogs,
-  upsertNutritionLog
+  upsertNutritionLog,
+  fetchNutritionAverage
 } from './queries.js'
 import { todayISO } from '../../lib/dates.js'
 import {
@@ -33,6 +34,7 @@ export default function Peso() {
   const [goal, setGoal] = useState(() => Number(localStorage.getItem('lifeos.weight.goal') || 0))
   const weightQ = useAsync(() => fetchWeightLogs(range), [range])
   const nutritionQ = useAsync(() => fetchNutritionLogs(30), [])
+  const nutritionAvgQ = useAsync(() => fetchNutritionAverage(), [])
 
   const today = todayISO()
   const todayNut = (nutritionQ.data || []).find((n) => n.date === today)
@@ -59,6 +61,7 @@ export default function Peso() {
       notes: null
     })
     nutritionQ.refetch()
+    nutritionAvgQ.refetch()
   }
 
   function saveGoal(v) {
@@ -70,12 +73,6 @@ export default function Peso() {
     () => (weightQ.data || []).map((w) => ({ date: w.date, weight: Number(w.weight_kg) })),
     [weightQ.data]
   )
-
-  const avgQuality = useMemo(() => {
-    const last7 = (nutritionQ.data || []).slice(-7)
-    if (!last7.length) return 0
-    return (last7.reduce((sum, n) => sum + (n.quality_score || 0), 0) / last7.length).toFixed(1)
-  }, [nutritionQ.data])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -124,7 +121,7 @@ export default function Peso() {
         </div>
       </Card>
 
-      <Card title="Nutrición de hoy" subtitle={`Promedio 7d: ${avgQuality}/5`}>
+      <Card title="Nutrición de hoy" subtitle={`Promedio 7d: ${nutritionAvgQ.data?.avg_quality ?? '–'}/5`}>
         <div className="space-y-3">
           <div>
             <label className="label">Calidad</label>
