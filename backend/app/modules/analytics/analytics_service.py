@@ -16,13 +16,20 @@ from app.core.numeros_util import js_round
 from app.modules.analytics import analytics_repository as repository
 from app.modules.analytics.analytics_schema import AnalyticsSummary
 from app.modules.fisico import GymSession, MmaSession
-from app.modules.rutina import Habit, RoutineBlock, expected_per_day
+from app.modules.rutina import (
+    STREAK_WINDOW_DAYS,
+    Habit,
+    RoutineBlock,
+    day_status,
+    expected_per_day,
+    streaks,
+)
 
 BruceLevel = Literal["elite", "modo_bruce", "activando", "apagado"]
 
 WORKOUT_GOAL = 5  # sesiones por semana que dan el puntaje completo
 STRATUS_GOAL = 5  # días por semana con trabajo en Stratus
-HEATMAP_DAYS = 90
+HEATMAP_DAYS = STREAK_WINDOW_DAYS
 HISTORY_WEEKS = 12
 HABIT_WEEKS = 8
 FINANCE_MONTHS = 6
@@ -148,34 +155,19 @@ def bruce_history(inp: StatsInput) -> list[dict[str, Any]]:
     return points
 
 
-# ─── KPIs ───────────────────────────────────────────────────
-def _daily_habit_counts(inp: StatsInput) -> pd.Series:
-    """Hábitos completados por día en los últimos 90 días (incluye hoy)."""
+# ─── Cumplimiento diario (misma regla del 70 % que la racha del dashboard) ──
+def daily_status(inp: StatsInput) -> pd.Series:
+    """Estado de cada uno de los últimos 90 días, contando hábitos y bloques de rutina."""
     days = _days(inp.today - timedelta(days=HEATMAP_DAYS - 1), inp.today)
-    counts = inp.habit_logs["date"].value_counts()
-    return counts.reindex(days, fill_value=0).astype("int64")
+    done = pd.concat([inp.habit_logs["date"], inp.completions["date"]]).dt.date
+    return day_status(inp.today, days, inp.blocks, inp.habits, done)
 
 
-def habit_streaks(inp: StatsInput) -> tuple[int, int]:
-    """(racha actual, mejor racha) de días con al menos un hábito, en 90 días.
-
-    Hoy sin hábitos todavía no corta la racha actual: el día no terminó.
-    """
-    active = _daily_habit_counts(inp) > 0
-    run_id = (~active).cumsum()
-    runs = active.groupby(run_id).cumsum()  # largo de la racha que termina en cada día
-    best = int(runs.max()) if len(runs) else 0
-
-    # Hoy sin hábitos: vale la racha que terminó ayer
-    last = -1 if active.iloc[-1] or len(runs) == 1 else -2
-    current = int(runs.iloc[last])
-    return current, best
-
-
+# ─── KPIs ───────────────────────────────────────────────────
 def kpis(inp: StatsInput) -> dict[str, Any]:
     today = inp.today
     month_start = today.replace(day=1)
-    current_streak, best_streak = habit_streaks(inp)
+    current_streak, best_streak = streaks(daily_status(inp))
 
     expected_month = _expected_habits(inp.habits, month_start, today)
     done_month = len(_between(inp.habit_logs, month_start, today))
@@ -252,34 +244,24 @@ def radar(inp: StatsInput, week_offset: int) -> list[dict[str, Any]]:
 
 
 # ─── Heatmap 90 días ────────────────────────────────────────
-def _heat_level(count: int, max_count: int) -> int:
-    """0 = nada; 1–4 = intensidad relativa al mejor día del período."""
-    if count == 0:
-        return 0
-    pct = count / max_count
-    if pct <= 0.25:
-        return 1
-    if pct <= 0.5:
-        return 2
-    if pct <= 0.75:
-        return 3
-    return 4
+def heatmap(inp: StatsInput) -> dict[str, Any]:
+    """Celdas por día en columnas de semana (lunes arriba) y cuántos días hubo de cada estado.
 
-
-def heatmap(inp: StatsInput) -> list[dict[str, Any]]:
-    """Celdas por día en columnas de semana (lunes arriba). Las de relleno van con nulls."""
-    counts = _daily_habit_counts(inp)
-    max_count = max(1, int(counts.max()))
-    blank: dict[str, Any] = {"date": None, "count": None, "level": None}
-
-    days = pd.DatetimeIndex(counts.index)
+    Las celdas de relleno van con nulls.
+    """
+    status = daily_status(inp)
+    blank: dict[str, Any] = {"date": None, "status": None}
+    days = pd.DatetimeIndex(status.index)
     cells = [blank] * days[0].weekday()
-    cells += [
-        {"date": day.date(), "count": n, "level": _heat_level(n, max_count)}
-        for day, n in zip(days, counts.astype(int).tolist(), strict=True)
-    ]
+    cells += [{"date": day.date(), "status": s} for day, s in zip(days, status, strict=True)]
     cells += [blank] * (-len(cells) % 7)
-    return cells
+    counts = status.value_counts()
+    return {
+        "cells": cells,
+        "cumplido": int(counts.get("cumplido", 0)),
+        "parcial": int(counts.get("parcial", 0)),
+        "sin_cumplir": int(counts.get("sin_cumplir", 0)),
+    }
 
 
 # ─── Series y distribución ──────────────────────────────────

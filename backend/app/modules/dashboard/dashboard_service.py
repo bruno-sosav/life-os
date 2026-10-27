@@ -12,17 +12,17 @@ from app.modules.dashboard import dashboard_repository as repository
 from app.modules.dashboard.dashboard_schema import MoodLevel, StreakOut, WeeklyReviewSummary
 from app.modules.fisico import GymSession, MmaSession
 from app.modules.rutina import (
+    STREAK_WINDOW_DAYS,
     Habit,
     RoutineBlock,
     block_runs_on,
+    day_status,
     done_per_day,
     expected_per_day,
     habit_runs_on,
+    streaks,
 )
 from app.modules.rutina.rutina_schema import WeeklyReviewOut
-
-STREAK_WINDOW_DAYS = 60
-STREAK_THRESHOLD = 0.7  # un día cuenta si se completó al menos el 70 % de lo esperado
 
 
 def global_streak(
@@ -37,29 +37,20 @@ def global_streak(
     si todavía no, no corta la racha porque el día no terminó.
     """
     days = pd.date_range(end=pd.Timestamp(today), periods=STREAK_WINDOW_DAYS, freq="D")
-    df = pd.DataFrame(
-        {"expected": expected_per_day(days, blocks, habits), "done": done_per_day(days, done_dates)}
-    )
-    df = df[df["expected"] > 0].sort_index(ascending=False)
-    ok = (df["done"] / df["expected"]) >= STREAK_THRESHOLD
-
-    if not ok.empty and ok.index[0].date() == today and not ok.iloc[0]:
-        ok = ok.iloc[1:]
-    # cantidad de True consecutivos al principio
-    return int(ok.astype("int64").cumprod().sum())
+    return streaks(day_status(today, days, blocks, habits, done_dates))[0]
 
 
 def habit_completion_pct(
     week_start: date, today: date, habits: Sequence[Habit], done_dates: Iterable[date]
-) -> int:
-    """% de hábitos cumplidos en la semana, contando solo hasta hoy."""
+) -> int | None:
+    """% de hábitos cumplidos en la semana, contando solo hasta hoy. None si no tocaba ninguno."""
     week_end = min(week_start + timedelta(days=6), today)
     if week_end < week_start:
-        return 0
+        return None
     days = pd.date_range(start=pd.Timestamp(week_start), end=pd.Timestamp(week_end), freq="D")
     expected = int(expected_per_day(days, [], habits).sum())
     done = int(done_per_day(days, done_dates).sum())
-    return js_round(done / expected * 100) if expected else 0
+    return js_round(done / expected * 100) if expected else None
 
 
 # ─── Agenda del día ─────────────────────────────────────────
@@ -195,7 +186,7 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
     habits = repository.active_habits(session)
     done = repository.completed_habit_dates(session, prev_start, week_end)
 
-    habit_pct = habit_completion_pct(week_start, today, habits, done)
+    habit_pct = habit_completion_pct(week_start, today, habits, done) or 0
     prev_habit_pct = habit_completion_pct(prev_start, today, habits, done)
     avg = repository.avg_mood(session, week_start, week_end)
     avg_mood = round(avg, 2) if avg is not None else None
@@ -204,8 +195,9 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
         week_start=week_start,
         week_end=week_end,
         habit_pct=habit_pct,
-        prev_habit_pct=prev_habit_pct,
-        habit_pct_delta=habit_pct - prev_habit_pct if prev_habit_pct else None,
+        prev_habit_pct=prev_habit_pct or 0,
+        # Una semana anterior al 0 % también se compara; solo se omite si no tocaba nada
+        habit_pct_delta=None if prev_habit_pct is None else habit_pct - prev_habit_pct,
         gym_days=repository.attended_days(session, GymSession, week_start, week_end),
         mma_days=repository.attended_days(session, MmaSession, week_start, week_end),
         avg_mood=avg_mood,

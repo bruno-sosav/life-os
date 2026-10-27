@@ -3,12 +3,13 @@ import os
 # Antes de importar la app: la configuración exige JWT_SECRET.
 os.environ.setdefault("JWT_SECRET", "test-secret-" + "x" * 40)
 
-from collections.abc import Iterator  # noqa: E402
+from collections.abc import Callable, Iterator  # noqa: E402
+from datetime import datetime  # noqa: E402
 from typing import Any  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine, event  # noqa: E402
+from sqlalchemy import create_engine, event, update  # noqa: E402
 from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
@@ -19,6 +20,7 @@ from app.core.seguridad.contrasena_util import hash_password  # noqa: E402
 from app.core.seguridad.limite_intentos_util import login_throttle  # noqa: E402
 from app.main import app  # noqa: E402
 from app.modules.auth import User  # noqa: E402
+from app.modules.rutina import Habit  # noqa: E402
 
 USERNAME = "bruno"
 PASSWORD = "una-clave-de-prueba-larga"
@@ -67,3 +69,15 @@ def client(anon_client: TestClient) -> TestClient:
     )
     anon_client.headers["Authorization"] = f"Bearer {response.json()['access_token']}"
     return anon_client
+
+
+@pytest.fixture
+def backdate_habits(db: sessionmaker[Session]) -> Callable[[], None]:
+    """Los hábitos cuentan desde que se crean: esto los hace "viejos" para probar fechas pasadas."""
+
+    def _backdate() -> None:
+        with db() as session:
+            session.execute(update(Habit).values(created_at=datetime(2026, 1, 1)))
+            session.commit()
+
+    return _backdate

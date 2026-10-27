@@ -1,8 +1,13 @@
+from collections.abc import Callable
+
 from fastapi.testclient import TestClient
 
 
-def test_analytics_summary_endpoint(client: TestClient) -> None:
+def test_analytics_summary_endpoint(
+    client: TestClient, backdate_habits: Callable[[], None]
+) -> None:
     habit = client.post("/api/habits", json={"name": "Stratus"}).json()
+    backdate_habits()
     for day in ("2026-10-12", "2026-10-13", "2026-10-14"):
         client.put(
             "/api/habit-logs", json={"habit_id": habit["id"], "date": day, "completed": True}

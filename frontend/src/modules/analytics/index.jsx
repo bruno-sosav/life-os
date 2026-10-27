@@ -97,7 +97,14 @@ function KPICard({ label, value, suffix, color, note }) {
   )
 }
 
-const HEAT_COLORS = ['rgba(255,255,255,0.04)', 'rgba(30,144,255,0.25)', 'rgba(30,144,255,0.45)', 'rgba(30,144,255,0.65)', 'rgba(30,144,255,0.9)']
+// Misma regla que la racha: cumplido = 70 % o más de lo agendado ese día
+const DAY_STATUS = {
+  cumplido: { color: '#30D158', label: 'Cumplido' },
+  parcial: { color: '#FF9F0A', label: 'Parcial' },
+  sin_cumplir: { color: '#FF453A', label: 'Sin cumplir' },
+  libre: { color: 'rgba(255,255,255,0.06)', label: 'Sin nada agendado' },
+  pendiente: { color: 'rgba(10,132,255,0.35)', label: 'Hoy, en curso' },
+}
 
 function HeatmapGrid({ cells }) {
   return (
@@ -106,8 +113,8 @@ function HeatmapGrid({ cells }) {
         {cells.map((cell, i) => (
           <div
             key={i}
-            title={cell.date ? `${cell.date}: ${cell.count} hábitos` : ''}
-            style={{ width: 13, height: 13, borderRadius: 3, backgroundColor: cell.date ? HEAT_COLORS[cell.level] : 'transparent' }}
+            title={cell.date ? `${cell.date}: ${DAY_STATUS[cell.status].label}` : ''}
+            style={{ width: 13, height: 13, borderRadius: 3, backgroundColor: cell.date ? DAY_STATUS[cell.status].color : 'transparent' }}
           />
         ))}
       </div>
@@ -306,14 +313,18 @@ export default function Analytics() {
           </div>
         </Card>
 
-        <Card title="Heatmap de hábitos" subtitle="Días completados · últimos 90 días">
-          <HeatmapGrid cells={s.heatmap} />
-          <div className="flex items-center gap-2 mt-3 text-[11px] text-white/30">
-            <span>0</span>
-            {HEAT_COLORS.map((color) => (
-              <div key={color} className="w-3 h-3 rounded-sm" style={{ background: color }} />
+        <Card
+          title="Cumplimiento diario"
+          subtitle={`Últimos 90 días: ${s.heatmap.cumplido} cumplidos · ${s.heatmap.parcial} parciales · ${s.heatmap.sin_cumplir} sin cumplir`}
+        >
+          <HeatmapGrid cells={s.heatmap.cells} />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-[11px] text-white/40">
+            {Object.entries(DAY_STATUS).map(([key, { color, label }]) => (
+              <span key={key} className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm" style={{ background: color }} />
+                {label}
+              </span>
             ))}
-            <span>Máx</span>
           </div>
         </Card>
       </div>

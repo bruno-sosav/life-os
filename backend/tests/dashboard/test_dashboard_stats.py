@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from app.modules.dashboard.dashboard_service import global_streak, habit_completion_pct
 from app.modules.rutina import Habit, RoutineBlock
@@ -46,10 +46,31 @@ def test_streak_includes_specific_date_blocks() -> None:
     assert global_streak(today, [block], [], [today]) == 1
 
 
+def test_new_habit_does_not_break_past_streak() -> None:
+    today = MONDAY + timedelta(days=3)
+    created_today = Habit(name="Nuevo", days_of_week=None, created_at=datetime(2026, 10, 15, 12))
+    new_block = RoutineBlock(
+        activity="Correr",
+        days_of_week=[0, 1, 2, 3, 4, 5, 6],
+        hour_start=7,
+        repeat_weekly=True,
+        created_at=datetime(2026, 10, 15, 12),
+    )
+    done = [today - timedelta(days=i) for i in range(1, 4)]
+    # Sin la regla de created_at, cada día pasado quedaría en 1/3 y la racha en 0
+    assert global_streak(today, [new_block], [daily_habit(), created_today], done) == 3
+
+
+def test_seventy_percent_is_enough() -> None:
+    habits = [Habit(name=str(i), days_of_week=None) for i in range(10)]
+    yesterday = MONDAY - timedelta(days=1)
+    assert global_streak(MONDAY, [], habits, [yesterday] * 7) == 1  # 7/10 justo
+
+
 def test_habit_pct_only_counts_until_today() -> None:
     today = MONDAY + timedelta(days=1)  # martes: 2 días esperados
     assert habit_completion_pct(MONDAY, today, [daily_habit()], [MONDAY]) == 50
 
 
-def test_habit_pct_without_habits_is_zero() -> None:
-    assert habit_completion_pct(MONDAY, MONDAY, [], []) == 0
+def test_habit_pct_without_habits_is_none() -> None:
+    assert habit_completion_pct(MONDAY, MONDAY, [], []) is None

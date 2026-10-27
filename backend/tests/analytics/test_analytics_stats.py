@@ -74,11 +74,14 @@ def test_bruce_levels() -> None:
 
 def test_streaks_current_and_best() -> None:
     days = [TODAY - timedelta(days=n) for n in (1, 2, 3, 10, 11, 12, 13, 14)]
-    inp = stats.StatsInput(today=TODAY, habit_logs=logs(*[("h1", d) for d in days]))
-    assert stats.habit_streaks(inp) == (3, 5)  # hoy pendiente no corta
+    inp = stats.StatsInput(
+        today=TODAY, habits=[habit("h1")], habit_logs=logs(*[("h1", d) for d in days])
+    )
+    assert stats.kpis(inp)["current_streak"] == 3  # hoy pendiente no corta
+    assert stats.kpis(inp)["best_streak"] == 5
 
     inp.habit_logs = logs(*[("h1", d) for d in [TODAY, *days]])
-    assert stats.habit_streaks(inp) == (4, 5)
+    assert stats.kpis(inp)["current_streak"] == 4
 
 
 def test_kpis() -> None:
@@ -119,20 +122,20 @@ def test_radar_axes_and_mental() -> None:
     assert radar["Finanzas"] == (100, 0)
 
 
-def test_heatmap_grid_and_levels() -> None:
+def test_heatmap_grid_and_status() -> None:
     inp = stats.StatsInput(
-        today=TODAY, habit_logs=logs(("h1", TODAY), ("h2", TODAY), ("h1", TODAY - timedelta(1)))
+        today=TODAY,
+        habits=[habit("h1"), habit("h2", "Agua")],
+        habit_logs=logs(("h1", TODAY), ("h2", TODAY), ("h1", TODAY - timedelta(1))),
     )
-    cells = stats.heatmap(inp)
+    result = stats.heatmap(inp)
+    cells = result["cells"]
     real = [c for c in cells if c["date"] is not None]
     assert len(cells) % 7 == 0 and len(real) == 90
     first = TODAY - timedelta(days=89)
-    assert (
-        cells[: first.weekday()] == [{"date": None, "count": None, "level": None}] * first.weekday()
-    )
-    assert (real[-1]["count"], real[-1]["level"]) == (2, 4)
-    assert (real[-2]["count"], real[-2]["level"]) == (1, 2)
-    assert real[0]["level"] == 0
+    assert cells[: first.weekday()] == [{"date": None, "status": None}] * first.weekday()
+    assert [c["status"] for c in real[-3:]] == ["sin_cumplir", "parcial", "cumplido"]
+    assert (result["cumplido"], result["parcial"], result["sin_cumplir"]) == (1, 1, 88)
 
 
 def test_finance_monthly_and_gym_vs_mma() -> None:

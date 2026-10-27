@@ -19,7 +19,7 @@ class WeeklyReviewSummary(BaseModel):
     week_end: date
     habit_pct: int
     prev_habit_pct: int
-    habit_pct_delta: int | None  # None si la semana anterior no tiene datos
+    habit_pct_delta: int | None  # None si la semana anterior no tenía hábitos agendados
     gym_days: int
     mma_days: int
     avg_mood: float | None

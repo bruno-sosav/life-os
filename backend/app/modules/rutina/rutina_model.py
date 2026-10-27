@@ -46,7 +46,7 @@ class HabitLog(UUIDPk, CreatedAt, Base):
     note: Mapped[str | None] = mapped_column(Text)
 
 
-class RoutineBlock(UUIDPk, Base):
+class RoutineBlock(UUIDPk, CreatedAt, Base):
     __tablename__ = "routine_blocks"
 
     # 0 = lunes … 6 = domingo; null si es un bloque de fecha puntual

@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from app.modules.rutina import DayStatus
+
 
 # ─── Resumen calculado (GET /analytics/summary) ─────────────
 class BruceScore(BaseModel):
@@ -54,8 +56,15 @@ class RadarAxis(BaseModel):
 
 class HeatCell(BaseModel):
     date: dt.date | None  # None = celda de relleno de la grilla
-    count: int | None
-    level: int | None  # 0 a 4
+    status: DayStatus | None
+
+
+class Heatmap(BaseModel):
+    cells: list[HeatCell]
+    # Días de cada estado en los 90 días (los libres y hoy pendiente no se cuentan)
+    cumplido: int
+    parcial: int
+    sin_cumplir: int
 
 
 class WeightPoint(BaseModel):
@@ -89,7 +98,7 @@ class AnalyticsSummary(BaseModel):
     kpis: KPIs
     habits_by_week: HabitsByWeek
     radar: list[RadarAxis]
-    heatmap: list[HeatCell]
+    heatmap: Heatmap
     weight_series: list[WeightPoint]
     mood_series: list[MoodPoint]
     gym_vs_mma: GymVsMma

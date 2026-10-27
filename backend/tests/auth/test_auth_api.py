@@ -64,6 +64,30 @@ def test_login_throttled_after_failures(anon_client: TestClient) -> None:
     assert int(response.headers["Retry-After"]) > 0
 
 
+def test_login_throttle_ignores_spoofed_forwarded_ips(anon_client: TestClient) -> None:
+    # El cliente inventa una IP distinta en cada intento; el proxy agrega la real al final
+    for i in range(5):
+        response = anon_client.post(
+            "/api/auth/login",
+            json={"username": USERNAME, "password": "mal"},
+            headers={"X-Forwarded-For": f"10.0.0.{i}, 203.0.113.7"},
+        )
+        assert response.status_code == 401
+    response = anon_client.post(
+        "/api/auth/login",
+        json={"username": USERNAME, "password": PASSWORD},
+        headers={"X-Forwarded-For": "10.0.0.99, 203.0.113.7"},
+    )
+    assert response.status_code == 429
+    # Otra IP real no queda bloqueada por los fallos de la primera
+    other = anon_client.post(
+        "/api/auth/login",
+        json={"username": USERNAME, "password": PASSWORD},
+        headers={"X-Forwarded-For": "198.51.100.4"},
+    )
+    assert other.status_code == 200
+
+
 @pytest.mark.parametrize(
     "token",
     [

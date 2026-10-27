@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from fastapi.testclient import TestClient
 
 
@@ -8,8 +10,11 @@ def create_habit(client: TestClient, **fields: object) -> dict[str, object]:
     return data
 
 
-def test_streak_and_weekly_stats_endpoints(client: TestClient) -> None:
+def test_streak_and_weekly_stats_endpoints(
+    client: TestClient, backdate_habits: Callable[[], None]
+) -> None:
     habit = create_habit(client)
+    backdate_habits()
     for day in ("2026-10-12", "2026-10-13"):
         client.put(
             "/api/habit-logs", json={"habit_id": habit["id"], "date": day, "completed": True}
@@ -24,7 +29,7 @@ def test_streak_and_weekly_stats_endpoints(client: TestClient) -> None:
         "week_end": "2026-10-18",
         "habit_pct": 67,
         "prev_habit_pct": 0,
-        "habit_pct_delta": None,
+        "habit_pct_delta": 67,  # la semana anterior tocaba el hábito y quedó en 0 %
         "gym_days": 0,
         "mma_days": 0,
         "avg_mood": None,
