@@ -15,7 +15,12 @@ from app.models import (
     RoutineCompletion,
     WeeklyReview,
 )
-from app.schemas.rutina import AgendaOut, StreakOut, WeeklyReviewOut, WeeklyReviewSummary
+from app.modules.rutina.rutina_schema import (
+    AgendaOut,
+    StreakOut,
+    WeeklyReviewOut,
+    WeeklyReviewSummary,
+)
 from app.services import dashboard as stats
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])

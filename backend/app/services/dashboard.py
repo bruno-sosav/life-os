@@ -8,7 +8,7 @@ import pandas as pd
 
 from app.core.numeros_util import js_round
 from app.models import Habit, RoutineBlock
-from app.schemas.rutina import MoodLevel
+from app.modules.rutina.rutina_schema import MoodLevel
 
 STREAK_WINDOW_DAYS = 60
 STREAK_THRESHOLD = 0.7  # un día cuenta si se completó al menos el 70 % de lo esperado
