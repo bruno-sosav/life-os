@@ -1,10 +1,10 @@
-import calendar
 from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
 from app.core.errores_util import get_or_404
+from app.core.fechas_util import days_between, month_bounds, week_bounds
 from app.modules.fisico import fisico_repository as repository
 from app.modules.fisico.fisico_model import (
     GymExercise,
@@ -18,17 +18,22 @@ from app.modules.fisico.fisico_schema import (
     AttendanceWeek,
     ExerciseProgressionPoint,
     GymSessionCreate,
-    GymSessionUpdate,
     LinkedHabitOut,
     MmaMonth,
     MmaMonthDay,
     MmaSessionCreate,
-    MmaSessionUpdate,
     NutritionAverage,
     NutritionLogIn,
     WeightLogIn,
 )
-from app.modules.rutina import HabitLogUpsert, LinkedModule, upsert_habit_log
+from app.modules.rutina import (
+    Habit,
+    HabitLogUpsert,
+    LinkedModule,
+    completed_habit_logs,
+    list_habits,
+    upsert_habit_log,
+)
 
 SESSION_MODELS: dict[LinkedModule, type[GymSession | MmaSession]] = {
     "gym": GymSession,
@@ -48,13 +53,6 @@ def create_gym_session(session: Session, payload: GymSessionCreate) -> GymSessio
     return base_repository.save(session, gym_session)
 
 
-def update_gym_session(session: Session, session_id: str, payload: GymSessionUpdate) -> GymSession:
-    gym_session = get_or_404(session, GymSession, session_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(gym_session, field, value)
-    return base_repository.save(session, gym_session)
-
-
 def delete_gym_session(session: Session, session_id: str) -> None:
     base_repository.delete(session, get_or_404(session, GymSession, session_id))
 
@@ -66,13 +64,9 @@ def list_exercise_names(session: Session) -> list[str]:
 def exercise_progression(session: Session, name: str) -> list[ExerciseProgressionPoint]:
     return [
         ExerciseProgressionPoint(
-            date=day,
-            max_weight_kg=float(max_weight) if max_weight is not None else None,
-            volume_kg=float(volume) if volume is not None else None,
+            date=day, max_weight_kg=float(max_weight) if max_weight is not None else None
         )
-        for day, max_weight, volume in repository.exercise_progression(
-            session, name.strip().lower()
-        )
+        for day, max_weight in repository.exercise_progression(session, name.strip().lower())
     ]
 
 
@@ -85,22 +79,13 @@ def create_mma_session(session: Session, payload: MmaSessionCreate) -> MmaSessio
     return base_repository.save(session, MmaSession(**payload.model_dump()))
 
 
-def update_mma_session(session: Session, session_id: str, payload: MmaSessionUpdate) -> MmaSession:
-    mma_session = get_or_404(session, MmaSession, session_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(mma_session, field, value)
-    return base_repository.save(session, mma_session)
-
-
 def delete_mma_session(session: Session, session_id: str) -> None:
     base_repository.delete(session, get_or_404(session, MmaSession, session_id))
 
 
 def mma_month(session: Session, month: date) -> MmaMonth:
     """Calendario del mes de `month`: un día por fecha, con o sin sesión."""
-    first = month.replace(day=1)
-    length = calendar.monthrange(first.year, first.month)[1]
-    days = [first + timedelta(days=i) for i in range(length)]
+    days = days_between(month_bounds(month))
     sessions = repository.list_mma_sessions_between(session, days[0], days[-1])
     by_date = {s.date: s.attended for s in sessions}
     return MmaMonth(
@@ -110,13 +95,20 @@ def mma_month(session: Session, month: date) -> MmaMonth:
 
 
 # ─── Asistencia (gym y MMA) ─────────────────────────────────
+def _linked_habit(session: Session, module: LinkedModule) -> Habit | None:
+    return next(iter(list_habits(session, active=True, linked_module=module)), None)
+
+
+def _habit_done_dates(session: Session, habit_id: str, start: date, end: date) -> set[date]:
+    return {day for hid, day in completed_habit_logs(session, start, end) if hid == habit_id}
+
+
 def attendance_week(session: Session, module: LinkedModule, today: date) -> AttendanceWeek:
     """Asistencia de lunes a domingo: del hábito vinculado si hay uno, si no de las sesiones."""
-    monday = today - timedelta(days=today.weekday())
-    days = [monday + timedelta(days=i) for i in range(7)]
-    habit = repository.linked_habit(session, module)
+    days = days_between(week_bounds(today))
+    habit = _linked_habit(session, module)
     if habit:
-        done = repository.completed_habit_dates(session, habit.id, days[0], days[-1])
+        done = _habit_done_dates(session, habit.id, days[0], days[-1])
     else:
         done = repository.attended_dates(session, SESSION_MODELS[module], days[0], days[-1])
     return AttendanceWeek(
@@ -127,9 +119,9 @@ def attendance_week(session: Session, module: LinkedModule, today: date) -> Atte
 
 def toggle_attendance(session: Session, module: LinkedModule, day: date) -> AttendanceDay:
     """Alterna la asistencia de `day` en el hábito vinculado o, si no hay, en la sesión del día."""
-    habit = repository.linked_habit(session, module)
+    habit = _linked_habit(session, module)
     if habit:
-        done = day in repository.completed_habit_dates(session, habit.id, day, day)
+        done = day in _habit_done_dates(session, habit.id, day, day)
         upsert_habit_log(session, HabitLogUpsert(habit_id=habit.id, date=day, completed=not done))
         return AttendanceDay(date=day, attended=not done)
 
@@ -155,9 +147,7 @@ def list_weight_logs(session: Session, start: date | None) -> list[WeightLog]:
 
 def upsert_weight_log(session: Session, day: date, payload: WeightLogIn) -> WeightLog:
     log = repository.weight_log_of(session, day) or WeightLog(date=day)
-    for field, value in payload.model_dump().items():
-        setattr(log, field, value)
-    return base_repository.save(session, log)
+    return base_repository.save(session, base_repository.apply(log, payload.model_dump()))
 
 
 # ─── Nutrición ──────────────────────────────────────────────
@@ -172,6 +162,4 @@ def nutrition_average(session: Session, today: date) -> NutritionAverage:
 
 def upsert_nutrition_log(session: Session, day: date, payload: NutritionLogIn) -> NutritionLog:
     log = repository.nutrition_log_of(session, day) or NutritionLog(date=day)
-    for field, value in payload.model_dump().items():
-        setattr(log, field, value)
-    return base_repository.save(session, log)
+    return base_repository.save(session, base_repository.apply(log, payload.model_dump()))

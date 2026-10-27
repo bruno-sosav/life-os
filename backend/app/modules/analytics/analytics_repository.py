@@ -1,4 +1,4 @@
-"""Analytics no tiene tablas propias: lee las de rutina, físico, mental y finanzas."""
+"""Analytics no tiene tablas propias. Lo de rutina lo pide a rutina; acá lee el resto."""
 
 from datetime import date
 from typing import Any
@@ -9,33 +9,6 @@ from sqlalchemy.orm import Session
 from app.modules.finanzas import FinanceExpense, FinanceIncome
 from app.modules.fisico import GymSession, MmaSession, WeightLog
 from app.modules.mental import Book, JournalEntry, MoodLog
-from app.modules.rutina import Habit, HabitLog, RoutineBlock, RoutineCompletion
-
-
-def active_habits(session: Session) -> list[Habit]:
-    return list(session.scalars(select(Habit).where(Habit.active.is_(True))))
-
-
-def routine_blocks(session: Session) -> list[RoutineBlock]:
-    return list(session.scalars(select(RoutineBlock)))
-
-
-def habit_logs(session: Session, start: date, end: date) -> list[tuple[Any, ...]]:
-    """(habit_id, date) de los hábitos activos cumplidos en el rango."""
-    query = (
-        select(HabitLog.habit_id, HabitLog.date)
-        .join(Habit)
-        .where(Habit.active.is_(True), HabitLog.completed.is_(True))
-        .where(HabitLog.date.between(start, end))
-    )
-    return [tuple(row) for row in session.execute(query)]
-
-
-def block_completions(session: Session, start: date, end: date) -> list[tuple[Any, ...]]:
-    query = select(RoutineCompletion.block_id, RoutineCompletion.date).where(
-        RoutineCompletion.date.between(start, end)
-    )
-    return [tuple(row) for row in session.execute(query)]
 
 
 def attended_dates(

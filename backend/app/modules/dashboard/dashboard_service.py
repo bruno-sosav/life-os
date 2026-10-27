@@ -7,6 +7,7 @@ from typing import Any
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from app.core.fechas_util import days_between, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.dashboard import dashboard_repository as repository
 from app.modules.dashboard.dashboard_schema import MoodLevel, StreakOut, WeeklyReviewSummary
@@ -15,13 +16,18 @@ from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
     RoutineBlock,
+    block_completions,
     block_runs_on,
+    completed_habit_logs,
     day_status,
     done_per_day,
     expected_per_day,
     habit_runs_on,
+    list_habits,
+    list_routine_blocks,
     streaks,
 )
+from app.modules.rutina import get_weekly_review as weekly_review_of
 from app.modules.rutina.rutina_schema import WeeklyReviewOut
 
 
@@ -70,8 +76,7 @@ def _start_minutes(item: RoutineBlock | Habit) -> int | None:
 
 
 def week_days(today: date) -> list[dict[str, Any]]:
-    monday = today - timedelta(days=today.weekday())
-    days = (monday + timedelta(days=i) for i in range(7))
+    days = days_between(week_bounds(today))
     return [{"date": d, "weekday": d.weekday(), "is_today": d == today} for d in days]
 
 
@@ -159,11 +164,11 @@ def mood_level(avg: float | None) -> MoodLevel | None:
 def get_streak(session: Session, today: date) -> StreakOut:
     start = today - timedelta(days=STREAK_WINDOW_DAYS - 1)
     done = [
-        *repository.completed_habit_dates(session, start, today),
-        *repository.completed_block_dates(session, start, today),
+        *(day for _, day in completed_habit_logs(session, start, today)),
+        *(day for _, day in block_completions(session, start, today)),
     ]
-    blocks = repository.routine_blocks(session)
-    habits = repository.active_habits(session)
+    blocks = list_routine_blocks(session)
+    habits = list_habits(session, active=True, linked_module=None)
     return StreakOut(streak=global_streak(today, blocks, habits, done))
 
 
@@ -171,26 +176,25 @@ def get_agenda(session: Session, day: date, today: date) -> dict[str, Any]:
     return agenda(
         day,
         today,
-        repository.routine_blocks(session),
-        repository.active_habits(session),
-        repository.done_block_ids(session, day),
-        repository.done_habit_ids(session, day),
+        list_routine_blocks(session),
+        list_habits(session, active=True, linked_module=None),
+        {block_id for block_id, _ in block_completions(session, day, day)},
+        {habit_id for habit_id, _ in completed_habit_logs(session, day, day)},
     )
 
 
 def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
     """Cierre de la semana de `today` (lunes a domingo) comparado con la anterior."""
-    week_start = today - timedelta(days=today.weekday())
-    week_end = week_start + timedelta(days=6)
-    prev_start = week_start - timedelta(days=7)
-    habits = repository.active_habits(session)
-    done = repository.completed_habit_dates(session, prev_start, week_end)
+    week_start, week_end = week_bounds(today)
+    prev_start = week_bounds(today, 1).start
+    habits = list_habits(session, active=True, linked_module=None)
+    done = [day for _, day in completed_habit_logs(session, prev_start, week_end)]
 
     habit_pct = habit_completion_pct(week_start, today, habits, done) or 0
     prev_habit_pct = habit_completion_pct(prev_start, today, habits, done)
     avg = repository.avg_mood(session, week_start, week_end)
     avg_mood = round(avg, 2) if avg is not None else None
-    review = repository.weekly_review_of(session, week_start)
+    review = weekly_review_of(session, week_start)
     return WeeklyReviewSummary(
         week_start=week_start,
         week_end=week_end,

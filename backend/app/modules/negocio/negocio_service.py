@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
 from app.core.errores_util import get_or_404
+from app.core.fechas_util import month_bounds
 from app.modules.negocio import negocio_repository as repository
 from app.modules.negocio.negocio_model import Project, StratusGoal, StratusIdea, StratusTask
 from app.modules.negocio.negocio_schema import (
@@ -15,10 +16,6 @@ from app.modules.negocio.negocio_schema import (
     TaskIn,
     TaskUpdate,
 )
-
-
-def _first_of_month(day: date) -> date:
-    return day.replace(day=1)
 
 
 def _check_project(session: Session, project_id: str | None) -> None:
@@ -65,9 +62,7 @@ def update_task(session: Session, task_id: str, payload: TaskUpdate) -> StratusT
     changes = payload.model_dump(exclude_unset=True)
     if "project_id" in changes:
         _check_project(session, changes["project_id"])
-    for field, value in changes.items():
-        setattr(task, field, value)
-    _sync_completed_at(task)
+    _sync_completed_at(base_repository.apply(task, changes))
     return base_repository.save(session, task)
 
 
@@ -90,18 +85,18 @@ def delete_business_idea(session: Session, idea_id: str) -> None:
 
 # ─── Objetivos del mes ──────────────────────────────────────
 def list_goals(session: Session, month: date) -> list[StratusGoal]:
-    return repository.list_goals(session, _first_of_month(month))
+    return repository.list_goals(session, month_bounds(month).start)
 
 
 def create_goal(session: Session, payload: GoalIn) -> StratusGoal:
-    goal = StratusGoal(title=payload.title, month=_first_of_month(payload.month), progress=0)
+    goal = StratusGoal(title=payload.title, month=month_bounds(payload.month).start, progress=0)
     return base_repository.save(session, goal)
 
 
 def update_goal(session: Session, goal_id: str, payload: GoalUpdate) -> StratusGoal:
-    goal = get_or_404(session, StratusGoal, goal_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(goal, field, value)
+    goal = base_repository.apply(
+        get_or_404(session, StratusGoal, goal_id), payload.model_dump(exclude_unset=True)
+    )
     goal.completed = goal.progress >= 100
     return base_repository.save(session, goal)
 

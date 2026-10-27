@@ -13,7 +13,7 @@ export const createGymSession = ({ date, routine_name, attended = true, notes, e
 
 export const deleteGymSession = (id) => api(`/gym/sessions/${id}`, { method: 'DELETE' })
 
-// Un punto por sesión: { date, max_weight_kg, volume_kg }
+// Un punto por sesión: { date, max_weight_kg }
 export const fetchExerciseProgression = (exerciseName) =>
   api('/gym/exercises/progression', { params: { name: exerciseName } })
 

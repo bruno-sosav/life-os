@@ -24,7 +24,6 @@ HabitDays = Annotated[list[DayOfWeek] | None, AfterValidator(_all_or_some_days)]
 class HabitBase(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     color: str | None = "#30D158"
-    icon: str | None = None
     emoji: str | None = None
     start_time: time | None = None
     duration_min: int | None = Field(default=30, ge=0, le=1440)
@@ -40,7 +39,6 @@ class HabitCreate(HabitBase):
 class HabitUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     color: str | None = None
-    icon: str | None = None
     emoji: str | None = None
     active: bool | None = None
     start_time: time | None = None
@@ -67,13 +65,11 @@ class HabitLogOut(ORMModel):
     habit_id: str
     date: date
     completed: bool
-    note: str | None
     created_at: UTCDateTime
 
 
 # ─── Rutina ─────────────────────────────────────────────────
 class RoutineBlockFields(BaseModel):
-    day_of_week: DayOfWeek | None = None
     days_of_week: list[DayOfWeek] | None = None
     specific_date: date | None = None
     repeat_weekly: bool = True
@@ -89,21 +85,16 @@ class RoutineBlockFields(BaseModel):
 class RoutineBlockIn(RoutineBlockFields):
     @model_validator(mode="after")
     def normalize_schedule(self) -> "RoutineBlockIn":
-        """Semanal: al menos un día (day_of_week se deduce si es uno solo). Puntual: fecha."""
+        """Semanal: al menos un día. Puntual: fecha."""
         if self.repeat_weekly:
-            days = set(self.days_of_week or [])
-            if self.day_of_week is not None:
-                days.add(self.day_of_week)
-            if not days:
+            if not self.days_of_week:
                 raise ValueError("Un bloque semanal necesita al menos un día")
-            self.days_of_week = sorted(days)
-            self.day_of_week = self.days_of_week[0] if len(days) == 1 else None
+            self.days_of_week = sorted(set(self.days_of_week))
             self.specific_date = None
         else:
             if self.specific_date is None:
                 raise ValueError("Un bloque de un solo día necesita la fecha")
             self.days_of_week = None
-            self.day_of_week = None
         return self
 
 
@@ -115,14 +106,6 @@ class RoutineCompletionToggle(BaseModel):
     block_id: str
     date: date
     completed: bool
-
-
-class RoutineCompletionOut(ORMModel):
-    id: str
-    block_id: str
-    date: date
-    completed: bool
-    completed_at: UTCDateTime
 
 
 # ─── Cierre semanal ─────────────────────────────────────────

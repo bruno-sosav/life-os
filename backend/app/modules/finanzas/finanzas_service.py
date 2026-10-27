@@ -1,28 +1,23 @@
-import calendar
 from datetime import date
 
 from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
 from app.core.errores_util import get_or_404
+from app.core.fechas_util import month_bounds
 from app.modules.finanzas import finanzas_repository as repository
 from app.modules.finanzas.finanzas_model import FinanceExpense, FinanceIncome
 from app.modules.finanzas.finanzas_schema import ExpenseIn, IncomeIn
 
 
-def month_bounds(day: date) -> tuple[date, date]:
-    last = calendar.monthrange(day.year, day.month)[1]
-    return day.replace(day=1), day.replace(day=last)
-
-
 # ─── Ingresos (se registran por mes) ────────────────────────
 def list_income(session: Session, month: date) -> list[FinanceIncome]:
-    return repository.list_income(session, month_bounds(month)[0])
+    return repository.list_income(session, month_bounds(month).start)
 
 
 def create_income(session: Session, payload: IncomeIn) -> FinanceIncome:
     income = FinanceIncome(**payload.model_dump())
-    income.month = month_bounds(payload.month)[0]
+    income.month = month_bounds(payload.month).start
     return base_repository.save(session, income)
 
 

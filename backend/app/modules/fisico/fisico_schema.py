@@ -29,13 +29,6 @@ class GymSessionCreate(BaseModel):
     exercises: list[GymExerciseIn] = []
 
 
-class GymSessionUpdate(BaseModel):
-    date: dt.date | None = None
-    attended: bool | None = None
-    routine_name: str | None = Field(default=None, max_length=255)
-    notes: str | None = None
-
-
 class GymSessionOut(ORMModel):
     id: str
     date: dt.date
@@ -49,20 +42,12 @@ class GymSessionOut(ORMModel):
 class ExerciseProgressionPoint(BaseModel):
     date: dt.date
     max_weight_kg: float | None
-    volume_kg: float | None  # suma de series × reps × kg de esa sesión
 
 
 # ─── MMA ────────────────────────────────────────────────────
 class MmaSessionCreate(BaseModel):
     date: dt.date
     attended: bool = True
-    session_type: str | None = Field(default=None, max_length=255)
-    notes: str | None = None
-
-
-class MmaSessionUpdate(BaseModel):
-    date: dt.date | None = None
-    attended: bool | None = None
     session_type: str | None = Field(default=None, max_length=255)
     notes: str | None = None
 

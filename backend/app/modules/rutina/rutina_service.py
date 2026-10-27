@@ -36,9 +36,9 @@ def create_habit(session: Session, payload: HabitCreate) -> Habit:
 
 def update_habit(session: Session, habit_id: str, payload: HabitUpdate) -> Habit:
     habit = get_or_404(session, Habit, habit_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(habit, field, value)
-    return base_repository.save(session, habit)
+    return base_repository.save(
+        session, base_repository.apply(habit, payload.model_dump(exclude_unset=True))
+    )
 
 
 def delete_habit(session: Session, habit_id: str) -> None:
@@ -46,8 +46,8 @@ def delete_habit(session: Session, habit_id: str) -> None:
 
 
 # ─── Logs de hábitos (uno por hábito y día) ─────────────────
-def list_habit_logs(session: Session, start: date, end: date) -> list[HabitLog]:
-    return repository.list_habit_logs(session, start, end)
+def completed_habit_logs(session: Session, start: date, end: date) -> list[tuple[str, date]]:
+    return repository.completed_habit_logs(session, start, end)
 
 
 def upsert_habit_log(session: Session, payload: HabitLogUpsert) -> HabitLog:
@@ -70,9 +70,7 @@ def create_routine_block(session: Session, payload: RoutineBlockIn) -> RoutineBl
 
 def replace_routine_block(session: Session, block_id: str, payload: RoutineBlockIn) -> RoutineBlock:
     block = get_or_404(session, RoutineBlock, block_id)
-    for field, value in payload.model_dump().items():
-        setattr(block, field, value)
-    return base_repository.save(session, block)
+    return base_repository.save(session, base_repository.apply(block, payload.model_dump()))
 
 
 def delete_routine_block(session: Session, block_id: str) -> None:
@@ -80,8 +78,8 @@ def delete_routine_block(session: Session, block_id: str) -> None:
 
 
 # ─── Completions de rutina ──────────────────────────────────
-def list_routine_completions(session: Session, day: date) -> list[RoutineCompletion]:
-    return repository.list_routine_completions(session, day)
+def block_completions(session: Session, start: date, end: date) -> list[tuple[str, date]]:
+    return repository.block_completions(session, start, end)
 
 
 def toggle_routine_completion(session: Session, payload: RoutineCompletionToggle) -> None:
@@ -129,9 +127,7 @@ def habit_runs_on(habit: Habit, dow: int) -> bool:
 def block_runs_on(block: RoutineBlock, day: date) -> bool:
     if not block.repeat_weekly:
         return block.specific_date == day
-    if block.days_of_week:
-        return day.weekday() in block.days_of_week
-    return block.day_of_week == day.weekday()
+    return day.weekday() in (block.days_of_week or [])
 
 
 def expected_per_day(

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Numeric, Row, func, select, type_coerce
+from sqlalchemy import Row, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.modules.fisico.fisico_model import (
@@ -12,7 +12,6 @@ from app.modules.fisico.fisico_model import (
     NutritionLog,
     WeightLog,
 )
-from app.modules.rutina import Habit, HabitLog
 
 
 # ─── Gym ────────────────────────────────────────────────────
@@ -31,23 +30,10 @@ def list_exercise_names(session: Session) -> list[str]:
     return list(session.scalars(query))
 
 
-def exercise_progression(
-    session: Session, name: str
-) -> Sequence[Row[date, Decimal | None, Decimal | None]]:
-    """Por fecha: carga máxima y volumen (series × reps × kg) del ejercicio.
-
-    `name` llega en minúsculas: la comparación no distingue mayúsculas.
-    """
-    volume = type_coerce(
-        func.sum(
-            func.coalesce(GymExercise.sets, 1)
-            * func.coalesce(GymExercise.reps, 0)
-            * func.coalesce(GymExercise.weight_kg, 0)
-        ),
-        Numeric(),
-    )
+def exercise_progression(session: Session, name: str) -> Sequence[Row[date, Decimal | None]]:
+    """Por fecha: carga máxima del ejercicio. `name` llega en minúsculas (no distingue)."""
     query = (
-        select(GymSession.date, func.max(GymExercise.weight_kg), volume)
+        select(GymSession.date, func.max(GymExercise.weight_kg))
         .join(GymSession)
         .where(func.lower(GymExercise.exercise_name) == name)
         .group_by(GymSession.date)
@@ -67,20 +53,6 @@ def list_mma_sessions_between(session: Session, start: date, end: date) -> list[
 
 
 # ─── Asistencia (gym y MMA) ─────────────────────────────────
-def linked_habit(session: Session, module: str) -> Habit | None:
-    query = select(Habit).where(Habit.active.is_(True), Habit.linked_module == module)
-    return session.scalars(query.order_by(Habit.sort_order, Habit.created_at)).first()
-
-
-def completed_habit_dates(session: Session, habit_id: str, start: date, end: date) -> set[date]:
-    query = select(HabitLog.date).where(
-        HabitLog.habit_id == habit_id,
-        HabitLog.completed.is_(True),
-        HabitLog.date.between(start, end),
-    )
-    return set(session.scalars(query))
-
-
 def attended_dates(
     session: Session, model: type[GymSession | MmaSession], start: date, end: date
 ) -> set[date]:

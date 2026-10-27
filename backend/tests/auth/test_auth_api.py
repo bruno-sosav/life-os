@@ -99,7 +99,7 @@ def test_login_throttle_ignores_spoofed_forwarded_ips(anon_client: TestClient) -
     ],
 )
 def test_invalid_tokens_rejected(anon_client: TestClient, token: str) -> None:
-    response = anon_client.get("/api/habits", headers={"Authorization": f"Bearer {token}"})
+    response = anon_client.get("/api/books", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
@@ -111,16 +111,16 @@ def test_expired_token_rejected(client: TestClient, db: sessionmaker[Session]) -
             get_settings().jwt_secret.get_secret_value(),
             algorithm="HS256",
         )
-    response = client.get("/api/habits", headers={"Authorization": f"Bearer {expired}"})
+    response = client.get("/api/books", headers={"Authorization": f"Bearer {expired}"})
     assert response.status_code == 401
 
 
 def test_password_change_revokes_tokens(client: TestClient, db: sessionmaker[Session]) -> None:
-    assert client.get("/api/habits").status_code == 200
+    assert client.get("/api/books").status_code == 200
     with db() as session:
         session.query(User).one().token_version += 1
         session.commit()
-    assert client.get("/api/habits").status_code == 401
+    assert client.get("/api/books").status_code == 401
 
 
 def test_password_is_hashed(db: sessionmaker[Session]) -> None:

@@ -11,11 +11,9 @@ from app.modules.fisico.fisico_schema import (
     ExerciseProgressionPoint,
     GymSessionCreate,
     GymSessionOut,
-    GymSessionUpdate,
     MmaMonth,
     MmaSessionCreate,
     MmaSessionOut,
-    MmaSessionUpdate,
     NutritionAverage,
     NutritionLogIn,
     NutritionLogOut,
@@ -36,13 +34,6 @@ def list_gym_sessions(session: SessionDep, limit: int = 50) -> list[GymSession]:
 @router.post("/gym/sessions", response_model=GymSessionOut, status_code=CREATED)
 def create_gym_session(payload: GymSessionCreate, session: SessionDep) -> GymSession:
     return service.create_gym_session(session, payload)
-
-
-@router.patch("/gym/sessions/{session_id}", response_model=GymSessionOut)
-def update_gym_session(
-    session_id: str, payload: GymSessionUpdate, session: SessionDep
-) -> GymSession:
-    return service.update_gym_session(session, session_id, payload)
 
 
 @router.delete("/gym/sessions/{session_id}", status_code=NO_CONTENT)
@@ -79,13 +70,6 @@ def list_mma_sessions(session: SessionDep) -> list[MmaSession]:
 @router.post("/mma/sessions", response_model=MmaSessionOut, status_code=CREATED)
 def create_mma_session(payload: MmaSessionCreate, session: SessionDep) -> MmaSession:
     return service.create_mma_session(session, payload)
-
-
-@router.patch("/mma/sessions/{session_id}", response_model=MmaSessionOut)
-def update_mma_session(
-    session_id: str, payload: MmaSessionUpdate, session: SessionDep
-) -> MmaSession:
-    return service.update_mma_session(session, session_id, payload)
 
 
 @router.delete("/mma/sessions/{session_id}", status_code=NO_CONTENT)

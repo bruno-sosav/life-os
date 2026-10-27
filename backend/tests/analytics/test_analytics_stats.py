@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 import pandas as pd
 
+from app.core.fechas_util import Period, month_bounds, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.analytics import analytics_service as stats
 from app.modules.rutina import Habit, RoutineBlock
@@ -26,10 +27,11 @@ def logs(*items: tuple[str, date]) -> pd.DataFrame:
     return frame(["habit_id", "date"], list(items))
 
 
-def test_js_round_and_week_bounds() -> None:
+def test_js_round_and_date_bounds() -> None:
     assert (js_round(2.5), js_round(2.4), js_round(-0.5)) == (3, 2, 0)
-    assert stats.week_bounds(TODAY) == stats.Week(MONDAY, TODAY)
-    assert stats.week_bounds(TODAY, 1).start == MONDAY - timedelta(days=7)
+    assert week_bounds(TODAY) == Period(MONDAY, TODAY)
+    assert week_bounds(TODAY, 1).start == MONDAY - timedelta(days=7)
+    assert month_bounds(date(2028, 2, 10)) == Period(date(2028, 2, 1), date(2028, 2, 29))
 
 
 def test_bruce_score_full_week_is_elite() -> None:
@@ -40,7 +42,7 @@ def test_bruce_score_full_week_is_elite() -> None:
         habit_logs=logs(*[("h1", d) for d in week_days]),
         workouts=frame(["kind", "date"], [("gym", d) for d in week_days[:5]]),
     )
-    score = stats.bruce_score(inp, stats.week_bounds(TODAY))
+    score = stats.bruce_score(inp, week_bounds(TODAY))
     assert (score["habit_score"], score["workout_score"], score["stratus_score"]) == (50, 30, 20)
     assert (score["total"], score["level"]) == (100, "elite")
 
@@ -55,7 +57,7 @@ def test_bruce_score_partial_uses_blocks_for_stratus() -> None:
         completions=frame(["block_id", "date"], [("b1", MONDAY)]),
         workouts=frame(["kind", "date"], [("gym", MONDAY), ("mma", MONDAY)]),
     )
-    score = stats.bruce_score(inp, stats.week_bounds(TODAY))
+    score = stats.bruce_score(inp, week_bounds(TODAY))
     # 3/7 hábitos → 21 · 2/5 entrenos → 12 · 1/5 días Stratus → 4
     assert (score["habit_score"], score["workout_score"], score["stratus_score"]) == (21, 12, 4)
     assert (score["total"], score["level"]) == (37, "apagado")

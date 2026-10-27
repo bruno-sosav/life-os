@@ -26,9 +26,9 @@ def create_book(session: Session, payload: BookIn) -> Book:
 
 def update_book(session: Session, book_id: str, payload: BookUpdate) -> Book:
     book = get_or_404(session, Book, book_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(book, field, value)
-    return base_repository.save(session, book)
+    return base_repository.save(
+        session, base_repository.apply(book, payload.model_dump(exclude_unset=True))
+    )
 
 
 def delete_book(session: Session, book_id: str) -> None:
@@ -42,9 +42,7 @@ def list_mood_logs(session: Session, start: date | None) -> list[MoodLog]:
 
 def upsert_mood_log(session: Session, day: date, payload: MoodLogIn) -> MoodLog:
     log = repository.mood_log_of(session, day) or MoodLog(date=day)
-    for field, value in payload.model_dump().items():
-        setattr(log, field, value)
-    return base_repository.save(session, log)
+    return base_repository.save(session, base_repository.apply(log, payload.model_dump()))
 
 
 # ─── Diario ─────────────────────────────────────────────────

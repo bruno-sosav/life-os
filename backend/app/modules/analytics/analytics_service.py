@@ -12,6 +12,7 @@ from typing import Any, Literal
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from app.core.fechas_util import Period, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.analytics import analytics_repository as repository
 from app.modules.analytics.analytics_schema import AnalyticsSummary
@@ -20,8 +21,12 @@ from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
     RoutineBlock,
+    block_completions,
+    completed_habit_logs,
     day_status,
     expected_per_day,
+    list_habits,
+    list_routine_blocks,
     streaks,
 )
 
@@ -33,18 +38,6 @@ HEATMAP_DAYS = STREAK_WINDOW_DAYS
 HISTORY_WEEKS = 12
 HABIT_WEEKS = 8
 FINANCE_MONTHS = 6
-
-
-@dataclass(frozen=True)
-class Week:
-    start: date
-    end: date
-
-
-def week_bounds(today: date, offset: int = 0) -> Week:
-    """Semana de lunes a domingo, `offset` semanas hacia atrás."""
-    monday = today - timedelta(days=today.weekday() + 7 * offset)
-    return Week(monday, monday + timedelta(days=6))
 
 
 def _empty(*columns: str) -> pd.DataFrame:
@@ -91,7 +84,7 @@ def _expected_habits(habits: Sequence[Habit], start: date, end: date) -> int:
     return int(expected_per_day(_days(start, end), [], habits).sum())
 
 
-def _stratus_days(inp: StatsInput, week: Week) -> int:
+def _stratus_days(inp: StatsInput, week: Period) -> int:
     """Días de la semana con algún hábito o bloque de rutina 'Stratus' completado."""
     habit_ids = {h.id for h in inp.habits if "stratus" in (h.name or "").lower()}
     block_ids = {b.id for b in inp.blocks if "stratus" in (b.activity or "").lower()}
@@ -117,7 +110,7 @@ def bruce_level(total: int) -> BruceLevel:
     return "apagado"
 
 
-def bruce_score(inp: StatsInput, week: Week) -> dict[str, Any]:
+def bruce_score(inp: StatsInput, week: Period) -> dict[str, Any]:
     """Hábitos (50 pts) + entrenos (30 pts, meta 5/semana) + Stratus (20 pts, meta 5 días)."""
     expected = _expected_habits(inp.habits, week.start, week.end)
     completed = len(_between(inp.habit_logs, week.start, week.end))
@@ -214,7 +207,7 @@ def habits_by_week(inp: StatsInput) -> dict[str, Any]:
 
 
 # ─── Radar semanal ──────────────────────────────────────────
-def _radar_metrics(inp: StatsInput, week: Week) -> dict[str, int]:
+def _radar_metrics(inp: StatsInput, week: Period) -> dict[str, int]:
     expected = _expected_habits(inp.habits, week.start, week.end)
     done = len(_between(inp.habit_logs, week.start, week.end))
     workouts = len(_between(inp.workouts, week.start, week.end))
@@ -363,13 +356,13 @@ def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSum
 
     inp = StatsInput(
         today=today,
-        habits=repository.active_habits(session),
-        blocks=repository.routine_blocks(session),
+        habits=list_habits(session, active=True, linked_module=None),
+        blocks=list_routine_blocks(session),
         habit_logs=_frame(
-            repository.habit_logs(session, start, today), ["habit_id", "date"], ("date",)
+            list(completed_habit_logs(session, start, today)), ["habit_id", "date"], ("date",)
         ),
         completions=_frame(
-            repository.block_completions(session, start, today), ["block_id", "date"], ("date",)
+            list(block_completions(session, start, today)), ["block_id", "date"], ("date",)
         ),
         workouts=_frame(workouts, ["kind", "date"], ("date",)),
         weights=_frame(repository.weights(session), ["date", "kg"], ("date",)),
