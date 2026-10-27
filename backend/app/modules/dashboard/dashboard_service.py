@@ -1,46 +1,28 @@
-"""Cálculos del dashboard (racha y cierre semanal) sobre los registros ya leídos de la base."""
+"""Racha, agenda del día y cierre semanal. `today` lo manda el frontend: es su fecha local."""
 
 from collections.abc import Iterable, Sequence
 from datetime import date, timedelta
 from typing import Any
 
 import pandas as pd
+from sqlalchemy.orm import Session
 
 from app.core.numeros_util import js_round
-from app.models import Habit, RoutineBlock
-from app.modules.rutina.rutina_schema import MoodLevel
+from app.modules.dashboard import dashboard_repository as repository
+from app.modules.dashboard.dashboard_schema import MoodLevel, StreakOut, WeeklyReviewSummary
+from app.modules.fisico import GymSession, MmaSession
+from app.modules.rutina import (
+    Habit,
+    RoutineBlock,
+    block_runs_on,
+    done_per_day,
+    expected_per_day,
+    habit_runs_on,
+)
+from app.modules.rutina.rutina_schema import WeeklyReviewOut
 
 STREAK_WINDOW_DAYS = 60
 STREAK_THRESHOLD = 0.7  # un día cuenta si se completó al menos el 70 % de lo esperado
-
-
-def _habit_runs_on(habit: Habit, dow: int) -> bool:
-    return not habit.days_of_week or dow in habit.days_of_week
-
-
-def _block_runs_on(block: RoutineBlock, day: date) -> bool:
-    if not block.repeat_weekly:
-        return block.specific_date == day
-    if block.days_of_week:
-        return day.weekday() in block.days_of_week
-    return block.day_of_week == day.weekday()
-
-
-def expected_per_day(
-    days: pd.DatetimeIndex, blocks: Sequence[RoutineBlock], habits: Sequence[Habit]
-) -> pd.Series:
-    """Cantidad de bloques + hábitos agendados para cada día."""
-    values = [
-        sum(_block_runs_on(b, d.date()) for b in blocks)
-        + sum(_habit_runs_on(h, d.weekday()) for h in habits)
-        for d in days
-    ]
-    return pd.Series(values, index=days, dtype="int64")
-
-
-def done_per_day(days: pd.DatetimeIndex, done_dates: Iterable[date]) -> pd.Series:
-    counts = pd.Series(pd.to_datetime(list(done_dates)), dtype="datetime64[ns]").value_counts()
-    return counts.reindex(days, fill_value=0).astype("int64")
 
 
 def global_streak(
@@ -113,10 +95,10 @@ def agenda(
     """Bloques y hábitos de `day`, ordenados por hora y agrupados por momento del día."""
     entries: list[tuple[int | None, dict[str, Any]]] = []
     for block in blocks:
-        if _block_runs_on(block, day):
+        if block_runs_on(block, day):
             entries.append((_start_minutes(block), _agenda_item(block, block.id in done_block_ids)))
     for habit in habits:
-        if _habit_runs_on(habit, day.weekday()):
+        if habit_runs_on(habit, day.weekday()):
             entries.append((_start_minutes(habit), _agenda_item(habit, habit.id in done_habit_ids)))
     # Primero los que tienen hora (por hora); al final los sin horario. Orden estable.
     entries.sort(key=lambda e: (e[0] is None, e[0] or 0))
@@ -180,3 +162,53 @@ def mood_level(avg: float | None) -> MoodLevel | None:
     if avg >= 2.5:
         return "regular"
     return "dificil"
+
+
+# ─── Lo que piden los endpoints ─────────────────────────────
+def get_streak(session: Session, today: date) -> StreakOut:
+    start = today - timedelta(days=STREAK_WINDOW_DAYS - 1)
+    done = [
+        *repository.completed_habit_dates(session, start, today),
+        *repository.completed_block_dates(session, start, today),
+    ]
+    blocks = repository.routine_blocks(session)
+    habits = repository.active_habits(session)
+    return StreakOut(streak=global_streak(today, blocks, habits, done))
+
+
+def get_agenda(session: Session, day: date, today: date) -> dict[str, Any]:
+    return agenda(
+        day,
+        today,
+        repository.routine_blocks(session),
+        repository.active_habits(session),
+        repository.done_block_ids(session, day),
+        repository.done_habit_ids(session, day),
+    )
+
+
+def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
+    """Cierre de la semana de `today` (lunes a domingo) comparado con la anterior."""
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    prev_start = week_start - timedelta(days=7)
+    habits = repository.active_habits(session)
+    done = repository.completed_habit_dates(session, prev_start, week_end)
+
+    habit_pct = habit_completion_pct(week_start, today, habits, done)
+    prev_habit_pct = habit_completion_pct(prev_start, today, habits, done)
+    avg = repository.avg_mood(session, week_start, week_end)
+    avg_mood = round(avg, 2) if avg is not None else None
+    review = repository.weekly_review_of(session, week_start)
+    return WeeklyReviewSummary(
+        week_start=week_start,
+        week_end=week_end,
+        habit_pct=habit_pct,
+        prev_habit_pct=prev_habit_pct,
+        habit_pct_delta=habit_pct - prev_habit_pct if prev_habit_pct else None,
+        gym_days=repository.attended_days(session, GymSession, week_start, week_end),
+        mma_days=repository.attended_days(session, MmaSession, week_start, week_end),
+        avg_mood=avg_mood,
+        mood_level=mood_level(avg_mood),
+        review=WeeklyReviewOut.model_validate(review) if review else None,
+    )

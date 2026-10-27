@@ -8,5 +8,22 @@ from app.modules.rutina.rutina_model import (
     RoutineCompletion,
     WeeklyReview,
 )
+from app.modules.rutina.rutina_service import (
+    block_runs_on,
+    done_per_day,
+    expected_per_day,
+    habit_runs_on,
+)
 
-__all__ = ["Habit", "HabitLog", "RoutineBlock", "RoutineCompletion", "WeeklyReview", "router"]
+__all__ = [
+    "Habit",
+    "HabitLog",
+    "RoutineBlock",
+    "RoutineCompletion",
+    "WeeklyReview",
+    "block_runs_on",
+    "done_per_day",
+    "expected_per_day",
+    "habit_runs_on",
+    "router",
+]

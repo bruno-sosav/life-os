@@ -1,5 +1,7 @@
+from collections.abc import Iterable, Sequence
 from datetime import date
 
+import pandas as pd
 from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
@@ -105,3 +107,33 @@ def upsert_weekly_review(
     review.went_well = payload.went_well
     review.would_change = payload.would_change
     return base_repository.save(session, review)
+
+
+# ─── Qué toca cada día (lo usan dashboard y analytics) ──────
+def habit_runs_on(habit: Habit, dow: int) -> bool:
+    return not habit.days_of_week or dow in habit.days_of_week
+
+
+def block_runs_on(block: RoutineBlock, day: date) -> bool:
+    if not block.repeat_weekly:
+        return block.specific_date == day
+    if block.days_of_week:
+        return day.weekday() in block.days_of_week
+    return block.day_of_week == day.weekday()
+
+
+def expected_per_day(
+    days: pd.DatetimeIndex, blocks: Sequence[RoutineBlock], habits: Sequence[Habit]
+) -> pd.Series:
+    """Cantidad de bloques + hábitos agendados para cada día."""
+    values = [
+        sum(block_runs_on(b, d.date()) for b in blocks)
+        + sum(habit_runs_on(h, d.weekday()) for h in habits)
+        for d in days
+    ]
+    return pd.Series(values, index=days, dtype="int64")
+
+
+def done_per_day(days: pd.DatetimeIndex, done_dates: Iterable[date]) -> pd.Series:
+    counts = pd.Series(pd.to_datetime(list(done_dates)), dtype="datetime64[ns]").value_counts()
+    return counts.reindex(days, fill_value=0).astype("int64")

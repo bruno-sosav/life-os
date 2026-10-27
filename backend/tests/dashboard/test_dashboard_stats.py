@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
-from app.models import Habit, RoutineBlock
-from app.services.dashboard import global_streak, habit_completion_pct
+from app.modules.dashboard.dashboard_service import global_streak, habit_completion_pct
+from app.modules.rutina import Habit, RoutineBlock
 
 MONDAY = date(2026, 10, 12)
 
