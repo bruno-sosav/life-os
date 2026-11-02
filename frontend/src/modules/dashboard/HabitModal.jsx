@@ -11,7 +11,7 @@ const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
-const empty = { name: '', color: COLORS[0], emoji: '', days_of_week: null, hasTime: false, hour: 8, minute: 0, duration_min: 30, linked_module: null }
+const empty = { name: '', color: COLORS[0], emoji: '', days_of_week: null, hasTime: false, hour: 8, minute: 0, duration_min: 30 }
 
 export default function HabitModal({ open, onClose, initial, onSaved }) {
   const [form, setForm] = useState(empty)
@@ -28,8 +28,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
         hasTime: !!initial.start_time,
         hour: parts?.[0] ?? 8,
         minute: parts?.[1] ?? 0,
-        duration_min: initial.duration_min || 30,
-        linked_module: initial.linked_module || null
+        duration_min: initial.duration_min || 30
       })
     } else {
       setForm(empty)
@@ -53,8 +52,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
       emoji: form.emoji || null,
       days_of_week: form.days_of_week,
       start_time: startTime,
-      duration_min: startTime ? Number(form.duration_min) : null,
-      linked_module: form.linked_module || null
+      duration_min: startTime ? Number(form.duration_min) : null
     }
     try {
       if (initial?.id) await updateHabit(initial.id, payload)
@@ -157,20 +155,6 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
                 style={{ backgroundColor: c }} />
             ))}
           </div>
-        </div>
-
-        <div>
-          <label className="label">Sincronizar con pestaña</label>
-          <div className="flex gap-1.5">
-            {[{ label: 'Ninguna', v: null }, { label: '🏋️ Gym', v: 'gym' }, { label: '🥊 MMA', v: 'mma' }].map((opt) => (
-              <button
-                key={String(opt.v)} type="button"
-                onClick={() => setForm({ ...form, linked_module: opt.v })}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${form.linked_module === opt.v ? 'bg-[#BF5AF2] text-white' : 'bg-white/[0.06] text-white/40'}`}
-              >{opt.label}</button>
-            ))}
-          </div>
-          <p className="text-[11px] text-white/30 mt-1.5">Al marcar este hábito como hecho, también aparece en la pestaña correspondiente</p>
         </div>
 
         <div>

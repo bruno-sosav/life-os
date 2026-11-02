@@ -1,19 +1,21 @@
-import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { Routes, Route, NavLink, Navigate, useParams } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader.jsx'
-import Gym from './Gym.jsx'
-import MMA from './MMA.jsx'
+import { useAsync } from '../../hooks/useAsync.js'
+import { fetchActivities } from './queries.js'
+import Actividad from './Actividad.jsx'
+import Actividades from './Actividades.jsx'
 import Peso from './Peso.jsx'
 
-const TABS = [
-  { to: 'gym', label: 'Gym' },
-  { to: 'mma', label: 'MMA' },
-  { to: 'peso', label: 'Peso & Nutrición' }
-]
-
-function FisicoTabs() {
+function FisicoTabs({ activities }) {
+  // Solo las activas: las pausadas se gestionan (y reactivan) desde "Actividades"
+  const tabs = [
+    ...activities.filter((a) => a.active).map((a) => ({ to: a.id, label: `${a.emoji ? `${a.emoji} ` : ''}${a.name}` })),
+    { to: 'peso', label: 'Peso & Nutrición' },
+    { to: 'actividades', label: '⚙︎ Actividades' }
+  ]
   return (
-    <div className="inline-flex p-1 bg-ink-800 border border-white/[0.05] rounded-xl">
-      {TABS.map((t) => (
+    <div className="inline-flex flex-wrap p-1 bg-ink-800 border border-white/[0.05] rounded-xl">
+      {tabs.map((t) => (
         <NavLink
           key={t.to}
           to={t.to}
@@ -30,16 +32,29 @@ function FisicoTabs() {
   )
 }
 
+function ActividadRoute({ activities }) {
+  const { activityId } = useParams()
+  const activity = activities.find((a) => a.id === activityId)
+  if (!activity) return <Navigate to="../actividades" replace />
+  return <Actividad key={activity.id} activity={activity} />
+}
+
 export default function Fisico() {
+  const activitiesQ = useAsync(() => fetchActivities(), [])
+  const activities = activitiesQ.data || []
+  const first = activities.find((a) => a.active)
+
   return (
     <div>
-      <PageHeader title="Físico" subtitle="Gym, MMA, peso y nutrición" actions={<FisicoTabs />} />
-      <Routes>
-        <Route index element={<Navigate to="gym" replace />} />
-        <Route path="gym" element={<Gym />} />
-        <Route path="mma" element={<MMA />} />
-        <Route path="peso" element={<Peso />} />
-      </Routes>
+      <PageHeader title="Físico" subtitle="Tus actividades, peso y nutrición" actions={<FisicoTabs activities={activities} />} />
+      {activitiesQ.data && (
+        <Routes>
+          <Route index element={<Navigate to={first ? first.id : 'actividades'} replace />} />
+          <Route path="peso" element={<Peso />} />
+          <Route path="actividades" element={<Actividades activities={activities} onChanged={activitiesQ.refetch} />} />
+          <Route path=":activityId" element={<ActividadRoute activities={activities} />} />
+        </Routes>
+      )}
     </div>
   )
 }

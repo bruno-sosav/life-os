@@ -42,6 +42,18 @@ def test_habit_crud(client: TestClient) -> None:
     assert agenda(client)["total"] == 0
 
 
+def test_list_habits_by_time_and_active(client: TestClient) -> None:
+    create_habit(client, name="Sin hora")
+    create_habit(client, name="Tarde", start_time="18:00")
+    create_habit(client, name="Mañana", start_time="07:00")
+    paused = create_habit(client, name="Pausado")
+    client.patch(f"/api/habits/{paused['id']}", json={"active": False})
+
+    names = [h["name"] for h in client.get("/api/habits", params={"active": True}).json()]
+    assert names == ["Mañana", "Tarde", "Sin hora"]
+    assert len(client.get("/api/habits").json()) == 4
+
+
 def test_habit_validation(client: TestClient) -> None:
     assert client.post("/api/habits", json={"name": "X", "days_of_week": [7]}).status_code == 422
     assert client.post("/api/habits", json={"name": ""}).status_code == 422

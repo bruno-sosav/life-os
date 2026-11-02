@@ -137,13 +137,15 @@ export default function Analytics() {
     </div>
   )
 
-  const { bruce, kpis, habits_by_week: habitsByWeek, gym_vs_mma: gymVsMma } = s
+  const { bruce, kpis, habits_by_week: habitsByWeek } = s
   const level = BRUCE_LEVELS[bruce.level]
-  const gymVsMmaData = [
-    { name: 'Gym', value: gymVsMma.gym, color: '#30D158' },
-    { name: 'MMA', value: gymVsMma.mma, color: '#FF9F0A' },
-  ]
-  const hasWorkouts = gymVsMma.gym > 0 || gymVsMma.mma > 0
+  // Incluye actividades pausadas si tuvieron sesiones en el período
+  const activityData = s.activity_distribution.map((a, i) => ({
+    name: `${a.emoji ? `${a.emoji} ` : ''}${a.name}`,
+    value: a.count,
+    color: a.color || HABIT_COLORS[i % HABIT_COLORS.length],
+  }))
+  const hasWorkouts = activityData.length > 0
   const hasFinance = s.finance_monthly.some(m => m.income > 0 || m.expenses > 0)
 
   return (
@@ -210,7 +212,7 @@ export default function Analytics() {
           note="consecutivos con hábitos"
         />
         <KPICard label="Mejor racha" value={kpis.best_streak} suffix=" días" color="#FFD700" note="en los últimos 90 días" />
-        <KPICard label="Entrenos (mes)" value={kpis.workouts_month} color="#30D158" note="gym + MMA este mes" />
+        <KPICard label="Entrenos (mes)" value={kpis.workouts_month} color="#30D158" note="todas las actividades" />
         <KPICard label="Hábitos (mes)" value={`${kpis.habit_month_pct}%`} color="#BF5AF2" note="completados del total" />
         <KPICard
           label="Peso actual"
@@ -369,13 +371,13 @@ export default function Analytics() {
           </div>
         </Card>
 
-        <Card title="Gym vs MMA" subtitle="Distribución de entrenos · 30 días">
+        <Card title="Actividades" subtitle="Distribución de entrenos · 30 días">
           <div className="h-48">
             {hasWorkouts ? (
               <ResponsiveContainer>
                 <PieChart>
-                  <Pie data={gymVsMmaData} cx="50%" cy="45%" innerRadius={45} outerRadius={72} dataKey="value" paddingAngle={3}>
-                    {gymVsMmaData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                  <Pie data={activityData} cx="50%" cy="45%" innerRadius={45} outerRadius={72} dataKey="value" paddingAngle={3}>
+                    {activityData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
                   <Tooltip {...TT} formatter={(v, n) => [`${v} sesiones`, n]} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />

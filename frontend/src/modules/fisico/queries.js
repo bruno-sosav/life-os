@@ -4,39 +4,53 @@ import { todayISO } from '../../lib/dates.js'
 
 const daysAgoISO = (n) => format(subDays(new Date(), n), 'yyyy-MM-dd')
 
-// ─── Gym ────────────────────────────────────────────────────
-// Cada sesión trae sus ejercicios en `exercises`
-export const fetchGymSessions = (limit = 50) => api('/gym/sessions', { params: { limit } })
+// ─── Actividades (las definís vos, con sus campos) ──────────
+// Campo: { id, name, type, unit, options, archived }
+// type: 'numero' | 'texto' | 'si_no' | 'opcion' | 'escala' | 'ejercicios'
+export const fetchActivities = () => api('/activities')
 
-export const createGymSession = ({ date, routine_name, attended = true, notes, exercises = [] }) =>
-  api('/gym/sessions', { method: 'POST', body: { date, routine_name, attended, notes, exercises } })
+export const createActivity = (payload) => api('/activities', { method: 'POST', body: payload })
 
-export const deleteGymSession = (id) => api(`/gym/sessions/${id}`, { method: 'DELETE' })
+// `fields` es la lista completa: un campo que no viene queda archivado (no se borra)
+export const updateActivity = (id, patch) =>
+  api(`/activities/${id}`, { method: 'PATCH', body: patch })
 
-// Un punto por sesión: { date, max_weight_kg }
-export const fetchExerciseProgression = (exerciseName) =>
-  api('/gym/exercises/progression', { params: { name: exerciseName } })
+// Borra también todas sus sesiones. Para dejar de verla sin perder nada: pausarla.
+export const deleteActivity = (id) => api(`/activities/${id}`, { method: 'DELETE' })
 
-export const fetchAllExerciseNames = () => api('/gym/exercises/names')
+// Para elegir el hábito vinculado (la asistencia se marca en ese hábito)
+export const fetchActiveHabits = () => api('/habits', { params: { active: true } })
 
-// ─── MMA ────────────────────────────────────────────────────
-export const fetchMMASessions = () => api('/mma/sessions')
+// ─── Sesiones ───────────────────────────────────────────────
+// Cada sesión trae `values` ({ field_id: valor }) y `exercises`
+export const fetchSessions = (activityId, limit = 50) =>
+  api('/sessions', { params: { activity_id: activityId, limit } })
 
-export const createMMASession = (payload) => api('/mma/sessions', { method: 'POST', body: payload })
+export const createSession = (payload) => api('/sessions', { method: 'POST', body: payload })
 
-export const deleteMMASession = (id) => api(`/mma/sessions/${id}`, { method: 'DELETE' })
+export const deleteSession = (id) => api(`/sessions/${id}`, { method: 'DELETE' })
 
-// Calendario del mes de `monthISO`: { count, days: [{ date, attended: true | false | null }] }
-export const fetchMMAMonth = (monthISO) => api('/mma/month', { params: { month: monthISO } })
-
-// ─── Asistencia semanal (module: 'gym' | 'mma') ─────────────
+// ─── Asistencia y calendario ────────────────────────────────
 // Sale del hábito vinculado si hay uno; si no, de las sesiones. { habit, days: [{ date, attended }] }
-export const fetchAttendanceWeek = (module) =>
-  api(`/${module}/week`, { params: { today: todayISO() } })
+export const fetchAttendanceWeek = (activityId) =>
+  api(`/activities/${activityId}/week`, { params: { today: todayISO() } })
 
 // Alterna la asistencia del día; devuelve { date, attended }
-export const toggleAttendance = (module, dateISO) =>
-  api(`/${module}/attendance/${dateISO}`, { method: 'PUT' })
+export const toggleAttendance = (activityId, dateISO) =>
+  api(`/activities/${activityId}/attendance/${dateISO}`, { method: 'PUT' })
+
+// { count, days: [{ date, attended: true | false | null }] }
+export const fetchActivityMonth = (activityId, monthISO) =>
+  api(`/activities/${activityId}/month`, { params: { month: monthISO } })
+
+// ─── Gráficos: un punto por sesión, [{ date, value }] ───────
+export const fetchExerciseNames = (activityId) => api(`/activities/${activityId}/exercises/names`)
+
+export const fetchExerciseProgression = (activityId, name) =>
+  api(`/activities/${activityId}/exercises/progression`, { params: { name } })
+
+export const fetchFieldSeries = (activityId, fieldId) =>
+  api(`/activities/${activityId}/fields/${fieldId}/series`)
 
 // ─── Peso / Nutrición ───────────────────────────────────────
 export const fetchWeightLogs = (rangeDays = 90) =>

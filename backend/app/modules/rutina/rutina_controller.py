@@ -23,6 +23,12 @@ CREATED = status.HTTP_201_CREATED
 NO_CONTENT = status.HTTP_204_NO_CONTENT
 
 
+@router.get("/habits", response_model=list[HabitOut])
+def list_habits(session: SessionDep, active: bool | None = None) -> list[Habit]:
+    """Lo usa Físico para elegir el hábito vinculado a una actividad."""
+    return service.list_habits(session, active)
+
+
 @router.post("/habits", response_model=HabitOut, status_code=CREATED)
 def create_habit(payload: HabitCreate, session: SessionDep) -> Habit:
     return service.create_habit(session, payload)

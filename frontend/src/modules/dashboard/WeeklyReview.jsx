@@ -89,8 +89,9 @@ export default function WeeklyReview({ open, onClose }) {
               color="#BF5AF2"
               sub={MOOD_LABELS[week.mood_level] ?? ''}
             />
-            <KPITile label="Días de Gym" value={week.gym_days} color="#30D158" />
-            <KPITile label="Días de MMA" value={week.mma_days} color="#FF9F0A" />
+            {week.activity_days.map((a) => (
+              <KPITile key={a.id} label={`Días de ${a.emoji ? `${a.emoji} ` : ''}${a.name}`} value={a.days} color={a.color || '#30D158'} />
+            ))}
           </div>
         ) : (
           <div className="text-sm text-white/30 text-center py-2">Sin datos por ahora.</div>
