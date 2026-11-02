@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import Card from '../../components/Card.jsx'
 import Button from '../../components/Button.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
-import { fetchMoodLogs, upsertMoodLog } from './queries.js'
+import { fetchMoodLogs, fetchMoodAverage, upsertMoodLog } from './queries.js'
 import { todayISO } from '../../lib/dates.js'
 import { toast } from '../../store/toastStore.js'
 import {
@@ -13,7 +13,8 @@ const MOOD_ICONS = ['😞', '😕', '😐', '🙂', '😄']
 const ENERGY_ICONS = ['⚡', '⚡⚡', '⚡⚡⚡', '⚡⚡⚡⚡', '🔥']
 
 export default function MoodTracker() {
-  const moodQ = useAsync(() => fetchMoodLogs(30), [])
+  const moodQ = useAsync(() => fetchMoodLogs(14), [])
+  const averageQ = useAsync(() => fetchMoodAverage(), [])
   const today = todayISO()
   const todayLog = (moodQ.data || []).find((m) => m.date === today)
 
@@ -35,16 +36,12 @@ export default function MoodTracker() {
       await upsertMoodLog({ date: today, mood_score: score, energy_score: energy, sleep_hours: sleep, notes: notes || null })
       toast.success('Estado guardado ✓')
       moodQ.refetch()
+      averageQ.refetch()
     } catch (e) { toast.error(e.message) }
   }
 
-  const avgMood = useMemo(() => {
-    const last7 = (moodQ.data || []).slice(-7)
-    return last7.length ? (last7.reduce((s, m) => s + (m.mood_score || 0), 0) / last7.length).toFixed(1) : '—'
-  }, [moodQ.data])
-
   const chartData = useMemo(() =>
-    (moodQ.data || []).slice(-14).map((m) => ({
+    (moodQ.data || []).map((m) => ({
       date: m.date.slice(5),
       mood: m.mood_score,
       sueño: Number(m.sleep_hours)
@@ -52,7 +49,7 @@ export default function MoodTracker() {
 
   return (
     <div className="space-y-4">
-      <Card title="Estado de hoy" subtitle={`Mood promedio 7d: ${avgMood}/5`}>
+      <Card title="Estado de hoy" subtitle={`Mood promedio 7d: ${averageQ.data?.avg_mood ?? '—'}/5`}>
         <div className="space-y-4">
           <div>
             <label className="label">Mood</label>

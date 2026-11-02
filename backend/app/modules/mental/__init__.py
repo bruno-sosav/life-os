@@ -2,5 +2,6 @@
 
 from app.modules.mental.mental_controller import router
 from app.modules.mental.mental_model import Book, Idea, JournalEntry, MoodLog
+from app.modules.mental.mental_service import avg_mood
 
-__all__ = ["Book", "Idea", "JournalEntry", "MoodLog", "router"]
+__all__ = ["Book", "Idea", "JournalEntry", "MoodLog", "avg_mood", "router"]

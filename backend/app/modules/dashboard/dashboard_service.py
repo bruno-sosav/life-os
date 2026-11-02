@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.core.fechas_util import days_between, week_bounds
 from app.core.numeros_util import js_round
-from app.modules.dashboard import dashboard_repository as repository
 from app.modules.dashboard.dashboard_schema import (
     ActivityDays,
     MoodLevel,
@@ -17,6 +16,7 @@ from app.modules.dashboard.dashboard_schema import (
     WeeklyReviewSummary,
 )
 from app.modules.fisico import Activity, attended_days, list_activities
+from app.modules.mental import avg_mood
 from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
@@ -213,8 +213,8 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
 
     habit_pct = habit_completion_pct(week_start, today, habits, done) or 0
     prev_habit_pct = habit_completion_pct(prev_start, today, habits, done)
-    avg = repository.avg_mood(session, week_start, week_end)
-    avg_mood = round(avg, 2) if avg is not None else None
+    avg = avg_mood(session, week_start, week_end)
+    mood = round(avg, 2) if avg is not None else None
     review = weekly_review_of(session, week_start)
     return WeeklyReviewSummary(
         week_start=week_start,
@@ -226,7 +226,7 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
         activity_days=activity_days(
             list_activities(session), attended_days(session, week_start, week_end)
         ),
-        avg_mood=avg_mood,
-        mood_level=mood_level(avg_mood),
+        avg_mood=mood,
+        mood_level=mood_level(mood),
         review=WeeklyReviewOut.model_validate(review) if review else None,
     )

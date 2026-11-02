@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -11,13 +11,26 @@ from app.modules.mental.mental_schema import (
     BookUpdate,
     IdeaIn,
     JournalEntryIn,
+    Library,
+    MoodAverage,
     MoodLogIn,
+    Shelves,
+    TagCount,
 )
 
 
 # ─── Libros ─────────────────────────────────────────────────
-def list_books(session: Session) -> list[Book]:
-    return repository.list_books(session)
+def library(session: Session, today: date) -> Library:
+    """Los libros agrupados por estante y cuántos se terminaron en el año de `today`."""
+    books = repository.list_books(session)
+    read = [b for b in books if b.status == "leido"]
+    return Library(
+        shelves=Shelves.model_validate(
+            {status: [b for b in books if b.status == status] for status in Shelves.model_fields}
+        ),
+        year=today.year,
+        read_this_year=sum(1 for b in read if b.finished_at and b.finished_at.year == today.year),
+    )
 
 
 def create_book(session: Session, payload: BookIn) -> Book:
@@ -40,6 +53,15 @@ def list_mood_logs(session: Session, start: date | None) -> list[MoodLog]:
     return repository.list_mood_logs(session, start)
 
 
+def avg_mood(session: Session, start: date, end: date) -> float | None:
+    return repository.avg_mood(session, start, end)
+
+
+def mood_average(session: Session, today: date) -> MoodAverage:
+    avg = avg_mood(session, today - timedelta(days=6), today)
+    return MoodAverage(avg_mood=round(avg, 1) if avg is not None else None)
+
+
 def upsert_mood_log(session: Session, day: date, payload: MoodLogIn) -> MoodLog:
     log = repository.mood_log_of(session, day) or MoodLog(date=day)
     return base_repository.save(session, base_repository.apply(log, payload.model_dump()))
@@ -59,8 +81,12 @@ def delete_journal_entry(session: Session, entry_id: str) -> None:
 
 
 # ─── Ideas ──────────────────────────────────────────────────
-def list_ideas(session: Session) -> list[Idea]:
-    return repository.list_ideas(session)
+def list_ideas(session: Session, tag: str | None) -> list[Idea]:
+    return repository.list_ideas(session, tag)
+
+
+def list_tags(session: Session) -> list[TagCount]:
+    return [TagCount(tag=tag, count=n) for tag, n in repository.tag_counts(session)]
 
 
 def create_idea(session: Session, payload: IdeaIn) -> Idea:

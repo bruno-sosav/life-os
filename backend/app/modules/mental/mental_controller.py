@@ -13,17 +13,21 @@ from app.modules.mental.mental_schema import (
     IdeaOut,
     JournalEntryIn,
     JournalEntryOut,
+    Library,
+    MoodAverage,
     MoodLogIn,
     MoodLogOut,
+    TagCount,
 )
 
 router = APIRouter(tags=["mental"])
 NO_CONTENT = status.HTTP_204_NO_CONTENT
 
 
-@router.get("/books", response_model=list[BookOut])
-def list_books(session: SessionDep) -> list[Book]:
-    return service.list_books(session)
+@router.get("/books/library", response_model=Library)
+def library(today: date, session: SessionDep) -> Library:
+    """Estantes (pendiente, leyendo, leído) y libros leídos en el año."""
+    return service.library(session, today)
 
 
 @router.post("/books", response_model=BookOut, status_code=status.HTTP_201_CREATED)
@@ -45,6 +49,11 @@ def delete_book(book_id: str, session: SessionDep) -> Response:
 @router.get("/mood-logs", response_model=list[MoodLogOut])
 def list_mood_logs(session: SessionDep, start: date | None = None) -> list[MoodLog]:
     return service.list_mood_logs(session, start)
+
+
+@router.get("/mood-logs/average", response_model=MoodAverage)
+def mood_average(today: date, session: SessionDep) -> MoodAverage:
+    return service.mood_average(session, today)
 
 
 @router.put("/mood-logs/{day}", response_model=MoodLogOut)
@@ -71,8 +80,14 @@ def delete_journal_entry(entry_id: str, session: SessionDep) -> Response:
 
 
 @router.get("/ideas", response_model=list[IdeaOut])
-def list_ideas(session: SessionDep) -> list[Idea]:
-    return service.list_ideas(session)
+def list_ideas(session: SessionDep, tag: str | None = None) -> list[Idea]:
+    return service.list_ideas(session, tag)
+
+
+@router.get("/ideas/tags", response_model=list[TagCount])
+def list_tags(session: SessionDep) -> list[TagCount]:
+    """Etiquetas en uso, para filtrar y para elegir al cargar una idea."""
+    return service.list_tags(session)
 
 
 @router.post("/ideas", response_model=IdeaOut, status_code=status.HTTP_201_CREATED)

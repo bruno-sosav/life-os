@@ -6,7 +6,7 @@ import Journal from './Journal.jsx'
 import MentalIdeas from './MentalIdeas.jsx'
 import MoodTracker from './MoodTracker.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
-import { fetchBooks } from './queries.js'
+import { fetchLibrary } from './queries.js'
 
 const TABS = [
   { value: 'libros',  label: 'Libros',   icon: '📚' },
@@ -17,7 +17,7 @@ const TABS = [
 
 export default function Mental() {
   const [tab, setTab] = useState('libros')
-  const booksQ = useAsync(() => fetchBooks(), [])
+  const libraryQ = useAsync(() => fetchLibrary(), [])
 
   return (
     <div>
@@ -28,7 +28,7 @@ export default function Mental() {
         actions={<Tabs items={TABS} value={tab} onChange={setTab} />}
       />
 
-      {tab === 'libros' && <Books books={booksQ.data || []} onChange={booksQ.refetch} />}
+      {tab === 'libros' && libraryQ.data && <Books library={libraryQ.data} onChange={libraryQ.refetch} />}
       {tab === 'diario' && <Journal />}
       {tab === 'ideas'  && <MentalIdeas />}
       {tab === 'estado' && <MoodTracker />}

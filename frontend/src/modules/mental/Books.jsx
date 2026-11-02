@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Card from '../../components/Card.jsx'
 import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
@@ -11,25 +11,16 @@ const SHELVES = [
   { key: 'leido', label: '✅ Leídos' }
 ]
 
-export default function Books({ books, onChange }) {
+// Los estantes y el conteo del año vienen agrupados del backend
+export default function Books({ library, onChange }) {
   const [editing, setEditing] = useState(null)
   const [adding, setAdding] = useState(false)
-
-  const grouped = useMemo(() => {
-    const g = { leyendo: [], pendiente: [], leido: [] }
-    books.forEach((b) => g[b.status]?.push(b))
-    return g
-  }, [books])
-
-  const yearRead = useMemo(() => {
-    const year = new Date().getFullYear()
-    return books.filter((b) => b.status === 'leido' && b.finished_at && new Date(b.finished_at).getFullYear() === year).length
-  }, [books])
+  const grouped = library.shelves
 
   return (
     <Card
       title="Biblioteca"
-      subtitle={`${yearRead} libros leídos en ${new Date().getFullYear()}`}
+      subtitle={`${library.read_this_year} libros leídos en ${library.year}`}
       action={<Button size="sm" onClick={() => setAdding(true)}>+ Libro</Button>}
     >
       <div className="space-y-5">

@@ -5,37 +5,46 @@ import Modal from '../../components/Modal.jsx'
 import Badge from '../../components/Badge.jsx'
 import EmptyState from '../../components/EmptyState.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
-import { fetchMentalIdeas, createMentalIdea, deleteMentalIdea } from './queries.js'
+import { fetchMentalIdeas, fetchIdeaTags, createMentalIdea, deleteMentalIdea } from './queries.js'
 import { fmt } from '../../lib/dates.js'
 import { toast } from '../../store/toastStore.js'
 
-const TAGS = [
-  { value: 'frase', label: '💬 Frase', color: '#0A84FF' },
-  { value: 'idea de negocio', label: '💼 Negocio', color: '#FF9F0A' },
-  { value: 'aprendizaje', label: '📚 Aprendizaje', color: '#30D158' },
-  { value: 'meta', label: '🎯 Meta', color: '#BF5AF2' },
-  { value: 'idea', label: '💡 Idea', color: '#5AC8FA' }
-]
+const COLORS = ['#0A84FF', '#FF9F0A', '#30D158', '#BF5AF2', '#5AC8FA', '#FF453A', '#FFD60A']
+const DEFAULT_TAG = '💡 Idea'
+
+// Las etiquetas son libres: cada una toma siempre el mismo color a partir de su texto
+function tagColor(tag) {
+  let hash = 0
+  for (const ch of tag) hash = (hash * 31 + ch.codePointAt(0)) >>> 0
+  return COLORS[hash % COLORS.length]
+}
 
 export default function MentalIdeas() {
-  const ideasQ = useAsync(() => fetchMentalIdeas(), [])
-  const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState(null)
-  const [form, setForm] = useState({ text: '', author: '', tag: 'idea' })
-
-  const filtered = filter
-    ? (ideasQ.data || []).filter((i) => i.tag === filter)
-    : (ideasQ.data || [])
+  const ideasQ = useAsync(() => fetchMentalIdeas(filter), [filter])
+  const tagsQ = useAsync(() => fetchIdeaTags(), [])
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ text: '', author: '', tag: DEFAULT_TAG })
+  const tags = (tagsQ.data || []).map((t) => t.tag)
+  const ideas = ideasQ.data || []
 
   async function save() {
     if (!form.text.trim()) return
     try {
-      await createMentalIdea({ text: form.text.trim(), author: form.author.trim() || null, tag: form.tag })
+      await createMentalIdea({ text: form.text.trim(), author: form.author.trim() || null, tag: form.tag.trim() || DEFAULT_TAG })
       toast.success('Guardada ✓')
-      setForm({ text: '', author: '', tag: 'idea' })
+      setForm({ text: '', author: '', tag: DEFAULT_TAG })
       setAdding(false)
       ideasQ.refetch()
+      tagsQ.refetch()
     } catch (e) { toast.error(e.message) }
+  }
+
+  async function remove(id) {
+    await deleteMentalIdea(id)
+    toast.success('Eliminada')
+    ideasQ.refetch()
+    tagsQ.refetch()
   }
 
   return (
@@ -46,14 +55,18 @@ export default function MentalIdeas() {
           onClick={() => setFilter(null)}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${!filter ? 'bg-white/[0.14] text-white' : 'text-white/35 hover:text-white'}`}
         >Todas</button>
-        {TAGS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setFilter(filter === t.value ? null : t.value)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${filter === t.value ? 'text-white' : 'text-white/35 hover:text-white'}`}
-            style={filter === t.value ? { background: `${t.color}33`, border: `1px solid ${t.color}50`, color: t.color } : { background: 'rgba(255,255,255,0.06)' }}
-          >{t.label}</button>
-        ))}
+        {(tagsQ.data || []).map(({ tag, count }) => {
+          const color = tagColor(tag)
+          return (
+            <button
+              key={tag}
+              aria-pressed={filter === tag}
+              onClick={() => setFilter(filter === tag ? null : tag)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${filter === tag ? 'text-white' : 'text-white/35 hover:text-white'}`}
+              style={filter === tag ? { background: `${color}33`, border: `1px solid ${color}50`, color } : { background: 'rgba(255,255,255,0.06)' }}
+            >{tag} <span className="opacity-60">· {count}</span></button>
+          )
+        })}
       </div>
 
       <Card
@@ -61,25 +74,25 @@ export default function MentalIdeas() {
        
         action={<Button size="sm" color="purple" onClick={() => setAdding(true)}>+ Nueva</Button>}
       >
-        {!filtered.length ? (
+        {!ideas.length ? (
           <EmptyState icon="💡" title="Sin ideas" description="Guardá frases, ideas y aprendizajes." />
         ) : (
           <ul className="divide-y divide-white/[0.04]">
-            {filtered.map((idea) => {
-              const tagInfo = TAGS.find((t) => t.value === idea.tag)
+            {ideas.map((idea) => {
               return (
                 <li key={idea.id} className="py-3 group flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium leading-snug">"{idea.text}"</p>
                     {idea.author && <p className="text-xs text-white/35 mt-0.5">— {idea.author}</p>}
                     <div className="flex items-center gap-2 mt-1.5">
-                      {tagInfo && <Badge color={tagInfo.color}>{tagInfo.label}</Badge>}
+                      <Badge color={tagColor(idea.tag)}>{idea.tag}</Badge>
                       <span className="text-[11px] text-white/25">{fmt(idea.created_at, 'd MMM')}</span>
                     </div>
                   </div>
                   <button
-                    onClick={() => deleteMentalIdea(idea.id).then(() => { toast.success('Eliminada'); ideasQ.refetch() })}
-                    className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs shrink-0 mt-0.5"
+                    onClick={() => remove(idea.id)}
+                    aria-label="Eliminar idea"
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/25 hover:text-[#FF453A] text-xs shrink-0 mt-0.5"
                   >✕</button>
                 </li>
               )
@@ -95,15 +108,22 @@ export default function MentalIdeas() {
           <div><label className="label">Texto</label><textarea className="input min-h-[100px]" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder='"La disciplina es hacer lo que tenés que hacer..."' /></div>
           <div><label className="label">Autor (opcional)</label><input className="input" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} placeholder="Nombre del autor" /></div>
           <div>
-            <label className="label">Tipo</label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {TAGS.map((t) => (
-                <button key={t.value} type="button" onClick={() => setForm({ ...form, tag: t.value })}
-                  className={`py-2 rounded-xl text-xs font-semibold transition ${form.tag === t.value ? 'text-white' : 'bg-white/[0.06] text-white/40'}`}
-                  style={form.tag === t.value ? { background: `${t.color}33`, border: `1px solid ${t.color}50`, color: t.color } : {}}
-                >{t.label}</button>
-              ))}
-            </div>
+            <label className="label" htmlFor="idea-tag">Etiqueta</label>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {tags.map((tag) => {
+                  const color = tagColor(tag)
+                  return (
+                    <button key={tag} type="button" aria-pressed={form.tag === tag} onClick={() => setForm({ ...form, tag })}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${form.tag === tag ? 'text-white' : 'bg-white/[0.06] text-white/40'}`}
+                      style={form.tag === tag ? { background: `${color}33`, border: `1px solid ${color}50`, color } : {}}
+                    >{tag}</button>
+                  )
+                })}
+              </div>
+            )}
+            <input id="idea-tag" className="input" value={form.tag} maxLength={30}
+              onChange={(e) => setForm({ ...form, tag: e.target.value })} placeholder="Elegí una o escribí una nueva: 🎬 Película" />
           </div>
         </div>
       </Modal>

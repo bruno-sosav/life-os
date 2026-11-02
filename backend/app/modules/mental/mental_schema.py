@@ -1,12 +1,15 @@
 import datetime as dt
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.core.base_schema import ORMModel, UTCDateTime
 
+# Los estados de libro quedan fijos: "leido" tiene reglas (cuenta en Stats)
 BookStatus = Literal["pendiente", "leyendo", "leido"]
-IdeaTag = Literal["idea", "frase", "idea de negocio", "aprendizaje", "meta"]
+# Las etiquetas de ideas son libres: se ven tal cual, emoji incluido ("💬 Frase")
+IdeaTag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
+DEFAULT_TAG = "💡 Idea"
 Score = Field(default=None, ge=1, le=5)
 
 
@@ -36,6 +39,18 @@ class BookOut(BookIn, ORMModel):
     created_at: UTCDateTime
 
 
+class Shelves(BaseModel):
+    pendiente: list[BookOut]
+    leyendo: list[BookOut]
+    leido: list[BookOut]
+
+
+class Library(BaseModel):
+    shelves: Shelves
+    year: int
+    read_this_year: int  # leídos con fecha de fin en el año de `today`
+
+
 # ─── Mood ───────────────────────────────────────────────────
 class MoodLogIn(BaseModel):
     mood_score: int | None = Score
@@ -48,6 +63,10 @@ class MoodLogOut(MoodLogIn, ORMModel):
     id: str
     date: dt.date
     created_at: UTCDateTime
+
+
+class MoodAverage(BaseModel):
+    avg_mood: float | None  # promedio de los últimos 7 días, o None sin registros
 
 
 # ─── Diario ─────────────────────────────────────────────────
@@ -66,9 +85,14 @@ class JournalEntryOut(JournalEntryIn, ORMModel):
 class IdeaIn(BaseModel):
     text: str = Field(min_length=1)
     author: str | None = Field(default=None, max_length=255)
-    tag: IdeaTag = "idea"
+    tag: IdeaTag = DEFAULT_TAG
 
 
 class IdeaOut(IdeaIn, ORMModel):
     id: str
     created_at: UTCDateTime
+
+
+class TagCount(BaseModel):
+    tag: str
+    count: int

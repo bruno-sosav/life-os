@@ -47,5 +47,5 @@ class Idea(UUIDPk, CreatedAt, Base):
 
     text: Mapped[str] = mapped_column(Text)
     author: Mapped[str | None] = mapped_column(String(NAME))
-    # 'idea' | 'frase' | 'idea de negocio' | 'aprendizaje' | 'meta'
-    tag: Mapped[str] = mapped_column(String(STATUS), default="idea")
+    # Etiqueta libre, se muestra tal cual ("💬 Frase", "📚 Aprendizaje"…)
+    tag: Mapped[str] = mapped_column(String(STATUS), default="💡 Idea")
