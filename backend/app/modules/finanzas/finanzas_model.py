@@ -12,7 +12,7 @@ class FinanceIncome(UUIDPk, CreatedAt, Base):
 
     month: Mapped[date] = mapped_column(Date, index=True)  # primer día del mes
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    source: Mapped[str | None] = mapped_column(String(NAME))  # 'sueldo' | 'freelance' | 'otro'
+    source: Mapped[str | None] = mapped_column(String(NAME))  # libre: "Sueldo", "Freelance"…
     notes: Mapped[str | None] = mapped_column(Text)
 
 

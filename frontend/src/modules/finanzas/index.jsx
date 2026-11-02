@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { format, startOfMonth, addMonths, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -6,10 +6,12 @@ import Card from '../../components/Card.jsx'
 import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
 import EmptyState from '../../components/EmptyState.jsx'
+import LabelPicker from '../../components/LabelPicker.jsx'
+import { colorFor } from '../../lib/constants.js'
 import { useAsync } from '../../hooks/useAsync.js'
 import { toast } from '../../store/toastStore.js'
 import {
-  fetchMonthIncome, createIncome, deleteIncome,
+  fetchMonthSummary, fetchLabels, fetchMonthIncome, createIncome, deleteIncome,
   fetchMonthExpenses, createExpense, deleteExpense
 } from './queries.js'
 import { fmt } from '../../lib/dates.js'
@@ -17,19 +19,6 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Tooltip, XAxis, YAxis, CartesianGrid
 } from 'recharts'
 
-const CATEGORIES = [
-  { value: 'comida',       label: '🍔 Comida',       color: '#FF9F0A' },
-  { value: 'transporte',   label: '🚗 Transporte',    color: '#0A84FF' },
-  { value: 'salud',        label: '💊 Salud',          color: '#30D158' },
-  { value: 'ocio',         label: '🎮 Ocio',           color: '#BF5AF2' },
-  { value: 'ropa',         label: '👕 Ropa',           color: '#FF453A' },
-  { value: 'educacion',    label: '📚 Educación',      color: '#5AC8FA' },
-  { value: 'servicios',    label: '💡 Servicios',      color: '#FF9F0A' },
-  { value: 'suscripciones',label: '📱 Suscripciones',  color: '#64D2FF' },
-  { value: 'otro',         label: '📦 Otro',           color: '#8E8E93' },
-]
-
-const INCOME_SOURCES = ['sueldo', 'freelance', 'inversión', 'regalo', 'otro']
 
 function fmt$ (n) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
@@ -40,31 +29,21 @@ export default function Finanzas() {
   const [addingIncome, setAddingIncome] = useState(false)
   const [addingExpense, setAddingExpense] = useState(false)
 
-  const incomeQ = useAsync(() => fetchMonthIncome(refDate), [format(refDate, 'yyyy-MM')])
-  const expensesQ = useAsync(() => fetchMonthExpenses(refDate), [format(refDate, 'yyyy-MM')])
+  const monthKey = format(refDate, 'yyyy-MM')
+  const summaryQ = useAsync(() => fetchMonthSummary(refDate), [monthKey])
+  const incomeQ = useAsync(() => fetchMonthIncome(refDate), [monthKey])
+  const expensesQ = useAsync(() => fetchMonthExpenses(refDate), [monthKey])
+  const labelsQ = useAsync(() => fetchLabels(), [])
 
   const income = incomeQ.data || []
   const expenses = expensesQ.data || []
-
-  const totalIncome = useMemo(() => income.reduce((s, i) => s + Number(i.amount), 0), [income])
-  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount), 0), [expenses])
-  const savings = totalIncome - totalExpenses
-  const savingsPct = totalIncome > 0 ? Math.round((savings / totalIncome) * 100) : 0
-
-  const byCategory = useMemo(() => {
-    const m = {}
-    expenses.forEach((e) => {
-      m[e.category] = (m[e.category] || 0) + Number(e.amount)
-    })
-    return CATEGORIES
-      .filter((c) => m[c.value])
-      .map((c) => ({ name: c.label, value: m[c.value], color: c.color }))
-      .sort((a, b) => b.value - a.value)
-  }, [expenses])
+  // Todos los totales vienen calculados del backend
+  const summary = summaryQ.data || { income: 0, expenses: 0, savings: 0, savings_pct: null, spent_pct: null, by_category: [] }
+  const labels = labelsQ.data || { expense_categories: [], income_sources: [] }
 
   const monthLabel = format(refDate, "MMMM yyyy", { locale: es }).replace(/^\w/, c => c.toUpperCase())
 
-  function refetch() { incomeQ.refetch(); expensesQ.refetch() }
+  function refetch() { summaryQ.refetch(); incomeQ.refetch(); expensesQ.refetch(); labelsQ.refetch() }
 
   return (
     <div>
@@ -85,32 +64,32 @@ export default function Finanzas() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <Card>
           <div className="text-[11px] text-white/35">Ingresos</div>
-          <div className="text-lg font-bold text-[#30D158] mt-0.5 tabular-nums">{fmt$(totalIncome)}</div>
+          <div className="text-lg font-bold text-[#30D158] mt-0.5 tabular-nums">{fmt$(summary.income)}</div>
         </Card>
         <Card>
           <div className="text-[11px] text-white/35">Gastos</div>
-          <div className="text-lg font-bold text-[#FF453A] mt-0.5 tabular-nums">{fmt$(totalExpenses)}</div>
+          <div className="text-lg font-bold text-[#FF453A] mt-0.5 tabular-nums">{fmt$(summary.expenses)}</div>
         </Card>
         <Card>
           <div className="text-[11px] text-white/35">Ahorro</div>
-          <div className={`text-lg font-bold mt-0.5 tabular-nums ${savings >= 0 ? 'text-[#0A84FF]' : 'text-[#FF453A]'}`}>{fmt$(savings)}</div>
-          {totalIncome > 0 && <div className="text-[10px] text-white/30 mt-0.5">{savingsPct}% del ingreso</div>}
+          <div className={`text-lg font-bold mt-0.5 tabular-nums ${summary.savings >= 0 ? 'text-[#0A84FF]' : 'text-[#FF453A]'}`}>{fmt$(summary.savings)}</div>
+          {summary.savings_pct != null && <div className="text-[10px] text-white/30 mt-0.5">{summary.savings_pct}% del ingreso</div>}
         </Card>
       </div>
 
       {/* Savings bar */}
-      {totalIncome > 0 && (
+      {summary.spent_pct != null && (
         <div className="mb-4 px-1">
           <div className="flex justify-between text-[11px] text-white/35 mb-1">
             <span>Gastos sobre ingresos</span>
-            <span>{Math.min(100, Math.round((totalExpenses / totalIncome) * 100))}%</span>
+            <span>{summary.spent_pct}%</span>
           </div>
           <div className="h-2 bg-white/[0.07] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${Math.min(100, (totalExpenses / totalIncome) * 100)}%`,
-                background: savingsPct >= 20 ? '#30D158' : savingsPct >= 0 ? '#FF9F0A' : '#FF453A'
+                width: `${summary.spent_pct}%`,
+                background: summary.savings_pct >= 20 ? '#30D158' : summary.savings_pct >= 0 ? '#FF9F0A' : '#FF453A'
               }}
             />
           </div>
@@ -147,20 +126,20 @@ export default function Finanzas() {
 
         {/* Por categoría */}
         <Card title="Por categoría">
-          {!byCategory.length ? (
+          {!summary.by_category.length ? (
             <EmptyState icon="🗂" title="Sin gastos" description="Agregá gastos para ver el desglose." />
           ) : (
             <div className="space-y-2">
-              {byCategory.map((c) => (
-                <div key={c.name}>
+              {summary.by_category.map((c) => (
+                <div key={c.category}>
                   <div className="flex justify-between text-xs mb-0.5">
-                    <span>{c.name}</span>
-                    <span className="tabular-nums text-white/60">{fmt$(c.value)}</span>
+                    <span>{c.category}</span>
+                    <span className="tabular-nums text-white/60">{fmt$(c.total)}</span>
                   </div>
                   <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${(c.value / totalExpenses) * 100}%`, background: c.color }}
+                      style={{ width: `${c.pct}%`, background: colorFor(c.category) }}
                     />
                   </div>
                 </div>
@@ -181,13 +160,12 @@ export default function Finanzas() {
           ) : (
             <ul className="divide-y divide-white/[0.04]">
               {expenses.map((exp) => {
-                const cat = CATEGORIES.find((c) => c.value === exp.category)
                 return (
                   <li key={exp.id} className="py-2.5 flex items-center gap-3 group">
-                    <span className="text-base">{cat?.label.split(' ')[0] || '📦'}</span>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorFor(exp.category) }} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold">{exp.description || cat?.label.slice(3) || exp.category}</div>
-                      <div className="text-xs text-white/35">{fmt(exp.date, "d 'de' MMM")} · {cat?.label.slice(3) || exp.category}</div>
+                      <div className="text-sm font-semibold">{exp.description || exp.category}</div>
+                      <div className="text-xs text-white/35">{fmt(exp.date, "d 'de' MMM")} · {exp.category}</div>
                     </div>
                     <span className="text-sm font-bold text-[#FF453A] tabular-nums">{fmt$(exp.amount)}</span>
                     <button
@@ -202,15 +180,15 @@ export default function Finanzas() {
         </Card>
       </div>
 
-      <IncomeModal open={addingIncome} onClose={() => setAddingIncome(false)} refDate={refDate} onSaved={refetch} />
-      <ExpenseModal open={addingExpense} onClose={() => setAddingExpense(false)} onSaved={refetch} />
+      <IncomeModal open={addingIncome} onClose={() => setAddingIncome(false)} refDate={refDate} onSaved={refetch} sources={labels.income_sources} />
+      <ExpenseModal open={addingExpense} onClose={() => setAddingExpense(false)} onSaved={refetch} categories={labels.expense_categories} />
     </div>
   )
 }
 
-function IncomeModal({ open, onClose, refDate, onSaved }) {
+function IncomeModal({ open, onClose, refDate, onSaved, sources }) {
   const [amount, setAmount] = useState('')
-  const [source, setSource] = useState('sueldo')
+  const [source, setSource] = useState('')
   const [notes, setNotes] = useState('')
 
   async function save() {
@@ -219,7 +197,7 @@ function IncomeModal({ open, onClose, refDate, onSaved }) {
       await createIncome({
         month: format(startOfMonth(refDate), 'yyyy-MM-dd'),
         amount: Number(amount),
-        source,
+        source: source.trim() || null,
         notes: notes.trim() || null
       })
       toast.success('Ingreso guardado ✓')
@@ -236,17 +214,8 @@ function IncomeModal({ open, onClose, refDate, onSaved }) {
           <label className="label">Monto ($)</label>
           <input type="number" min={0} className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="50000" />
         </div>
-        <div>
-          <label className="label">Fuente</label>
-          <div className="flex gap-2 flex-wrap">
-            {INCOME_SOURCES.map((s) => (
-              <button key={s} type="button" onClick={() => setSource(s)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition capitalize ${source === s ? 'bg-[#30D158] text-white' : 'bg-white/[0.07] text-white/50'}`}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
+        <LabelPicker id="income-source" label="Fuente (opcional)" value={source} options={sources}
+          onChange={setSource} placeholder="Elegí una o escribí una nueva: Sueldo, Freelance…" />
         <div>
           <label className="label">Notas (opcional)</label>
           <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Sueldo enero, proyecto X…" />
@@ -256,20 +225,21 @@ function IncomeModal({ open, onClose, refDate, onSaved }) {
   )
 }
 
-function ExpenseModal({ open, onClose, onSaved }) {
+function ExpenseModal({ open, onClose, onSaved, categories }) {
   const today = format(new Date(), 'yyyy-MM-dd')
   const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState('comida')
+  const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(today)
 
   async function save() {
     if (!amount || Number(amount) <= 0) return
+    if (!category.trim()) return toast.error('Elegí o escribí una categoría')
     try {
       await createExpense({
         date,
         amount: Number(amount),
-        category,
+        category: category.trim(),
         description: description.trim() || null
       })
       toast.success('Gasto guardado ✓')
@@ -292,18 +262,8 @@ function ExpenseModal({ open, onClose, onSaved }) {
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
         </div>
-        <div>
-          <label className="label">Categoría</label>
-          <div className="grid grid-cols-3 gap-1.5">
-            {CATEGORIES.map((c) => (
-              <button key={c.value} type="button" onClick={() => setCategory(c.value)}
-                className={`py-2 rounded-xl text-xs font-semibold transition ${category === c.value ? 'text-white' : 'bg-white/[0.06] text-white/40'}`}
-                style={category === c.value ? { background: `${c.color}33`, border: `1px solid ${c.color}50`, color: c.color } : {}}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <LabelPicker id="expense-category" label="Categoría" value={category} options={categories}
+          onChange={setCategory} placeholder="Elegí una o escribí una nueva: 🍔 Comida" />
         <div>
           <label className="label">Descripción (opcional)</label>
           <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Almuerzo, nafta, Netflix…" />

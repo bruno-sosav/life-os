@@ -1,14 +1,14 @@
 import datetime as dt
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field
 
-from app.core.base_schema import ORMModel, UTCDateTime
+from app.core.base_schema import Label, ORMModel, UTCDateTime
 
 # Los estados de libro quedan fijos: "leido" tiene reglas (cuenta en Stats)
 BookStatus = Literal["pendiente", "leyendo", "leido"]
 # Las etiquetas de ideas son libres: se ven tal cual, emoji incluido ("💬 Frase")
-IdeaTag = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
+IdeaTag = Label
 DEFAULT_TAG = "💡 Idea"
 Score = Field(default=None, ge=1, le=5)
 

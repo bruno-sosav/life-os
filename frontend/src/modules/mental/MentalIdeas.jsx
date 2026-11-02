@@ -4,20 +4,14 @@ import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
 import Badge from '../../components/Badge.jsx'
 import EmptyState from '../../components/EmptyState.jsx'
+import LabelPicker from '../../components/LabelPicker.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
 import { fetchMentalIdeas, fetchIdeaTags, createMentalIdea, deleteMentalIdea } from './queries.js'
 import { fmt } from '../../lib/dates.js'
 import { toast } from '../../store/toastStore.js'
+import { colorFor as tagColor } from '../../lib/constants.js'
 
-const COLORS = ['#0A84FF', '#FF9F0A', '#30D158', '#BF5AF2', '#5AC8FA', '#FF453A', '#FFD60A']
 const DEFAULT_TAG = '💡 Idea'
-
-// Las etiquetas son libres: cada una toma siempre el mismo color a partir de su texto
-function tagColor(tag) {
-  let hash = 0
-  for (const ch of tag) hash = (hash * 31 + ch.codePointAt(0)) >>> 0
-  return COLORS[hash % COLORS.length]
-}
 
 export default function MentalIdeas() {
   const [filter, setFilter] = useState(null)
@@ -107,24 +101,8 @@ export default function MentalIdeas() {
         <div className="space-y-3">
           <div><label className="label">Texto</label><textarea className="input min-h-[100px]" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder='"La disciplina es hacer lo que tenés que hacer..."' /></div>
           <div><label className="label">Autor (opcional)</label><input className="input" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} placeholder="Nombre del autor" /></div>
-          <div>
-            <label className="label" htmlFor="idea-tag">Etiqueta</label>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {tags.map((tag) => {
-                  const color = tagColor(tag)
-                  return (
-                    <button key={tag} type="button" aria-pressed={form.tag === tag} onClick={() => setForm({ ...form, tag })}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${form.tag === tag ? 'text-white' : 'bg-white/[0.06] text-white/40'}`}
-                      style={form.tag === tag ? { background: `${color}33`, border: `1px solid ${color}50`, color } : {}}
-                    >{tag}</button>
-                  )
-                })}
-              </div>
-            )}
-            <input id="idea-tag" className="input" value={form.tag} maxLength={30}
-              onChange={(e) => setForm({ ...form, tag: e.target.value })} placeholder="Elegí una o escribí una nueva: 🎬 Película" />
-          </div>
+          <LabelPicker id="idea-tag" label="Etiqueta" value={form.tag} options={tags}
+            onChange={(tag) => setForm({ ...form, tag })} placeholder="Elegí una o escribí una nueva: 🎬 Película" />
         </div>
       </Modal>
     </div>

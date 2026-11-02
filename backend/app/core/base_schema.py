@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
 
 
 class ORMModel(BaseModel):
@@ -15,3 +15,6 @@ def _as_utc(value: dt.datetime) -> dt.datetime:
 # MySQL guarda DATETIME sin zona (en UTC). Al marcarlo como UTC, el JSON sale con "Z"
 # y el navegador lo convierte bien a la hora local.
 UTCDateTime = Annotated[dt.datetime, AfterValidator(_as_utc)]
+
+# Etiqueta libre que elige el usuario (categoría, etiqueta…): se muestra tal cual, emoji incluido
+Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
