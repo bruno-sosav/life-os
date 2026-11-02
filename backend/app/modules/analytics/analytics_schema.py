@@ -1,5 +1,4 @@
 import datetime as dt
-from typing import Literal
 
 from pydantic import BaseModel
 
@@ -7,21 +6,19 @@ from app.modules.rutina import DayStatus
 
 
 # ─── Resumen calculado (GET /analytics/summary) ─────────────
-class BruceScore(BaseModel):
-    total: int
-    level: Literal["elite", "modo_bruce", "activando", "apagado"]
-    habit_score: int
-    workout_score: int
-    stratus_score: int
-    completed_habits: int
-    expected_habits: int
-    workouts: int
-    stratus_days: int
+class Compliance(BaseModel):
+    """Cuánto de lo agendado (hábitos y bloques) se hizo en la semana, hasta hoy."""
+
+    pct: int | None  # None si no había nada agendado
+    done: int
+    expected: int
+    prev_pct: int | None  # semana anterior
+    delta: int | None  # pct - prev_pct, si las dos semanas tienen datos
 
 
-class BrucePoint(BaseModel):
+class CompliancePoint(BaseModel):
     week_start: dt.date
-    score: int
+    pct: int | None
     is_current: bool
 
 
@@ -83,7 +80,7 @@ class ActivityCount(BaseModel):
     name: str
     emoji: str | None
     color: str | None
-    count: int  # sesiones asistidas en los últimos 30 días
+    count: int  # días con la actividad en los últimos 30 días
 
 
 class FinanceMonth(BaseModel):
@@ -96,8 +93,8 @@ class FinanceMonth(BaseModel):
 class AnalyticsSummary(BaseModel):
     week_start: dt.date
     week_end: dt.date
-    bruce: BruceScore
-    bruce_history: list[BrucePoint]
+    compliance: Compliance
+    compliance_history: list[CompliancePoint]
     kpis: KPIs
     habits_by_week: HabitsByWeek
     radar: list[RadarAxis]

@@ -14,5 +14,5 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 def analytics_summary(
     today: date, session: SessionDep, week_offset: Annotated[int, Query(ge=0, le=520)] = 0
 ) -> AnalyticsSummary:
-    """Todo lo de la pantalla Stats, calculado. `week_offset` mueve la semana del Score/radar."""
+    """Todo lo de la pantalla Stats. `week_offset` mueve la semana del cumplimiento y el radar."""
     return service.get_summary(session, today, week_offset)

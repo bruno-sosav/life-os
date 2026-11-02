@@ -8,7 +8,7 @@ from app.modules.fisico.fisico_model import (
     SessionExercise,
     WeightLog,
 )
-from app.modules.fisico.fisico_service import attended_sessions, list_activities
+from app.modules.fisico.fisico_service import attended_days, list_activities
 
 __all__ = [
     "Activity",
@@ -16,7 +16,7 @@ __all__ = [
     "NutritionLog",
     "SessionExercise",
     "WeightLog",
-    "attended_sessions",
+    "attended_days",
     "list_activities",
     "router",
 ]

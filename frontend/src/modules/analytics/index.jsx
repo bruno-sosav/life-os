@@ -24,11 +24,15 @@ const TT = {
 const AX = { stroke: 'rgba(255,255,255,0.13)', fontSize: 11 }
 const GR = { stroke: 'rgba(255,255,255,0.04)', vertical: false }
 
-const BRUCE_LEVELS = {
-  elite: { text: 'Elite ⚡', color: '#FFD700' },
-  modo_bruce: { text: 'Modo Bruce', color: '#30D158' },
-  activando: { text: 'Activando', color: '#FF9F0A' },
-  apagado: { text: 'Modo apagado', color: '#8E8E93' },
+// Mismos cortes que el cierre semanal del dashboard; 70 % es la regla de la racha
+const complianceColor = (pct) =>
+  pct == null ? '#8E8E93' : pct >= 70 ? '#30D158' : pct >= 50 ? '#FF9F0A' : '#FF453A'
+
+function deltaNote(delta) {
+  if (delta == null) return 'sin semana anterior para comparar'
+  if (delta > 0) return `↑ +${delta} puntos vs la semana anterior`
+  if (delta < 0) return `↓ ${delta} puntos vs la semana anterior`
+  return 'igual que la semana anterior'
 }
 
 // Formato de fechas para mostrar (yyyy-MM-dd → "12 oct")
@@ -52,7 +56,7 @@ function ArcProgress({ value, color, size = 110 }) {
   const r = size / 2 - 10
   const cx = size / 2, cy = size / 2
   const circ = 2 * Math.PI * r
-  const filled = (Math.min(Math.max(value, 0), 100) / 100) * circ
+  const filled = (Math.min(Math.max(value ?? 0, 0), 100) / 100) * circ
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9" />
@@ -64,23 +68,8 @@ function ArcProgress({ value, color, size = 110 }) {
         transform={`rotate(-90 ${cx} ${cy})`}
         style={{ transition: 'stroke-dasharray 0.5s ease' }}
       />
-      <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="800">{value}</text>
-      <text x={cx} y={cy + 17} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize="10">pts</text>
+      <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="800">{value == null ? '—' : `${value}%`}</text>
     </svg>
-  )
-}
-
-function ScoreBar({ label, value, max, color, detail }) {
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-[11px]">
-        <span className="text-white/50">{label}</span>
-        <span style={{ color }}>{value}/{max} pts · {detail}</span>
-      </div>
-      <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${max > 0 ? (value / max) * 100 : 0}%`, background: color }} />
-      </div>
-    </div>
   )
 }
 
@@ -137,8 +126,8 @@ export default function Analytics() {
     </div>
   )
 
-  const { bruce, kpis, habits_by_week: habitsByWeek } = s
-  const level = BRUCE_LEVELS[bruce.level]
+  const { compliance, kpis, habits_by_week: habitsByWeek } = s
+  const color = complianceColor(compliance.pct)
   // Incluye actividades pausadas si tuvieron sesiones en el período
   const activityData = s.activity_distribution.map((a, i) => ({
     name: `${a.emoji ? `${a.emoji} ` : ''}${a.name}`,
@@ -152,11 +141,11 @@ export default function Analytics() {
     <div className="space-y-4">
       <PageHeader title="Stats" subtitle="Tu vida en números" />
 
-      {/* ── 1. Score Bruce ── */}
+      {/* ── 1. Cumplimiento de la semana ── */}
       <Card>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-0.5">Score Bruce</div>
+            <div className="text-[11px] text-white/35 uppercase tracking-wider font-semibold mb-0.5">Cumplimiento de la semana</div>
             <div className="text-xs text-white/30">
               {fmtDay(s.week_start)} – {fmtDay(s.week_end)}
               {weekOffset > 0 && <span className="ml-1 text-white/20">(hace {weekOffset} sem.)</span>}
@@ -165,11 +154,13 @@ export default function Analytics() {
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setWeekOffset(o => o + 1)}
+              aria-label="Semana anterior"
               className="w-7 h-7 rounded-full bg-white/[0.07] hover:bg-white/[0.12] text-white/50 hover:text-white text-sm grid place-items-center transition"
             >←</button>
             <button
               onClick={() => setWeekOffset(o => Math.max(0, o - 1))}
               disabled={weekOffset === 0}
+              aria-label="Semana siguiente"
               className="w-7 h-7 rounded-full bg-white/[0.07] hover:bg-white/[0.12] text-white/50 hover:text-white text-sm grid place-items-center transition disabled:opacity-25 disabled:cursor-not-allowed"
             >→</button>
           </div>
@@ -177,27 +168,16 @@ export default function Analytics() {
 
         <div className="flex gap-5 items-center">
           <div className="shrink-0">
-            <ArcProgress value={bruce.total} color={level.color} size={110} />
+            <ArcProgress value={compliance.pct} color={color} size={110} />
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-bold mb-3" style={{ color: level.color }}>{level.text}</div>
-            <div className="space-y-2">
-              <ScoreBar
-                label="Hábitos"
-                value={bruce.habit_score} max={50} color="#BF5AF2"
-                detail={`${bruce.completed_habits}/${bruce.expected_habits}`}
-              />
-              <ScoreBar
-                label="Entrenos"
-                value={bruce.workout_score} max={30} color="#30D158"
-                detail={`${bruce.workouts}/5 sesiones`}
-              />
-              <ScoreBar
-                label="Stratus"
-                value={bruce.stratus_score} max={20} color="#0A84FF"
-                detail={`${bruce.stratus_days}/5 días`}
-              />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="text-[15px] font-bold" style={{ color }}>
+              {compliance.expected
+                ? `Hiciste ${compliance.done} de ${compliance.expected} cosas agendadas`
+                : 'No tenías nada agendado'}
             </div>
+            <div className="text-xs text-white/50">{deltaNote(compliance.delta)}</div>
+            <div className="text-[11px] text-white/30">Hábitos y bloques de rutina, hasta hoy.</div>
           </div>
         </div>
       </Card>
@@ -209,7 +189,7 @@ export default function Analytics() {
           value={kpis.current_streak}
           suffix=" días"
           color={kpis.current_streak >= 7 ? '#FF9F0A' : kpis.current_streak >= 3 ? '#30D158' : '#0A84FF'}
-          note="consecutivos con hábitos"
+          note="seguidos con 70 % o más"
         />
         <KPICard label="Mejor racha" value={kpis.best_streak} suffix=" días" color="#FFD700" note="en los últimos 90 días" />
         <KPICard label="Entrenos (mes)" value={kpis.workouts_month} color="#30D158" note="todas las actividades" />
@@ -224,7 +204,7 @@ export default function Analytics() {
         <KPICard label={`Libros ${kpis.year}`} value={kpis.books_year} color="#5AC8FA" note="completados este año" />
       </div>
 
-      {/* ── 3. Hábitos por semana  |  4. Bruce histórico ── */}
+      {/* ── 3. Hábitos por semana  |  4. Cumplimiento semanal ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Hábitos por semana" subtitle="Días completados · últimas 8 semanas">
           <div className="h-52">
@@ -253,41 +233,41 @@ export default function Analytics() {
           </div>
         </Card>
 
-        <Card title="Score Bruce histórico" subtitle="Últimas 12 semanas">
+        <Card title="Cumplimiento semanal" subtitle="Últimas 12 semanas">
           <div className="h-52">
-            {s.bruce_history.some(w => w.score > 0) ? (
+            {s.compliance_history.some(w => w.pct != null) ? (
               <ResponsiveContainer>
-                <AreaChart data={s.bruce_history}>
+                <AreaChart data={s.compliance_history}>
                   <defs>
-                    <linearGradient id="bruceGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FFD700" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#FFD700" stopOpacity={0} />
+                    <linearGradient id="complianceGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#30D158" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#30D158" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid {...GR} />
                   <XAxis dataKey="week_start" tickFormatter={fmtDay} {...AX} />
                   <YAxis {...AX} domain={[0, 100]} />
-                  <Tooltip {...TT} labelFormatter={fmtDay} formatter={(v) => [`${v}%`, 'Score']} />
-                  <ReferenceLine y={70} stroke="#FFD700" strokeDasharray="4 3" opacity={0.4}
-                    label={{ value: '70%', position: 'insideTopRight', fill: 'rgba(255,215,0,0.6)', fontSize: 10 }} />
+                  <Tooltip {...TT} labelFormatter={fmtDay} formatter={(v) => [`${v}%`, 'Cumplimiento']} />
+                  <ReferenceLine y={70} stroke="#30D158" strokeDasharray="4 3" opacity={0.4}
+                    label={{ value: '70%', position: 'insideTopRight', fill: 'rgba(48,209,88,0.6)', fontSize: 10 }} />
                   <Area
-                    type="monotone" dataKey="score"
-                    stroke="#FFD700" strokeWidth={2.5}
-                    fill="url(#bruceGrad)"
-                    dot={({ cx, cy, payload }) => (
+                    type="monotone" dataKey="pct"
+                    stroke="#30D158" strokeWidth={2.5}
+                    fill="url(#complianceGrad)"
+                    dot={({ cx, cy, payload }) => payload.pct == null ? <g key={payload.week_start} /> : (
                       <circle key={payload.week_start} cx={cx} cy={cy}
                         r={payload.is_current ? 5 : 2.5}
-                        fill="#FFD700"
+                        fill="#30D158"
                         stroke={payload.is_current ? 'white' : 'none'}
                         strokeWidth={payload.is_current ? 2 : 0}
                       />
                     )}
-                    name="Score"
+                    name="Cumplimiento"
                   />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <NoData text="Sin datos de score aún" />
+              <NoData text="Sin nada agendado en estas semanas" />
             )}
           </div>
         </Card>

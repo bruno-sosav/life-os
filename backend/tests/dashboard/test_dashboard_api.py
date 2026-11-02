@@ -57,6 +57,19 @@ def test_weekly_review_days_per_activity(client: TestClient) -> None:
     assert [(a["name"], a["days"]) for a in weekly["activity_days"]] == [("Gym", 2), ("MMA", 1)]
 
 
+def test_linked_habit_counts_as_a_training_day(client: TestClient) -> None:
+    habit = create_habit(client, name="Ir al gym")
+    gym = client.post("/api/activities", json={"name": "Gym", "habit_id": habit["id"]}).json()
+    client.put(f"/api/activities/{gym['id']}/attendance/2026-10-13")  # marca el hábito
+    client.post("/api/sessions", json={"activity_id": gym["id"], "date": "2026-10-13"})  # mismo día
+    client.post("/api/sessions", json={"activity_id": gym["id"], "date": "2026-10-14"})
+
+    weekly = client.get("/api/dashboard/weekly-review", params={"today": "2026-10-14"}).json()
+    assert weekly["activity_days"][0]["days"] == 2  # el 13 cuenta una sola vez
+    summary = client.get("/api/analytics/summary", params={"today": "2026-10-14"}).json()
+    assert summary["activity_distribution"][0]["count"] == 2
+
+
 def test_agenda(client: TestClient) -> None:
     # Lunes 2026-10-19
     block = {"hour_start": 7, "hour_min": 30, "hour_end": 8, "activity": "Gym", "days_of_week": [0]}

@@ -16,7 +16,7 @@ from app.modules.dashboard.dashboard_schema import (
     StreakOut,
     WeeklyReviewSummary,
 )
-from app.modules.fisico import Activity, attended_sessions, list_activities
+from app.modules.fisico import Activity, attended_days, list_activities
 from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
@@ -224,7 +224,7 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
         # Una semana anterior al 0 % también se compara; solo se omite si no tocaba nada
         habit_pct_delta=None if prev_habit_pct is None else habit_pct - prev_habit_pct,
         activity_days=activity_days(
-            list_activities(session), attended_sessions(session, week_start, week_end)
+            list_activities(session), attended_days(session, week_start, week_end)
         ),
         avg_mood=avg_mood,
         mood_level=mood_level(avg_mood),

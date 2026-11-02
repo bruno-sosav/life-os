@@ -1,4 +1,4 @@
-"""Estadísticas de la pantalla Stats: Score Bruce, KPIs, radar, heatmap y series.
+"""Estadísticas de la pantalla Stats: cumplimiento semanal, KPIs, radar, heatmap y series.
 
 Las funciones son puras: reciben los registros ya leídos de la base (en DataFrames con
 una columna `date` de tipo datetime64) y devuelven estructuras listas para serializar.
@@ -7,7 +7,7 @@ una columna `date` de tipo datetime64) y devuelven estructuras listas para seria
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import Any, Literal
+from typing import Any
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -16,7 +16,7 @@ from app.core.fechas_util import Period, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.analytics import analytics_repository as repository
 from app.modules.analytics.analytics_schema import AnalyticsSummary
-from app.modules.fisico import Activity, attended_sessions, list_activities
+from app.modules.fisico import Activity, attended_days, list_activities
 from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
@@ -24,16 +24,14 @@ from app.modules.rutina import (
     block_completions,
     completed_habit_logs,
     day_status,
+    done_per_day,
     expected_per_day,
     list_habits,
     list_routine_blocks,
     streaks,
 )
 
-BruceLevel = Literal["elite", "modo_bruce", "activando", "apagado"]
-
-WORKOUT_GOAL = 5  # sesiones por semana que dan el puntaje completo
-STRATUS_GOAL = 5  # días por semana con trabajo en Stratus
+WORKOUT_GOAL = 5  # días de entreno por semana que llenan el eje del radar
 HEATMAP_DAYS = STREAK_WINDOW_DAYS
 HISTORY_WEEKS = 12
 HABIT_WEEKS = 8
@@ -60,7 +58,7 @@ class StatsInput:
     completions: pd.DataFrame = field(default_factory=lambda: _empty("block_id", "date"))
     # Todas las actividades (también las pausadas: sus sesiones viejas siguen contando)
     activities: Sequence[Activity] = ()
-    # Sesiones asistidas de cualquier actividad: activity_id, date
+    # Días con cada actividad (sesión asistida o hábito vinculado cumplido): activity_id, date
     workouts: pd.DataFrame = field(default_factory=lambda: _empty("activity_id", "date"))
     weights: pd.DataFrame = field(default_factory=lambda: _empty("date", "kg"))
     moods: pd.DataFrame = field(default_factory=lambda: _empty("date", "mood", "sleep"))
@@ -86,76 +84,52 @@ def _expected_habits(habits: Sequence[Habit], start: date, end: date) -> int:
     return int(expected_per_day(_days(start, end), [], habits).sum())
 
 
-def _stratus_days(inp: StatsInput, week: Period) -> int:
-    """Días de la semana con algún hábito o bloque de rutina 'Stratus' completado."""
-    habit_ids = {h.id for h in inp.habits if "stratus" in (h.name or "").lower()}
-    block_ids = {b.id for b in inp.blocks if "stratus" in (b.activity or "").lower()}
-    logs = _between(inp.habit_logs, week.start, week.end)
-    comps = _between(inp.completions, week.start, week.end)
-    dates = pd.concat(
-        [
-            logs.loc[logs["habit_id"].isin(habit_ids), "date"],
-            comps.loc[comps["block_id"].isin(block_ids), "date"],
-        ]
-    )
-    return int(dates.nunique())
+# ─── Cumplimiento semanal ───────────────────────────────────
+def week_compliance(inp: StatsInput, week: Period) -> dict[str, Any]:
+    """% de lo agendado (hábitos y bloques) que se hizo en la semana, contando hasta hoy.
+
+    Cada día suma como mucho lo que tenía agendado: hacer algo extra no tapa lo que faltó.
+    pct es None si en la semana no había nada agendado.
+    """
+    end = min(week.end, inp.today)
+    if end < week.start:
+        return {"pct": None, "done": 0, "expected": 0}
+    days = _days(week.start, end)
+    expected = expected_per_day(days, inp.blocks, inp.habits)
+    done = done_per_day(days, _done_dates(inp)).clip(upper=expected)
+    total, did = int(expected.sum()), int(done.sum())
+    return {"pct": js_round(did / total * 100) if total else None, "done": did, "expected": total}
 
 
-# ─── Score Bruce ────────────────────────────────────────────
-def bruce_level(total: int) -> BruceLevel:
-    if total >= 91:
-        return "elite"
-    if total >= 71:
-        return "modo_bruce"
-    if total >= 41:
-        return "activando"
-    return "apagado"
+def compliance(inp: StatsInput, week_offset: int) -> dict[str, Any]:
+    current = week_compliance(inp, week_bounds(inp.today, week_offset))
+    previous = week_compliance(inp, week_bounds(inp.today, week_offset + 1))["pct"]
+    both = current["pct"] is not None and previous is not None
+    return {**current, "prev_pct": previous, "delta": current["pct"] - previous if both else None}
 
 
-def bruce_score(inp: StatsInput, week: Period) -> dict[str, Any]:
-    """Hábitos (50 pts) + entrenos (30 pts, meta 5/semana) + Stratus (20 pts, meta 5 días)."""
-    expected = _expected_habits(inp.habits, week.start, week.end)
-    completed = len(_between(inp.habit_logs, week.start, week.end))
-    workouts = len(_between(inp.workouts, week.start, week.end))
-    stratus_days = _stratus_days(inp, week)
-
-    habit_score = js_round(min(completed / expected, 1) * 50) if expected else 0
-    workout_score = js_round(min(workouts / WORKOUT_GOAL, 1) * 30)
-    stratus_score = js_round(min(stratus_days / STRATUS_GOAL, 1) * 20)
-    total = habit_score + workout_score + stratus_score
-    return {
-        "total": total,
-        "level": bruce_level(total),
-        "habit_score": habit_score,
-        "workout_score": workout_score,
-        "stratus_score": stratus_score,
-        "completed_habits": completed,
-        "expected_habits": expected,
-        "workouts": workouts,
-        "stratus_days": stratus_days,
-    }
-
-
-def bruce_history(inp: StatsInput) -> list[dict[str, Any]]:
-    points = []
-    for offset in range(HISTORY_WEEKS - 1, -1, -1):
-        week = week_bounds(inp.today, offset)
-        points.append(
-            {
-                "week_start": week.start,
-                "score": bruce_score(inp, week)["total"],
-                "is_current": offset == 0,
-            }
-        )
-    return points
+def compliance_history(inp: StatsInput) -> list[dict[str, Any]]:
+    return [
+        {
+            "week_start": week.start,
+            "pct": week_compliance(inp, week)["pct"],
+            "is_current": offset == 0,
+        }
+        for offset in range(HISTORY_WEEKS - 1, -1, -1)
+        for week in [week_bounds(inp.today, offset)]
+    ]
 
 
 # ─── Cumplimiento diario (misma regla del 70 % que la racha del dashboard) ──
+def _done_dates(inp: StatsInput) -> list[date]:
+    """Una fecha por cada hábito o bloque cumplido."""
+    return list(pd.concat([inp.habit_logs["date"], inp.completions["date"]]).dt.date)
+
+
 def daily_status(inp: StatsInput) -> pd.Series:
     """Estado de cada uno de los últimos 90 días, contando hábitos y bloques de rutina."""
     days = _days(inp.today - timedelta(days=HEATMAP_DAYS - 1), inp.today)
-    done = pd.concat([inp.habit_logs["date"], inp.completions["date"]]).dt.date
-    return day_status(inp.today, days, inp.blocks, inp.habits, done)
+    return day_status(inp.today, days, inp.blocks, inp.habits, _done_dates(inp))
 
 
 # ─── KPIs ───────────────────────────────────────────────────
@@ -219,16 +193,10 @@ def _radar_metrics(inp: StatsInput, week: Period) -> dict[str, int]:
             _between(inp.moods, week.start, week.end)["date"],
         ]
     ).nunique()
-    has_finance = (
-        len(_between(inp.expenses, week.start, week.end)) > 0
-        or len(_between(inp.income, week.start, week.end, column="month")) > 0
-    )
     return {
         "Hábitos": js_round(done / expected * 100) if expected else 0,
         "Entrenos": js_round(min(workouts / WORKOUT_GOAL, 1) * 100),
-        "Stratus": js_round(min(_stratus_days(inp, week) / STRATUS_GOAL, 1) * 100),
         "Mental": js_round(min(mental_dates / 7, 1) * 100),
-        "Finanzas": 100 if has_finance else 0,
     }
 
 
@@ -282,7 +250,7 @@ def mood_series(inp: StatsInput) -> list[dict[str, Any]]:
 
 
 def activity_distribution(inp: StatsInput) -> list[dict[str, Any]]:
-    """Sesiones por actividad en los últimos 30 días, de la más hecha a la menos."""
+    """Días de cada actividad en los últimos 30 días, de la más hecha a la menos."""
     recent = _between(inp.workouts, inp.today - timedelta(days=30), inp.today)
     counts = recent["activity_id"].value_counts()
     rows = [
@@ -324,8 +292,8 @@ def summary(inp: StatsInput, week_offset: int) -> dict[str, Any]:
     return {
         "week_start": week.start,
         "week_end": week.end,
-        "bruce": bruce_score(inp, week),
-        "bruce_history": bruce_history(inp),
+        "compliance": compliance(inp, week_offset),
+        "compliance_history": compliance_history(inp),
         "kpis": kpis(inp),
         "habits_by_week": habits_by_week(inp),
         "radar": radar(inp, week_offset),
@@ -371,7 +339,7 @@ def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSum
         ),
         activities=list_activities(session),
         workouts=_frame(
-            list(attended_sessions(session, start, today)), ["activity_id", "date"], ("date",)
+            list(attended_days(session, start, today)), ["activity_id", "date"], ("date",)
         ),
         weights=_frame(repository.weights(session), ["date", "kg"], ("date",)),
         moods=_frame(

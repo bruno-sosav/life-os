@@ -144,8 +144,20 @@ def delete_session(session: Session, session_id: str) -> None:
     base_repository.delete(session, get_or_404(session, ActivitySession, session_id))
 
 
-def attended_sessions(session: Session, start: date, end: date) -> list[tuple[str, date]]:
-    return repository.attended_sessions(session, start, end)
+def attended_days(session: Session, start: date, end: date) -> list[tuple[str, date]]:
+    """(activity_id, día) en que se hizo cada actividad, una vez por día.
+
+    Cuenta la sesión asistida o, si la actividad tiene hábito vinculado, el hábito cumplido:
+    marcar la asistencia en el hábito no crea sesión, pero igual es un día entrenado.
+    """
+    days = set(repository.attended_sessions(session, start, end))
+    linked: dict[str, list[str]] = {}
+    for activity in repository.list_activities(session, None):
+        if activity.habit_id:
+            linked.setdefault(activity.habit_id, []).append(activity.id)
+    for habit_id, day in completed_habit_logs(session, start, end):
+        days.update((activity_id, day) for activity_id in linked.get(habit_id, []))
+    return sorted(days)
 
 
 # ─── Asistencia y calendario ────────────────────────────────

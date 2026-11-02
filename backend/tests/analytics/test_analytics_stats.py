@@ -35,44 +35,37 @@ def test_js_round_and_date_bounds() -> None:
     assert month_bounds(date(2028, 2, 10)) == Period(date(2028, 2, 1), date(2028, 2, 29))
 
 
-def test_bruce_score_full_week_is_elite() -> None:
-    week_days = [MONDAY + timedelta(days=i) for i in range(7)]
+def test_week_compliance_counts_habits_and_blocks() -> None:
+    block = RoutineBlock(id="b1", activity="Leer", days_of_week=[0], repeat_weekly=True)
     inp = stats.StatsInput(
         today=TODAY,
-        habits=[habit("h1", "Stratus deep work")],
-        habit_logs=logs(*[("h1", d) for d in week_days]),
-        workouts=frame(["activity_id", "date"], [("gym", d) for d in week_days[:5]]),
-    )
-    score = stats.bruce_score(inp, week_bounds(TODAY))
-    assert (score["habit_score"], score["workout_score"], score["stratus_score"]) == (50, 30, 20)
-    assert (score["total"], score["level"]) == (100, "elite")
-
-
-def test_bruce_score_partial_uses_blocks_for_stratus() -> None:
-    block = RoutineBlock(id="b1", activity="Stratus: ventas", hour_start=9, hour_end=10)
-    inp = stats.StatsInput(
-        today=TODAY,
-        habits=[habit("h1")],
+        habits=[habit("h1"), habit("h2", "Finde", days=[5])],
         blocks=[block],
-        habit_logs=logs(*[("h1", MONDAY + timedelta(days=i)) for i in range(3)]),
+        # h2 se hizo el lunes, que no le tocaba: no tapa lo que faltó otros días
+        habit_logs=logs(*[("h1", MONDAY + timedelta(days=i)) for i in range(3)], ("h2", MONDAY)),
         completions=frame(["block_id", "date"], [("b1", MONDAY)]),
-        workouts=frame(["activity_id", "date"], [("gym", MONDAY), ("mma", MONDAY)]),
     )
-    score = stats.bruce_score(inp, week_bounds(TODAY))
-    # 3/7 hábitos → 21 · 2/5 entrenos → 12 · 1/5 días Stratus → 4
-    assert (score["habit_score"], score["workout_score"], score["stratus_score"]) == (21, 12, 4)
-    assert (score["total"], score["level"]) == (37, "apagado")
+    result = stats.compliance(inp, 0)
+    # Agendado: h1 x7 + h2 el sábado + b1 el lunes = 9. Hecho: lunes 2 (tope), martes 1, miércoles 1
+    assert (result["done"], result["expected"], result["pct"]) == (4, 9, 44)
+    assert (result["prev_pct"], result["delta"]) == (0, 44)
 
 
-def test_bruce_levels() -> None:
-    assert [stats.bruce_level(n) for n in (91, 90, 71, 70, 41, 40)] == [
-        "elite",
-        "modo_bruce",
-        "modo_bruce",
-        "activando",
-        "activando",
-        "apagado",
-    ]
+def test_week_compliance_counts_only_until_today() -> None:
+    wednesday = MONDAY + timedelta(days=2)
+    inp = stats.StatsInput(
+        today=wednesday, habits=[habit("h1")], habit_logs=logs(("h1", MONDAY), ("h1", wednesday))
+    )
+    assert stats.week_compliance(inp, week_bounds(wednesday))["pct"] == 67  # 2 de 3 días
+    future = week_bounds(wednesday + timedelta(days=7))
+    assert stats.week_compliance(inp, future)["pct"] is None
+
+
+def test_compliance_history_has_12_weeks() -> None:
+    inp = stats.StatsInput(today=TODAY, habits=[habit("h1")], habit_logs=logs(("h1", TODAY)))
+    history = stats.compliance_history(inp)
+    assert len(history) == 12 and history[-1]["is_current"]
+    assert (history[-1]["week_start"], history[-1]["pct"]) == (MONDAY, 14)  # 1 de 7
 
 
 def test_streaks_current_and_best() -> None:
@@ -119,12 +112,10 @@ def test_radar_axes_and_mental() -> None:
         today=TODAY,
         journal=frame(["date"], [(MONDAY,), (MONDAY,)]),
         moods=frame(["date", "mood", "sleep"], [(MONDAY + timedelta(days=1), 4, 7.0)]),
-        expenses=frame(["date", "amount"], [(MONDAY, 10.0)]),
     )
     radar = {r["axis"]: (r["semana"], r["anterior"]) for r in stats.radar(inp, 0)}
-    assert list(radar) == ["Hábitos", "Entrenos", "Stratus", "Mental", "Finanzas"]
+    assert list(radar) == ["Hábitos", "Entrenos", "Mental"]
     assert radar["Mental"] == (29, 0)  # 2 de 7 días
-    assert radar["Finanzas"] == (100, 0)
 
 
 def test_heatmap_grid_and_status() -> None:
@@ -181,5 +172,5 @@ def test_series_empty_inputs() -> None:
     inp = stats.StatsInput(today=TODAY)
     result = stats.summary(inp, 0)
     assert result["weight_series"] == [] and result["mood_series"] == []
-    assert result["bruce"]["total"] == 0
+    assert result["compliance"]["pct"] is None and result["compliance"]["delta"] is None
     assert result["kpis"]["current_streak"] == 0
