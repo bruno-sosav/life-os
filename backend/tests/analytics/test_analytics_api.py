@@ -12,7 +12,8 @@ def test_analytics_summary_endpoint(
         client.put(
             "/api/habit-logs", json={"habit_id": habit["id"], "date": day, "completed": True}
         )
-    client.post("/api/gym/sessions", json={"date": "2026-10-13"})
+    gym = client.post("/api/activities", json={"name": "Gym", "emoji": "🏋️"}).json()
+    client.post("/api/sessions", json={"activity_id": gym["id"], "date": "2026-10-13"})
     client.put("/api/weight-logs/2026-10-14", json={"weight_kg": 80})
 
     summary = client.get("/api/analytics/summary", params={"today": "2026-10-14"}).json()
@@ -21,7 +22,9 @@ def test_analytics_summary_endpoint(
     assert summary["bruce"]["total"] == 39
     assert summary["kpis"]["current_streak"] == 3
     assert summary["weight_series"] == [{"date": "2026-10-14", "kg": 80.0}]
-    assert summary["gym_vs_mma"] == {"gym": 1, "mma": 0}
+    assert summary["activity_distribution"] == [
+        {"id": gym["id"], "name": "Gym", "emoji": "🏋️", "color": "#0A84FF", "count": 1}
+    ]
     assert len(summary["bruce_history"]) == 12 and summary["bruce_history"][-1]["is_current"]
 
     previous = client.get(

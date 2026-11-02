@@ -1,12 +1,22 @@
-"""Físico: gimnasio (sesiones y ejercicios), MMA, peso y nutrición."""
+"""Físico: actividades que definís vos (con sus campos y sesiones), peso y nutrición."""
 
 from app.modules.fisico.fisico_controller import router
 from app.modules.fisico.fisico_model import (
-    GymExercise,
-    GymSession,
-    MmaSession,
+    Activity,
+    ActivitySession,
     NutritionLog,
+    SessionExercise,
     WeightLog,
 )
+from app.modules.fisico.fisico_service import attended_sessions, list_activities
 
-__all__ = ["GymExercise", "GymSession", "MmaSession", "NutritionLog", "WeightLog", "router"]
+__all__ = [
+    "Activity",
+    "ActivitySession",
+    "NutritionLog",
+    "SessionExercise",
+    "WeightLog",
+    "attended_sessions",
+    "list_activities",
+    "router",
+]

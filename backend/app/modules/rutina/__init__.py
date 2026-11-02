@@ -8,7 +8,7 @@ from app.modules.rutina.rutina_model import (
     RoutineCompletion,
     WeeklyReview,
 )
-from app.modules.rutina.rutina_schema import HabitLogUpsert, LinkedModule
+from app.modules.rutina.rutina_schema import HabitLogUpsert
 from app.modules.rutina.rutina_service import (
     STREAK_WINDOW_DAYS,
     DayStatus,
@@ -32,7 +32,6 @@ __all__ = [
     "Habit",
     "HabitLog",
     "HabitLogUpsert",
-    "LinkedModule",
     "RoutineBlock",
     "RoutineCompletion",
     "WeeklyReview",

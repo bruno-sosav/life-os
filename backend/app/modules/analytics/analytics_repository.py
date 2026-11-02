@@ -7,15 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.modules.finanzas import FinanceExpense, FinanceIncome
-from app.modules.fisico import GymSession, MmaSession, WeightLog
+from app.modules.fisico import WeightLog
 from app.modules.mental import Book, JournalEntry, MoodLog
-
-
-def attended_dates(
-    session: Session, model: type[GymSession | MmaSession], start: date
-) -> list[date]:
-    query = select(model.date).where(model.attended.is_(True), model.date >= start)
-    return list(session.scalars(query))
 
 
 def moods(session: Session, start: date, end: date) -> list[tuple[Any, ...]]:

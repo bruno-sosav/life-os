@@ -16,7 +16,7 @@ from app.core.fechas_util import Period, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.analytics import analytics_repository as repository
 from app.modules.analytics.analytics_schema import AnalyticsSummary
-from app.modules.fisico import GymSession, MmaSession
+from app.modules.fisico import Activity, attended_sessions, list_activities
 from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
@@ -58,8 +58,10 @@ class StatsInput:
     habit_logs: pd.DataFrame = field(default_factory=lambda: _empty("habit_id", "date"))
     # Bloques completados: block_id, date
     completions: pd.DataFrame = field(default_factory=lambda: _empty("block_id", "date"))
-    # Entrenos con asistencia: kind ('gym' | 'mma'), date
-    workouts: pd.DataFrame = field(default_factory=lambda: _empty("kind", "date"))
+    # Todas las actividades (también las pausadas: sus sesiones viejas siguen contando)
+    activities: Sequence[Activity] = ()
+    # Sesiones asistidas de cualquier actividad: activity_id, date
+    workouts: pd.DataFrame = field(default_factory=lambda: _empty("activity_id", "date"))
     weights: pd.DataFrame = field(default_factory=lambda: _empty("date", "kg"))
     moods: pd.DataFrame = field(default_factory=lambda: _empty("date", "mood", "sleep"))
     journal: pd.DataFrame = field(default_factory=lambda: _empty("date"))
@@ -279,10 +281,16 @@ def mood_series(inp: StatsInput) -> list[dict[str, Any]]:
     ]
 
 
-def gym_vs_mma(inp: StatsInput) -> dict[str, int]:
+def activity_distribution(inp: StatsInput) -> list[dict[str, Any]]:
+    """Sesiones por actividad en los últimos 30 días, de la más hecha a la menos."""
     recent = _between(inp.workouts, inp.today - timedelta(days=30), inp.today)
-    counts = recent["kind"].value_counts()
-    return {"gym": int(counts.get("gym", 0)), "mma": int(counts.get("mma", 0))}
+    counts = recent["activity_id"].value_counts()
+    rows = [
+        {"id": a.id, "name": a.name, "emoji": a.emoji, "color": a.color, "count": int(counts[a.id])}
+        for a in inp.activities
+        if a.id in counts
+    ]
+    return sorted(rows, key=lambda r: -r["count"])
 
 
 def months_back(today: date, months: int) -> date:
@@ -324,7 +332,7 @@ def summary(inp: StatsInput, week_offset: int) -> dict[str, Any]:
         "heatmap": heatmap(inp),
         "weight_series": weight_series(inp),
         "mood_series": mood_series(inp),
-        "gym_vs_mma": gym_vs_mma(inp),
+        "activity_distribution": activity_distribution(inp),
         "finance_monthly": finance_monthly(inp),
     }
 
@@ -349,14 +357,11 @@ def _frame(rows: list[tuple[Any, ...]], columns: list[str], dates: tuple[str, ..
 def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSummary:
     start = earliest_needed(today, week_offset)
     finance_start = min(start, months_back(today, FINANCE_MONTHS - 1))
-    workouts = [("gym", d) for d in repository.attended_dates(session, GymSession, start)] + [
-        ("mma", d) for d in repository.attended_dates(session, MmaSession, start)
-    ]
     mood_start = min(start, today - timedelta(days=30))
 
     inp = StatsInput(
         today=today,
-        habits=list_habits(session, active=True, linked_module=None),
+        habits=list_habits(session, active=True),
         blocks=list_routine_blocks(session),
         habit_logs=_frame(
             list(completed_habit_logs(session, start, today)), ["habit_id", "date"], ("date",)
@@ -364,7 +369,10 @@ def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSum
         completions=_frame(
             list(block_completions(session, start, today)), ["block_id", "date"], ("date",)
         ),
-        workouts=_frame(workouts, ["kind", "date"], ("date",)),
+        activities=list_activities(session),
+        workouts=_frame(
+            list(attended_sessions(session, start, today)), ["activity_id", "date"], ("date",)
+        ),
         weights=_frame(repository.weights(session), ["date", "kg"], ("date",)),
         moods=_frame(
             repository.moods(session, mood_start, today), ["date", "mood", "sleep"], ("date",)

@@ -30,8 +30,7 @@ def test_streak_and_weekly_stats_endpoints(
         "habit_pct": 67,
         "prev_habit_pct": 0,
         "habit_pct_delta": 67,  # la semana anterior tocaba el hábito y quedó en 0 %
-        "gym_days": 0,
-        "mma_days": 0,
+        "activity_days": [],
         "avg_mood": None,
         "mood_level": None,
         "review": None,
@@ -40,6 +39,22 @@ def test_streak_and_weekly_stats_endpoints(
     client.put("/api/weekly-reviews/2026-10-12", json={"went_well": "Constancia"})
     weekly = client.get("/api/dashboard/weekly-review", params={"today": "2026-10-18"}).json()
     assert weekly["review"]["went_well"] == "Constancia"
+
+
+def test_weekly_review_days_per_activity(client: TestClient) -> None:
+    def activity(name: str, active: bool = True) -> str:
+        body = {"name": name, "active": active}
+        return str(client.post("/api/activities", json=body).json()["id"])
+
+    gym, mma, swim = activity("Gym"), activity("MMA", active=False), activity("Natación", False)
+    for day in ("2026-10-12", "2026-10-12", "2026-10-14"):  # dos sesiones el mismo día
+        client.post("/api/sessions", json={"activity_id": gym, "date": day})
+    client.post("/api/sessions", json={"activity_id": mma, "date": "2026-10-13"})
+    client.post("/api/sessions", json={"activity_id": swim, "date": "2026-10-01"})  # otra semana
+
+    weekly = client.get("/api/dashboard/weekly-review", params={"today": "2026-10-14"}).json()
+    # La pausada aparece solo si igual se usó esa semana
+    assert [(a["name"], a["days"]) for a in weekly["activity_days"]] == [("Gym", 2), ("MMA", 1)]
 
 
 def test_agenda(client: TestClient) -> None:

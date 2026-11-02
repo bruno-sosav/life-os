@@ -31,8 +31,6 @@ class Habit(UUIDPk, CreatedAt, Base):
     # null = todos los días; lista de 0..6 con 0 = lunes
     days_of_week: Mapped[list[int] | None] = mapped_column(JSON)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    # 'gym' | 'mma' | null: sincroniza el hábito con la pestaña Físico
-    linked_module: Mapped[str | None] = mapped_column(String(20))
 
 
 class HabitLog(UUIDPk, CreatedAt, Base):

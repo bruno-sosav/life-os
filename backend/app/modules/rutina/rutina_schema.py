@@ -1,12 +1,11 @@
 from datetime import date, time
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 
 from app.core.base_schema import ORMModel, UTCDateTime
 
 DayOfWeek = Annotated[int, Field(ge=0, le=6)]  # 0 = lunes … 6 = domingo
-LinkedModule = Literal["gym", "mma"]
 
 
 def _all_or_some_days(days: list[int] | None) -> list[int] | None:
@@ -29,7 +28,6 @@ class HabitBase(BaseModel):
     duration_min: int | None = Field(default=30, ge=0, le=1440)
     days_of_week: HabitDays = None  # null = todos los días
     sort_order: int = 0
-    linked_module: LinkedModule | None = None
 
 
 class HabitCreate(HabitBase):
@@ -45,7 +43,6 @@ class HabitUpdate(BaseModel):
     duration_min: int | None = Field(default=None, ge=0, le=1440)
     days_of_week: HabitDays = None
     sort_order: int | None = None
-    linked_module: LinkedModule | None = None
 
 
 class HabitOut(HabitBase, ORMModel):

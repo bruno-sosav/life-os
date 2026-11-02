@@ -26,8 +26,8 @@ from app.modules.rutina.rutina_schema import (
 
 
 # ─── Hábitos ────────────────────────────────────────────────
-def list_habits(session: Session, active: bool | None, linked_module: str | None) -> list[Habit]:
-    return repository.list_habits(session, active, linked_module)
+def list_habits(session: Session, active: bool | None) -> list[Habit]:
+    return repository.list_habits(session, active)
 
 
 def create_habit(session: Session, payload: HabitCreate) -> Habit:

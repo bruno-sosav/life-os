@@ -10,8 +10,13 @@ from sqlalchemy.orm import Session
 from app.core.fechas_util import days_between, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.dashboard import dashboard_repository as repository
-from app.modules.dashboard.dashboard_schema import MoodLevel, StreakOut, WeeklyReviewSummary
-from app.modules.fisico import GymSession, MmaSession
+from app.modules.dashboard.dashboard_schema import (
+    ActivityDays,
+    MoodLevel,
+    StreakOut,
+    WeeklyReviewSummary,
+)
+from app.modules.fisico import Activity, attended_sessions, list_activities
 from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
@@ -160,6 +165,22 @@ def mood_level(avg: float | None) -> MoodLevel | None:
     return "dificil"
 
 
+def activity_days(
+    activities: Sequence[Activity], attended: Iterable[tuple[str, date]]
+) -> list[ActivityDays]:
+    """Días con sesión por actividad. Las pausadas solo aparecen si igual se usaron."""
+    days: dict[str, set[date]] = {}
+    for activity_id, day in attended:
+        days.setdefault(activity_id, set()).add(day)
+    return [
+        ActivityDays(
+            id=a.id, name=a.name, emoji=a.emoji, color=a.color, days=len(days.get(a.id, ()))
+        )
+        for a in activities
+        if a.active or a.id in days
+    ]
+
+
 # ─── Lo que piden los endpoints ─────────────────────────────
 def get_streak(session: Session, today: date) -> StreakOut:
     start = today - timedelta(days=STREAK_WINDOW_DAYS - 1)
@@ -168,7 +189,7 @@ def get_streak(session: Session, today: date) -> StreakOut:
         *(day for _, day in block_completions(session, start, today)),
     ]
     blocks = list_routine_blocks(session)
-    habits = list_habits(session, active=True, linked_module=None)
+    habits = list_habits(session, active=True)
     return StreakOut(streak=global_streak(today, blocks, habits, done))
 
 
@@ -177,7 +198,7 @@ def get_agenda(session: Session, day: date, today: date) -> dict[str, Any]:
         day,
         today,
         list_routine_blocks(session),
-        list_habits(session, active=True, linked_module=None),
+        list_habits(session, active=True),
         {block_id for block_id, _ in block_completions(session, day, day)},
         {habit_id for habit_id, _ in completed_habit_logs(session, day, day)},
     )
@@ -187,7 +208,7 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
     """Cierre de la semana de `today` (lunes a domingo) comparado con la anterior."""
     week_start, week_end = week_bounds(today)
     prev_start = week_bounds(today, 1).start
-    habits = list_habits(session, active=True, linked_module=None)
+    habits = list_habits(session, active=True)
     done = [day for _, day in completed_habit_logs(session, prev_start, week_end)]
 
     habit_pct = habit_completion_pct(week_start, today, habits, done) or 0
@@ -202,8 +223,9 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
         prev_habit_pct=prev_habit_pct or 0,
         # Una semana anterior al 0 % también se compara; solo se omite si no tocaba nada
         habit_pct_delta=None if prev_habit_pct is None else habit_pct - prev_habit_pct,
-        gym_days=repository.attended_days(session, GymSession, week_start, week_end),
-        mma_days=repository.attended_days(session, MmaSession, week_start, week_end),
+        activity_days=activity_days(
+            list_activities(session), attended_sessions(session, week_start, week_end)
+        ),
         avg_mood=avg_mood,
         mood_level=mood_level(avg_mood),
         review=WeeklyReviewOut.model_validate(review) if review else None,

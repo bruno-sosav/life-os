@@ -78,9 +78,12 @@ class MoodPoint(BaseModel):
     sleep: float | None
 
 
-class GymVsMma(BaseModel):
-    gym: int
-    mma: int
+class ActivityCount(BaseModel):
+    id: str
+    name: str
+    emoji: str | None
+    color: str | None
+    count: int  # sesiones asistidas en los últimos 30 días
 
 
 class FinanceMonth(BaseModel):
@@ -101,5 +104,5 @@ class AnalyticsSummary(BaseModel):
     heatmap: Heatmap
     weight_series: list[WeightPoint]
     mood_series: list[MoodPoint]
-    gym_vs_mma: GymVsMma
+    activity_distribution: list[ActivityCount]
     finance_monthly: list[FinanceMonth]

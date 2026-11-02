@@ -1,14 +1,93 @@
 import datetime as dt
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.core.base_schema import ORMModel, UTCDateTime
+from app.core.database.base_model import new_uuid
 
 # Los decimales (kg, litros) viajan como número JSON, no como string.
 
+# Las piezas con las que se arma el formulario de cualquier actividad
+FieldType = Literal["numero", "texto", "si_no", "opcion", "escala", "ejercicios"]
+CHARTABLE: tuple[FieldType, ...] = ("numero", "escala")  # se pueden graficar en el tiempo
 
-# ─── Gym ────────────────────────────────────────────────────
-class GymExerciseIn(BaseModel):
+
+# ─── Actividades ────────────────────────────────────────────
+class ActivityField(BaseModel):
+    # El id no cambia nunca: los valores de las sesiones se guardan por id, no por nombre
+    id: str = Field(default_factory=new_uuid, min_length=1, max_length=36)
+    name: str = Field(min_length=1, max_length=60)
+    type: FieldType
+    unit: str | None = Field(default=None, max_length=20)  # "km", "min"…
+    options: list[str] | None = None  # solo para "opcion"
+    archived: bool = False  # archivado: no se carga más, pero el historial se sigue viendo
+
+    @model_validator(mode="after")
+    def check_options(self) -> Self:
+        if self.type == "opcion":
+            self.options = list(dict.fromkeys(o.strip() for o in self.options or [] if o.strip()))
+            if not self.options:
+                raise ValueError(f"El campo '{self.name}' necesita al menos una opción")
+        else:
+            self.options = None
+        return self
+
+
+def _check_fields(fields: list[ActivityField] | None) -> None:
+    if fields is None:
+        return
+    if len({f.id for f in fields}) != len(fields):
+        raise ValueError("Hay campos con el mismo id")
+    if sum(f.type == "ejercicios" and not f.archived for f in fields) > 1:
+        raise ValueError("Una actividad tiene como mucho una lista de ejercicios")
+
+
+class ActivityIn(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    emoji: str | None = Field(default=None, max_length=32)
+    color: str | None = "#0A84FF"
+    active: bool = True
+    sort_order: int = 0
+    fields: list[ActivityField] = []
+    habit_id: str | None = None
+
+    @model_validator(mode="after")
+    def check_fields(self) -> Self:
+        _check_fields(self.fields)
+        return self
+
+
+class ActivityUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    emoji: str | None = Field(default=None, max_length=32)
+    color: str | None = None
+    active: bool | None = None
+    sort_order: int | None = None
+    # Lista completa. Un campo que ya no viene queda archivado, no se borra.
+    fields: list[ActivityField] | None = None
+    habit_id: str | None = None
+
+    @model_validator(mode="after")
+    def check_fields(self) -> Self:
+        _check_fields(self.fields)
+        return self
+
+
+class ActivityOut(ORMModel):
+    id: str
+    name: str
+    emoji: str | None
+    color: str | None
+    active: bool
+    sort_order: int
+    fields: list[ActivityField]
+    habit_id: str | None
+    created_at: UTCDateTime
+
+
+# ─── Sesiones ───────────────────────────────────────────────
+class ExerciseIn(BaseModel):
     exercise_name: str = Field(min_length=1, max_length=255)
     sets: int | None = Field(default=None, ge=0)
     reps: int | None = Field(default=None, ge=0)
@@ -16,46 +95,60 @@ class GymExerciseIn(BaseModel):
     notes: str | None = None
 
 
-class GymExerciseOut(GymExerciseIn, ORMModel):
+class ExerciseOut(ExerciseIn, ORMModel):
     id: str
     session_id: str
 
 
-class GymSessionCreate(BaseModel):
+class SessionIn(BaseModel):
+    activity_id: str
     date: dt.date
     attended: bool = True
-    routine_name: str | None = Field(default=None, max_length=255)
     notes: str | None = None
-    exercises: list[GymExerciseIn] = []
+    values: dict[str, Any] = {}  # {field_id: valor}; se valida contra los campos de la actividad
+    exercises: list[ExerciseIn] = []
 
 
-class GymSessionOut(ORMModel):
+class SessionOut(ORMModel):
     id: str
+    activity_id: str
     date: dt.date
     attended: bool
-    routine_name: str | None
     notes: str | None
+    values: dict[str, Any]
+    exercises: list[ExerciseOut]
     created_at: UTCDateTime
-    exercises: list[GymExerciseOut]
 
 
-class ExerciseProgressionPoint(BaseModel):
+class ProgressionPoint(BaseModel):
     date: dt.date
-    max_weight_kg: float | None
+    value: float | None  # carga máxima del ejercicio, o el valor del campo ese día
 
 
-# ─── MMA ────────────────────────────────────────────────────
-class MmaSessionCreate(BaseModel):
-    date: dt.date
-    attended: bool = True
-    session_type: str | None = Field(default=None, max_length=255)
-    notes: str | None = None
-
-
-class MmaSessionOut(MmaSessionCreate, ORMModel):
+# ─── Asistencia y calendario ────────────────────────────────
+class LinkedHabitOut(ORMModel):
     id: str
+    name: str
+
+
+class AttendanceDay(BaseModel):
+    date: dt.date
     attended: bool
-    created_at: UTCDateTime
+
+
+class AttendanceWeek(BaseModel):
+    habit: LinkedHabitOut | None  # con hábito vinculado, la asistencia sale de sus registros
+    days: list[AttendanceDay]  # lunes a domingo
+
+
+class MonthDay(BaseModel):
+    date: dt.date
+    attended: bool | None  # None = sin sesión ese día
+
+
+class ActivityMonth(BaseModel):
+    count: int  # sesiones registradas en el mes (asistidas o no)
+    days: list[MonthDay]
 
 
 # ─── Peso / Nutrición ───────────────────────────────────────
@@ -81,32 +174,6 @@ class NutritionLogOut(NutritionLogIn, ORMModel):
     id: str
     date: dt.date
     created_at: UTCDateTime
-
-
-# ─── Asistencia (gym y MMA) ─────────────────────────────────
-class LinkedHabitOut(ORMModel):
-    id: str
-    name: str
-
-
-class AttendanceDay(BaseModel):
-    date: dt.date
-    attended: bool
-
-
-class AttendanceWeek(BaseModel):
-    habit: LinkedHabitOut | None  # con hábito vinculado, la asistencia sale de sus registros
-    days: list[AttendanceDay]  # lunes a domingo
-
-
-class MmaMonthDay(BaseModel):
-    date: dt.date
-    attended: bool | None  # None = sin sesión ese día
-
-
-class MmaMonth(BaseModel):
-    count: int  # sesiones registradas en el mes (asistidas o no)
-    days: list[MmaMonthDay]
 
 
 class NutritionAverage(BaseModel):
