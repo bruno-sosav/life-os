@@ -8,21 +8,12 @@ import { fmt } from '../../lib/dates.js'
 import { createTask, updateTask, deleteTask } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
-const COLUMNS = ['pendiente', 'en_progreso', 'hecho']
+const COLUMNS = Object.keys(STATUS_LABELS)
 const COL_COLORS = { pendiente: '#ffffff22', en_progreso: '#FF9F0A', hecho: '#30D158' }
 
-export default function Kanban({ tasks, projects, projectFilter, onChange }) {
+export default function Kanban({ board, projects, onChange }) {
   const [modal, setModal] = useState({ open: false, initial: null, status: null })
-
-  const filtered = useMemo(
-    () => projectFilter ? tasks.filter((t) => t.project_id === projectFilter) : tasks,
-    [tasks, projectFilter]
-  )
-  const grouped = useMemo(() => {
-    const g = { pendiente: [], en_progreso: [], hecho: [] }
-    filtered.forEach((t) => g[t.status]?.push(t))
-    return g
-  }, [filtered])
+  const grouped = board || Object.fromEntries(COLUMNS.map((col) => [col, []]))
 
   async function onDragEnd({ destination, source, draggableId }) {
     if (!destination || destination.droppableId === source.droppableId) return
@@ -200,13 +191,13 @@ function TaskModal({ open, onClose, initial, defaultStatus, projects, onSaved, o
           <div>
             <label className="label">Prioridad</label>
             <select className="input" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-              <option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option>
+              {Object.keys(PRIORITY_COLORS).map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>)}
             </select>
           </div>
           <div>
             <label className="label">Estado</label>
             <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="pendiente">Pendiente</option><option value="en_progreso">En progreso</option><option value="hecho">Hecho</option>
+              {COLUMNS.map((col) => <option key={col} value={col}>{STATUS_LABELS[col]}</option>)}
             </select>
           </div>
           <div>

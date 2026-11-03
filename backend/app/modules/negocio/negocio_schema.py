@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from app.core.base_schema import ORMModel, UTCDateTime
 
 TaskStatus = Literal["pendiente", "en_progreso", "hecho"]
-TaskPriority = Literal["alta", "media", "baja"]
+TaskPriority = Literal["alta", "media", "baja"]  # en orden: el tablero las ordena así
 
 
 # ─── Proyectos ──────────────────────────────────────────────
@@ -45,6 +45,9 @@ class TaskOut(TaskIn, ORMModel):
     id: str
     completed_at: UTCDateTime | None
     created_at: UTCDateTime
+
+
+Board = dict[TaskStatus, list[TaskOut]]
 
 
 # ─── Ideas ──────────────────────────────────────────────────

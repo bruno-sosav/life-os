@@ -5,12 +5,12 @@ import Ideas from './Ideas.jsx'
 import Goals from './Goals.jsx'
 import ProjectsBar from './ProjectsBar.jsx'
 import { useAsync } from '../../hooks/useAsync.js'
-import { fetchTasks, fetchProjects } from './queries.js'
+import { fetchBoard, fetchProjects } from './queries.js'
 
 export default function Negocio() {
   const projectsQ = useAsync(() => fetchProjects(), [])
   const [selectedProject, setSelectedProject] = useState(null)
-  const tasksQ = useAsync(() => fetchTasks(selectedProject), [selectedProject])
+  const boardQ = useAsync(() => fetchBoard(selectedProject), [selectedProject])
 
   return (
     <div>
@@ -24,10 +24,9 @@ export default function Negocio() {
       />
 
       <Kanban
-        tasks={tasksQ.data || []}
+        board={boardQ.data}
         projects={projectsQ.data || []}
-        projectFilter={selectedProject}
-        onChange={tasksQ.refetch}
+        onChange={boardQ.refetch}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">

@@ -1,4 +1,11 @@
+from typing import Any
+
 from fastapi.testclient import TestClient
+
+
+def all_tasks(client: TestClient, **params: str) -> list[dict[str, Any]]:
+    board = client.get("/api/tasks/board", params=params).json()
+    return [task for column in board.values() for task in column]
 
 
 def test_projects_and_task_filter(client: TestClient) -> None:
@@ -7,12 +14,11 @@ def test_projects_and_task_filter(client: TestClient) -> None:
 
     client.post("/api/tasks", json={"title": "Landing", "project_id": project["id"]})
     client.post("/api/tasks", json={"title": "Suelta"})
-    assert len(client.get("/api/tasks").json()) == 2
-    filtered = client.get("/api/tasks", params={"project_id": project["id"]}).json()
-    assert [t["title"] for t in filtered] == ["Landing"]
+    assert len(all_tasks(client)) == 2
+    assert [t["title"] for t in all_tasks(client, project_id=project["id"])] == ["Landing"]
 
     client.delete(f"/api/projects/{project['id']}")
-    assert all(t["project_id"] is None for t in client.get("/api/tasks").json())
+    assert all(t["project_id"] is None for t in all_tasks(client))
 
 
 def test_task_completed_at_follows_status(client: TestClient) -> None:
@@ -24,6 +30,27 @@ def test_task_completed_at_follows_status(client: TestClient) -> None:
 
     back = client.patch(f"/api/tasks/{task['id']}", json={"status": "en_progreso"}).json()
     assert back["completed_at"] is None
+
+
+def test_board_orders_by_priority_then_due_date(client: TestClient) -> None:
+    for title, priority, due in [
+        ("Baja", "baja", None),
+        ("Media sin fecha", "media", None),
+        ("Media pronto", "media", "2026-11-05"),
+        ("Alta", "alta", "2026-12-01"),
+    ]:
+        client.post("/api/tasks", json={"title": title, "priority": priority, "due_date": due})
+    client.post("/api/tasks", json={"title": "Lista", "status": "hecho"})
+
+    board = client.get("/api/tasks/board").json()
+    assert list(board) == ["pendiente", "en_progreso", "hecho"]
+    assert [t["title"] for t in board["pendiente"]] == [
+        "Alta",
+        "Media pronto",
+        "Media sin fecha",
+        "Baja",
+    ]
+    assert (board["en_progreso"], [t["title"] for t in board["hecho"]]) == ([], ["Lista"])
 
 
 def test_task_validation(client: TestClient) -> None:

@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime
+from typing import get_args
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -14,8 +15,12 @@ from app.modules.negocio.negocio_schema import (
     GoalUpdate,
     ProjectIn,
     TaskIn,
+    TaskPriority,
+    TaskStatus,
     TaskUpdate,
 )
+
+PRIORITY_RANK = {p: i for i, p in enumerate(get_args(TaskPriority))}
 
 
 def _check_project(session: Session, project_id: str | None) -> None:
@@ -46,8 +51,13 @@ def delete_project(session: Session, project_id: str) -> None:
 
 
 # ─── Tareas ─────────────────────────────────────────────────
-def list_tasks(session: Session, project_id: str | None) -> list[StratusTask]:
-    return repository.list_tasks(session, project_id)
+def board(session: Session, project_id: str | None) -> dict[str, list[StratusTask]]:
+    """Tareas por columna; en cada una, primero la más prioritaria y la que vence antes."""
+    columns: dict[str, list[StratusTask]] = {s: [] for s in get_args(TaskStatus)}
+    tasks = repository.list_tasks(session, project_id)
+    for task in sorted(tasks, key=lambda t: (PRIORITY_RANK[t.priority], t.due_date or date.max)):
+        columns[task.status].append(task)
+    return columns
 
 
 def create_task(session: Session, payload: TaskIn) -> StratusTask:

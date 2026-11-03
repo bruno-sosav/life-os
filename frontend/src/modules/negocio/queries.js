@@ -7,8 +7,8 @@ export const createProject = (payload) => api('/projects', { method: 'POST', bod
 export const deleteProject = (id) => api(`/projects/${id}`, { method: 'DELETE' })
 
 // ─── Tareas ─────────────────────────────────────────────────
-// completed_at lo maneja el backend según el status
-export const fetchTasks = (projectId) => api('/tasks', { params: { project_id: projectId } })
+// completed_at lo maneja el backend según el status; el tablero llega agrupado y ordenado
+export const fetchBoard = (projectId) => api('/tasks/board', { params: { project_id: projectId } })
 export const createTask = (payload) => api('/tasks', { method: 'POST', body: payload })
 export const updateTask = (id, patch) => api(`/tasks/${id}`, { method: 'PATCH', body: patch })
 export const deleteTask = (id) => api(`/tasks/${id}`, { method: 'DELETE' })

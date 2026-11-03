@@ -42,7 +42,7 @@ export default function Goals() {
               <div className="flex items-center justify-between mb-1.5">
                 <span className={`text-sm font-medium ${g.completed ? 'text-[#30D158] line-through opacity-60' : ''}`}>{g.title}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold" style={{ color: g.progress >= 100 ? '#30D158' : 'rgba(255,255,255,0.4)' }}>{g.progress}%</span>
+                  <span className="text-xs font-bold" style={{ color: g.completed ? '#30D158' : 'rgba(255,255,255,0.4)' }}>{g.progress}%</span>
                   <button onClick={() => deleteGoal(g.id).then(() => { toast.success('Eliminado'); goalsQ.refetch() })}
                     className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs">✕</button>
                 </div>
@@ -50,7 +50,7 @@ export default function Goals() {
               <div className="h-1.5 bg-white/[0.07] rounded-full overflow-hidden mb-1.5">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${g.progress}%`, background: g.progress >= 100 ? '#30D158' : '#0A84FF' }}
+                  style={{ width: `${g.progress}%`, background: g.completed ? '#30D158' : '#0A84FF' }}
                 />
               </div>
               <input

@@ -6,6 +6,7 @@ from app.core.database.conexion_database import SessionDep
 from app.modules.negocio import negocio_service as service
 from app.modules.negocio.negocio_model import Project, StratusGoal, StratusIdea, StratusTask
 from app.modules.negocio.negocio_schema import (
+    Board,
     BusinessIdeaIn,
     BusinessIdeaOut,
     GoalIn,
@@ -39,9 +40,9 @@ def delete_project(project_id: str, session: SessionDep) -> Response:
     return Response(status_code=NO_CONTENT)
 
 
-@router.get("/tasks", response_model=list[TaskOut])
-def list_tasks(session: SessionDep, project_id: str | None = None) -> list[StratusTask]:
-    return service.list_tasks(session, project_id)
+@router.get("/tasks/board", response_model=Board)
+def task_board(session: SessionDep, project_id: str | None = None) -> dict[str, list[StratusTask]]:
+    return service.board(session, project_id)
 
 
 @router.post("/tasks", response_model=TaskOut, status_code=CREATED)
