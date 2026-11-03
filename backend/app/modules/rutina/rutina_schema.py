@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 
-from app.core.base_schema import ORMModel, UTCDateTime
+from app.core.base_schema import Label, ORMModel, UTCDateTime
 
 DayOfWeek = Annotated[int, Field(ge=0, le=6)]  # 0 = lunes … 6 = domingo
 
@@ -74,7 +74,7 @@ class RoutineBlockFields(BaseModel):
     hour_min: int = Field(default=0, ge=0, le=59)
     hour_end: int = Field(ge=0, le=23)
     activity: str = Field(min_length=1, max_length=255)
-    category: str | None = None
+    category: Label | None = None
     emoji: str | None = None
     color: str | None = None
 

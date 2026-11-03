@@ -25,6 +25,8 @@ export function upsertRoutineBlock({ id, ...payload }) {
     : api('/routine-blocks', { method: 'POST', body: payload })
 }
 
+export const fetchBlockCategories = () => api('/routine-blocks/categories')
+
 export const deleteRoutineBlock = (id) => api(`/routine-blocks/${id}`, { method: 'DELETE' })
 
 export const toggleRoutineCompletion = ({ block_id, date, completed }) =>

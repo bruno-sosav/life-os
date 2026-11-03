@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Card from '../../components/Card.jsx'
 import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
-import { fmt, todayISO } from '../../lib/dates.js'
+import { todayISO } from '../../lib/dates.js'
 import { createBook, updateBook, deleteBook } from './queries.js'
 
 const SHELVES = [

@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import Modal from '../../components/Modal.jsx'
 import Button from '../../components/Button.jsx'
 import DrumPicker from '../../components/DrumPicker.jsx'
-import { CATEGORY_COLORS } from '../../lib/constants.js'
-import { upsertRoutineBlock, deleteRoutineBlock } from './queries.js'
+import LabelPicker from '../../components/LabelPicker.jsx'
+import { useAsync } from '../../hooks/useAsync.js'
+import { upsertRoutineBlock, deleteRoutineBlock, fetchBlockCategories } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
 const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -13,11 +14,12 @@ const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 const EMOJIS = ['🏋️', '🥊', '📖', '💼', '🍳', '🧘', '🏃', '☕', '💻', '🎯', '🛌', '🎵']
 const empty = {
   days_of_week: [], hour_start: 7, hour_min: 0, hour_end: 8, activity: '',
-  category: 'personal', emoji: '', repeat_weekly: true, specific_date: ''
+  category: '', emoji: '', repeat_weekly: true, specific_date: ''
 }
 
 export default function EditRoutineModal({ open, onClose, initial, selectedWeekday, onSaved }) {
   const [form, setForm] = useState(empty)
+  const categoriesQ = useAsync(() => (open ? fetchBlockCategories() : Promise.resolve([])), [open])
 
   useEffect(() => {
     if (!open) return
@@ -28,7 +30,7 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
         hour_min: initial.hour_min ?? 0,
         hour_end: initial.hour_end ?? 8,
         activity: initial.activity ?? '',
-        category: initial.category ?? 'personal',
+        category: initial.category ?? '',
         emoji: initial.emoji ?? '',
         repeat_weekly: initial.repeat_weekly ?? true,
         specific_date: initial.specific_date ?? ''
@@ -56,9 +58,8 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
         hour_min: Number(form.hour_min),
         hour_end: Number(form.hour_end),
         activity: form.activity.trim(),
-        category: form.category,
-        emoji: form.emoji || null,
-        color: CATEGORY_COLORS[form.category] || CATEGORY_COLORS.default
+        category: form.category.trim() || null,
+        emoji: form.emoji || null
       })
       toast.success(initial?.id ? 'Bloque actualizado ✓' : 'Bloque creado ✓')
       onSaved()
@@ -115,14 +116,9 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
               ))}
             </div>
           </div>
-          <div>
-            <label className="label">Categoría</label>
-            <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-              {Object.keys(CATEGORY_COLORS).filter(k => k !== 'default').map((k) => (
-                <option key={k} value={k}>{k}</option>
-              ))}
-            </select>
-          </div>
+          <LabelPicker id="block-category" label="Categoría (opcional)" value={form.category}
+            onChange={(category) => setForm({ ...form, category })}
+            options={categoriesQ.data || []} placeholder="Estudio, Trabajo…" />
         </div>
 
         <div>

@@ -15,9 +15,6 @@ import {
   fetchMonthExpenses, createExpense, deleteExpense
 } from './queries.js'
 import { fmt } from '../../lib/dates.js'
-import {
-  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Tooltip, XAxis, YAxis, CartesianGrid
-} from 'recharts'
 
 
 function fmt$ (n) {

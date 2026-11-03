@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 // ─── Proyectos ──────────────────────────────────────────────
 export const fetchProjects = () => api('/projects')
 export const createProject = (payload) => api('/projects', { method: 'POST', body: payload })
-export const deleteProject = (id) => api(`/projects/${id}`, { method: 'DELETE' })
 
 // ─── Tareas ─────────────────────────────────────────────────
 // completed_at lo maneja el backend según el status; el tablero llega agrupado y ordenado

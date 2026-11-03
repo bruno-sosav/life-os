@@ -119,3 +119,13 @@ def test_routine_block_schedule_rules(client: TestClient) -> None:
     assert client.post("/api/routine-blocks", json={**base, "days_of_week": []}).status_code == 422
     no_date = {**base, "repeat_weekly": False}
     assert client.post("/api/routine-blocks", json=no_date).status_code == 422
+
+
+def test_block_categories_are_free_labels(client: TestClient) -> None:
+    base = {"hour_start": 7, "hour_end": 8, "activity": "X", "days_of_week": [0]}
+    for category in ("🎸 Música", " 🎸 Música ", "Estudio", None):
+        client.post("/api/routine-blocks", json={**base, "category": category})
+    assert client.get("/api/routine-blocks/categories").json() == ["🎸 Música", "Estudio"]
+
+    too_long = {**base, "category": "x" * 31}
+    assert client.post("/api/routine-blocks", json=too_long).status_code == 422

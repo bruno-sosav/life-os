@@ -70,6 +70,6 @@ def month_summary(session: Session, month: date) -> MonthSummary:
 
 def labels(session: Session) -> Labels:
     return Labels(
-        expense_categories=repository.used_labels(session, FinanceExpense.category),
-        income_sources=repository.used_labels(session, FinanceIncome.source),
+        expense_categories=base_repository.used_labels(session, FinanceExpense.category),
+        income_sources=base_repository.used_labels(session, FinanceIncome.source),
     )

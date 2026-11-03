@@ -50,6 +50,11 @@ def upsert_habit_log(payload: HabitLogUpsert, session: SessionDep) -> HabitLog:
     return service.upsert_habit_log(session, payload)
 
 
+@router.get("/routine-blocks/categories", response_model=list[str])
+def block_categories(session: SessionDep) -> list[str]:
+    return service.block_categories(session)
+
+
 @router.post("/routine-blocks", response_model=RoutineBlockOut, status_code=CREATED)
 def create_routine_block(payload: RoutineBlockIn, session: SessionDep) -> RoutineBlock:
     return service.create_routine_block(session, payload)

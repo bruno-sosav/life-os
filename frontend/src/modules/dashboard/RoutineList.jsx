@@ -1,11 +1,11 @@
 import RoutineItem from './RoutineItem.jsx'
-import { CATEGORY_COLORS } from '../../lib/constants.js'
+import { colorFor } from '../../lib/constants.js'
 
 // Color de cada ítem: el propio, o el de su categoría (bloques) / verde (hábitos)
 function itemColor(item) {
   if (item.color) return item.color
   return item.kind === 'block'
-    ? CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default
+    ? (item.category ? colorFor(item.category) : '#5b5b68')
     : '#30D158'
 }
 

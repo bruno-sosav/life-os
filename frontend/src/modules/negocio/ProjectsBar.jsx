@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Button from '../../components/Button.jsx'
 import Modal from '../../components/Modal.jsx'
-import { createProject, deleteProject } from './queries.js'
+import { createProject } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
 const EMOJIS = ['📁', '🚀', '💼', '🌐', '🏢', '📱', '⚡', '🎯', '💡', '🛠']

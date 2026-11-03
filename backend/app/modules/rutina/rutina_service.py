@@ -64,6 +64,10 @@ def list_routine_blocks(session: Session) -> list[RoutineBlock]:
     return repository.list_routine_blocks(session)
 
 
+def block_categories(session: Session) -> list[str]:
+    return base_repository.used_labels(session, RoutineBlock.category)
+
+
 def create_routine_block(session: Session, payload: RoutineBlockIn) -> RoutineBlock:
     return base_repository.save(session, RoutineBlock(**payload.model_dump()))
 
