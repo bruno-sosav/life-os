@@ -295,3 +295,13 @@ def test_nutrition_average_last_7_days(client: TestClient) -> None:
     client.put("/api/nutrition-logs/2026-10-13", json={"meals_count": 3})  # sin calidad: no cuenta
     average = client.get("/api/nutrition-logs/average", params={"today": "2026-10-14"}).json()
     assert average == {"avg_quality": 4.5}  # el 07 queda afuera
+
+
+def test_weight_goal(client: TestClient) -> None:
+    assert client.get("/api/weight-goal").json() == {"weight_kg": None}
+    client.put("/api/weight-goal", json={"weight_kg": 80})
+    client.put("/api/weight-goal", json={"weight_kg": 78.5})  # pisa la misma fila
+    assert client.get("/api/weight-goal").json() == {"weight_kg": 78.5}
+    client.put("/api/weight-goal", json={"weight_kg": None})
+    assert client.get("/api/weight-goal").json() == {"weight_kg": None}
+    assert client.put("/api/weight-goal", json={"weight_kg": 0}).status_code == 422

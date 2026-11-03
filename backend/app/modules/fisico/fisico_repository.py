@@ -11,6 +11,7 @@ from app.modules.fisico.fisico_model import (
     ActivitySession,
     NutritionLog,
     SessionExercise,
+    WeightGoal,
     WeightLog,
 )
 
@@ -108,6 +109,10 @@ def list_weight_logs(session: Session, start: date | None) -> list[WeightLog]:
 
 def weight_log_of(session: Session, day: date) -> WeightLog | None:
     return session.scalar(select(WeightLog).where(WeightLog.date == day))
+
+
+def weight_goal(session: Session) -> WeightGoal | None:
+    return session.scalar(select(WeightGoal).limit(1))
 
 
 def list_nutrition_logs(session: Session, start: date | None) -> list[NutritionLog]:

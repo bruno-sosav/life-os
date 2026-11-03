@@ -77,6 +77,14 @@ class WeightLog(UUIDPk, CreatedAt, Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
 
+class WeightGoal(UUIDPk, CreatedAt, Base):
+    """Una sola fila: la meta de peso que se marca en el gráfico."""
+
+    __tablename__ = "weight_goals"
+
+    weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+
+
 class NutritionLog(UUIDPk, CreatedAt, Base):
     __tablename__ = "nutrition_logs"
     __table_args__ = (CheckConstraint("quality_score BETWEEN 1 AND 5", name="quality_score"),)

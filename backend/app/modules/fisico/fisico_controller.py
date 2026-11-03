@@ -18,6 +18,7 @@ from app.modules.fisico.fisico_schema import (
     ProgressionPoint,
     SessionIn,
     SessionOut,
+    WeightGoalIn,
     WeightLogIn,
     WeightLogOut,
 )
@@ -111,6 +112,16 @@ def list_weight_logs(session: SessionDep, start: date | None = None) -> list[Wei
 @router.put("/weight-logs/{day}", response_model=WeightLogOut)
 def upsert_weight_log(day: date, payload: WeightLogIn, session: SessionDep) -> WeightLog:
     return service.upsert_weight_log(session, day, payload)
+
+
+@router.get("/weight-goal", response_model=WeightGoalIn)
+def get_weight_goal(session: SessionDep) -> WeightGoalIn:
+    return service.get_weight_goal(session)
+
+
+@router.put("/weight-goal", response_model=WeightGoalIn)
+def set_weight_goal(payload: WeightGoalIn, session: SessionDep) -> WeightGoalIn:
+    return service.set_weight_goal(session, payload)
 
 
 @router.get("/nutrition-logs", response_model=list[NutritionLogOut])

@@ -56,6 +56,9 @@ export const fetchFieldSeries = (activityId, fieldId) =>
 export const fetchWeightLogs = (rangeDays = 90) =>
   api('/weight-logs', { params: { start: daysAgoISO(rangeDays) } })
 
+export const fetchWeightGoal = () => api('/weight-goal')
+export const saveWeightGoal = (weight_kg) => api('/weight-goal', { method: 'PUT', body: { weight_kg } })
+
 export const upsertWeightLog = ({ date, weight_kg, notes }) =>
   api(`/weight-logs/${date}`, { method: 'PUT', body: { weight_kg, notes } })
 

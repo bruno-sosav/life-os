@@ -8,9 +8,12 @@ import {
   upsertWeightLog,
   fetchNutritionLogs,
   upsertNutritionLog,
-  fetchNutritionAverage
+  fetchNutritionAverage,
+  fetchWeightGoal,
+  saveWeightGoal
 } from './queries.js'
 import { todayISO } from '../../lib/dates.js'
+import { toast } from '../../store/toastStore.js'
 import {
   ResponsiveContainer,
   LineChart,
@@ -31,7 +34,9 @@ const RANGES = [
 
 export default function Peso() {
   const [range, setRange] = useState(30)
-  const [goal, setGoal] = useState(() => Number(localStorage.getItem('lifeos.weight.goal') || 0))
+  const goalQ = useAsync(() => fetchWeightGoal(), [])
+  const goal = goalQ.data?.weight_kg ?? null
+  const [goalInput, setGoalInput] = useState('')
   const weightQ = useAsync(() => fetchWeightLogs(range), [range])
   const nutritionQ = useAsync(() => fetchNutritionLogs(30), [])
   const nutritionAvgQ = useAsync(() => fetchNutritionAverage(), [])
@@ -72,9 +77,25 @@ export default function Peso() {
     nutritionAvgQ.refetch()
   }
 
-  function saveGoal(v) {
-    setGoal(v)
-    localStorage.setItem('lifeos.weight.goal', String(v))
+  useEffect(() => { setGoalInput(goal ?? '') }, [goal])
+
+  // La meta antes vivía en el navegador: si quedó una ahí y el backend no tiene, se sube una vez
+  useEffect(() => {
+    if (!goalQ.data || goal !== null) return
+    const old = Number(localStorage.getItem('lifeos.weight.goal'))
+    if (!(old > 0)) return
+    saveWeightGoal(old)
+      .then(() => { localStorage.removeItem('lifeos.weight.goal'); goalQ.refetch() })
+      .catch(() => {}) // se reintenta la próxima vez que se abra Peso
+  }, [goalQ.data])
+
+  async function saveGoal() {
+    const value = goalInput === '' ? null : Number(goalInput)
+    if (value === goal) return
+    try {
+      await saveWeightGoal(value)
+      goalQ.refetch()
+    } catch (e) { toast.error('Error: ' + e.message) }
   }
 
   const chartData = useMemo(
@@ -102,7 +123,7 @@ export default function Peso() {
                 <Tooltip
                   contentStyle={{ background: '#1d1d22', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}
                 />
-                {goal > 0 && (
+                {goal !== null && (
                   <ReferenceLine y={goal} stroke="#1D9E75" strokeDasharray="4 4" label={{ value: `Meta ${goal}kg`, position: 'right', fill: '#1D9E75', fontSize: 10 }} />
                 )}
                 <Line type="monotone" dataKey="weight" stroke="#7F77DD" strokeWidth={2.5} dot={{ r: 3 }} />
@@ -123,7 +144,8 @@ export default function Peso() {
           <span>Meta:</span>
           <input
             type="number" step="0.1" className="input !py-1 max-w-[100px] text-xs"
-            value={goal || ''} onChange={(e) => saveGoal(Number(e.target.value))}
+            value={goalInput} onChange={(e) => setGoalInput(e.target.value)}
+            onBlur={saveGoal} onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
             placeholder="kg"
           />
         </div>

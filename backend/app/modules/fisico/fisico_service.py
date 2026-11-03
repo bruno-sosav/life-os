@@ -14,6 +14,7 @@ from app.modules.fisico.fisico_model import (
     ActivitySession,
     NutritionLog,
     SessionExercise,
+    WeightGoal,
     WeightLog,
 )
 from app.modules.fisico.fisico_schema import (
@@ -30,6 +31,7 @@ from app.modules.fisico.fisico_schema import (
     NutritionLogIn,
     ProgressionPoint,
     SessionIn,
+    WeightGoalIn,
     WeightLogIn,
 )
 from app.modules.rutina import Habit, HabitLogUpsert, completed_habit_logs, upsert_habit_log
@@ -259,6 +261,17 @@ def upsert_weight_log(session: Session, day: date, payload: WeightLogIn) -> Weig
 
 
 # ─── Nutrición ──────────────────────────────────────────────
+def get_weight_goal(session: Session) -> WeightGoalIn:
+    goal = repository.weight_goal(session)
+    return WeightGoalIn(weight_kg=goal.weight_kg if goal else None)
+
+
+def set_weight_goal(session: Session, payload: WeightGoalIn) -> WeightGoalIn:
+    goal = repository.weight_goal(session) or WeightGoal()
+    base_repository.save(session, base_repository.apply(goal, payload.model_dump()))
+    return payload
+
+
 def list_nutrition_logs(session: Session, start: date | None) -> list[NutritionLog]:
     return repository.list_nutrition_logs(session, start)
 

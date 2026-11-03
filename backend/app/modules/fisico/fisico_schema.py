@@ -163,6 +163,10 @@ class WeightLogOut(WeightLogIn, ORMModel):
     created_at: UTCDateTime
 
 
+class WeightGoalIn(BaseModel):
+    weight_kg: float | None = Field(gt=0, lt=1000)  # None = sin meta
+
+
 class NutritionLogIn(BaseModel):
     quality_score: int | None = Field(default=None, ge=1, le=5)
     meals_count: int | None = Field(default=None, ge=0, le=20)
