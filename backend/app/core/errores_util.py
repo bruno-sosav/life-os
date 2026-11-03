@@ -9,3 +9,8 @@ def get_or_404[T: Base](session: Session, model: type[T], id_: str) -> T:
     if obj is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"{model.__name__} {id_} no existe")
     return obj
+
+
+def unprocessable(detail: str) -> HTTPException:
+    """422 para una regla de negocio que no se cumple (el schema ya validó el formato)."""
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail)
