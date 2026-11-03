@@ -30,6 +30,7 @@ from app.modules.rutina import (
     habit_runs_on,
     list_habits,
     list_routine_blocks,
+    scheduled_on,
     streaks,
 )
 from app.modules.rutina import get_weekly_review as weekly_review_of
@@ -40,7 +41,7 @@ def global_streak(
     today: date,
     blocks: Sequence[RoutineBlock],
     habits: Sequence[Habit],
-    done_dates: Iterable[date],
+    done: Iterable[tuple[str, date]],
 ) -> int:
     """Días seguidos (hacia atrás desde hoy) con al menos el 70 % de la agenda cumplida.
 
@@ -48,11 +49,11 @@ def global_streak(
     si todavía no, no corta la racha porque el día no terminó.
     """
     days = pd.date_range(end=pd.Timestamp(today), periods=STREAK_WINDOW_DAYS, freq="D")
-    return streaks(day_status(today, days, blocks, habits, done_dates))[0]
+    return streaks(day_status(today, days, blocks, habits, done))[0]
 
 
 def habit_completion_pct(
-    week_start: date, today: date, habits: Sequence[Habit], done_dates: Iterable[date]
+    week_start: date, today: date, habits: Sequence[Habit], done: Iterable[tuple[str, date]]
 ) -> int | None:
     """% de hábitos cumplidos en la semana, contando solo hasta hoy. None si no tocaba ninguno."""
     week_end = min(week_start + timedelta(days=6), today)
@@ -60,8 +61,8 @@ def habit_completion_pct(
         return None
     days = pd.date_range(start=pd.Timestamp(week_start), end=pd.Timestamp(week_end), freq="D")
     expected = int(expected_per_day(days, [], habits).sum())
-    done = int(done_per_day(days, done_dates).sum())
-    return js_round(done / expected * 100) if expected else None
+    did = int(done_per_day(days, [], habits, done).sum())
+    return js_round(did / expected * 100) if expected else None
 
 
 # ─── Agenda del día ─────────────────────────────────────────
@@ -80,6 +81,14 @@ def _start_minutes(item: RoutineBlock | Habit) -> int | None:
     return item.start_time.hour * 60 + item.start_time.minute
 
 
+def _on_agenda(item: RoutineBlock | Habit, day: date, today: date) -> bool:
+    if day < today:
+        return scheduled_on(item, day)
+    if isinstance(item, RoutineBlock):
+        return block_runs_on(item, day)
+    return habit_runs_on(item, day.weekday())
+
+
 def week_days(today: date) -> list[dict[str, Any]]:
     days = days_between(week_bounds(today))
     return [{"date": d, "weekday": d.weekday(), "is_today": d == today} for d in days]
@@ -93,14 +102,17 @@ def agenda(
     done_block_ids: set[str],
     done_habit_ids: set[str],
 ) -> dict[str, Any]:
-    """Bloques y hábitos de `day`, ordenados por hora y agrupados por momento del día."""
+    """Bloques y hábitos de `day`, ordenados por hora y agrupados por momento del día.
+
+    Un día pasado muestra lo que estaba agendado entonces (lo mismo que cuenta la racha).
+    Hoy y los días futuros muestran todo, también lo recién creado.
+    """
+    done_ids = done_block_ids | done_habit_ids
     entries: list[tuple[int | None, dict[str, Any]]] = []
-    for block in blocks:
-        if block_runs_on(block, day):
-            entries.append((_start_minutes(block), _agenda_item(block, block.id in done_block_ids)))
-    for habit in habits:
-        if habit_runs_on(habit, day.weekday()):
-            entries.append((_start_minutes(habit), _agenda_item(habit, habit.id in done_habit_ids)))
+    items: list[RoutineBlock | Habit] = [*blocks, *habits]
+    for item in items:
+        if _on_agenda(item, day, today):
+            entries.append((_start_minutes(item), _agenda_item(item, item.id in done_ids)))
     # Primero los que tienen hora (por hora); al final los sin horario. Orden estable.
     entries.sort(key=lambda e: (e[0] is None, e[0] or 0))
 
@@ -185,8 +197,8 @@ def activity_days(
 def get_streak(session: Session, today: date) -> StreakOut:
     start = today - timedelta(days=STREAK_WINDOW_DAYS - 1)
     done = [
-        *(day for _, day in completed_habit_logs(session, start, today)),
-        *(day for _, day in block_completions(session, start, today)),
+        *completed_habit_logs(session, start, today),
+        *block_completions(session, start, today),
     ]
     blocks = list_routine_blocks(session)
     habits = list_habits(session, active=True)
@@ -209,7 +221,7 @@ def get_weekly_review(session: Session, today: date) -> WeeklyReviewSummary:
     week_start, week_end = week_bounds(today)
     prev_start = week_bounds(today, 1).start
     habits = list_habits(session, active=True)
-    done = [day for _, day in completed_habit_logs(session, prev_start, week_end)]
+    done = completed_habit_logs(session, prev_start, week_end)
 
     habit_pct = habit_completion_pct(week_start, today, habits, done) or 0
     prev_habit_pct = habit_completion_pct(prev_start, today, habits, done)

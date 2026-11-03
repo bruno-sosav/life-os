@@ -19,6 +19,3 @@ def get_current_user(
     if credentials is None:
         raise UNAUTHORIZED
     return service.user_from_token(session, credentials.credentials)
-
-
-CurrentUser = Annotated[User, Depends(get_current_user)]

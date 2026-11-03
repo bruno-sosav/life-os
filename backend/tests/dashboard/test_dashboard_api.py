@@ -90,7 +90,7 @@ def test_agenda(client: TestClient) -> None:
     )
 
     agenda = client.get(
-        "/api/dashboard/agenda", params={"date": "2026-10-19", "today": "2026-10-21"}
+        "/api/dashboard/agenda", params={"date": "2026-10-19", "today": "2026-10-19"}
     ).json()
     sections = {
         s["key"]: [(i["title"], i["time"], i["done"]) for i in s["items"]]
@@ -104,15 +104,7 @@ def test_agenda(client: TestClient) -> None:
     }
     assert (agenda["completed"], agenda["total"], agenda["pct"]) == (2, 4, 50)
     assert agenda["weekday"] == 0
-    assert [d["is_today"] for d in agenda["week"]] == [
-        False,
-        False,
-        True,
-        False,
-        False,
-        False,
-        False,
-    ]
+    assert [d["is_today"] for d in agenda["week"]] == [True, *[False] * 6]
     assert agenda["sections"][0]["items"][0]["block"]["id"] == gym["id"]
 
     # Jueves: solo los hábitos diarios, ninguno hecho

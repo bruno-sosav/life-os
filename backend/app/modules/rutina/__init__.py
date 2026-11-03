@@ -1,13 +1,7 @@
 """Rutina: hábitos y sus registros, bloques de horario, completions y cierre semanal."""
 
 from app.modules.rutina.rutina_controller import router
-from app.modules.rutina.rutina_model import (
-    Habit,
-    HabitLog,
-    RoutineBlock,
-    RoutineCompletion,
-    WeeklyReview,
-)
+from app.modules.rutina.rutina_model import Habit, HabitLog, RoutineBlock
 from app.modules.rutina.rutina_schema import HabitLogUpsert
 from app.modules.rutina.rutina_service import (
     STREAK_WINDOW_DAYS,
@@ -22,6 +16,7 @@ from app.modules.rutina.rutina_service import (
     habit_runs_on,
     list_habits,
     list_routine_blocks,
+    scheduled_on,
     streaks,
     upsert_habit_log,
 )
@@ -33,8 +28,6 @@ __all__ = [
     "HabitLog",
     "HabitLogUpsert",
     "RoutineBlock",
-    "RoutineCompletion",
-    "WeeklyReview",
     "block_completions",
     "block_runs_on",
     "completed_habit_logs",
@@ -46,6 +39,7 @@ __all__ = [
     "list_habits",
     "list_routine_blocks",
     "router",
+    "scheduled_on",
     "streaks",
     "upsert_habit_log",
 ]

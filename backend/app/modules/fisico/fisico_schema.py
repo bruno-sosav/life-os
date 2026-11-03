@@ -143,11 +143,11 @@ class AttendanceWeek(BaseModel):
 
 class MonthDay(BaseModel):
     date: dt.date
-    attended: bool | None  # None = sin sesión ese día
+    attended: bool | None  # False = sesión sin asistir; None = nada ese día
 
 
 class ActivityMonth(BaseModel):
-    count: int  # sesiones registradas en el mes (asistidas o no)
+    count: int  # días asistidos en el mes
     days: list[MonthDay]
 
 

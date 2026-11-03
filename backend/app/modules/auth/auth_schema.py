@@ -12,7 +12,3 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_at: UTCDateTime
-
-
-class MeOut(BaseModel):
-    username: str

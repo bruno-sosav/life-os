@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Card from '../../components/Card.jsx'
 import Button from '../../components/Button.jsx'
 import Tabs from '../../components/Tabs.jsx'
@@ -41,9 +41,17 @@ export default function Peso() {
   const todayWeight = (weightQ.data || []).find((w) => w.date === today)
 
   const [w, setW] = useState('')
-  const [q, setQ] = useState(todayNut?.quality_score || 3)
-  const [meals, setMeals] = useState(todayNut?.meals_count || 3)
-  const [water, setWater] = useState(todayNut?.water_liters || 2)
+  const [q, setQ] = useState(3)
+  const [meals, setMeals] = useState(3)
+  const [water, setWater] = useState(2)
+
+  // Lo de hoy llega después del primer render: sin esto, guardar pisaba lo cargado con los valores por defecto
+  useEffect(() => {
+    if (!todayNut) return
+    setQ(todayNut.quality_score ?? 3)
+    setMeals(todayNut.meals_count ?? 3)
+    setWater(Number(todayNut.water_liters ?? 2))
+  }, [todayNut?.id])
 
   async function saveWeight() {
     if (!w) return

@@ -205,18 +205,25 @@ def toggle_attendance(session: Session, activity_id: str, day: date) -> Attendan
 
 
 def activity_month(session: Session, activity_id: str, month: date) -> ActivityMonth:
-    """Calendario del mes de `month`: un día por fecha, con o sin sesión."""
+    """Calendario del mes: asistió (sesión o hábito vinculado), faltó (sesión sin asistir) o nada.
+
+    Usa la misma regla que la semana y el dashboard (`attended_days`).
+    """
     activity = get_or_404(session, Activity, activity_id)
     days = days_between(month_bounds(month))
-    sessions = repository.sessions_between(session, activity.id, days[0], days[-1])
-    by_date = {s.date: s.attended for s in sessions}
+    attended = {d for aid, d in attended_days(session, days[0], days[-1]) if aid == activity.id}
+    missed = {
+        s.date for s in repository.sessions_between(session, activity.id, days[0], days[-1])
+    } - attended
     return ActivityMonth(
-        count=len(sessions),
-        days=[MonthDay(date=d, attended=by_date.get(d)) for d in days],
+        count=len(attended),
+        days=[
+            MonthDay(date=d, attended=True if d in attended else False if d in missed else None)
+            for d in days
+        ],
     )
 
 
-# ─── Gráficos ───────────────────────────────────────────────
 def list_exercise_names(session: Session, activity_id: str) -> list[str]:
     return repository.list_exercise_names(session, activity_id)
 

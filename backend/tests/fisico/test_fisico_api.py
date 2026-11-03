@@ -226,6 +226,24 @@ def test_attendance_uses_linked_habit(client: TestClient) -> None:
     assert client.get(f"{url}/week", params={"today": WEDNESDAY}).json()["habit"] is None
 
 
+def test_month_matches_week_with_linked_habit(client: TestClient) -> None:
+    """Desmarcar no suma al contador; el hábito vinculado cuenta en el mes como en la semana."""
+    habit = client.post("/api/habits", json={"name": "Correr"}).json()
+    linked = create_activity(client, name="Correr", habit_id=habit["id"])
+    loose = create_activity(client, name="Yoga")
+    client.put(f"/api/activities/{linked['id']}/attendance/2026-10-13")
+    for _ in range(2):
+        client.put(f"/api/activities/{loose['id']}/attendance/2026-10-13")
+
+    def month(activity: dict[str, Any]) -> dict[str, Any]:
+        url = f"/api/activities/{activity['id']}/month"
+        result: dict[str, Any] = client.get(url, params={"month": "2026-10-01"}).json()
+        return result
+
+    assert (month(linked)["count"], month(linked)["days"][12]["attended"]) == (1, True)
+    assert month(loose)["count"] == 0
+
+
 def test_activity_month(client: TestClient) -> None:
     activity = create_activity(client, name="MMA")
     for day, attended in (("2026-10-03", True), ("2026-10-20", False), ("2026-11-01", True)):
@@ -233,7 +251,7 @@ def test_activity_month(client: TestClient) -> None:
     month = client.get(
         f"/api/activities/{activity['id']}/month", params={"month": "2026-10-15"}
     ).json()
-    assert month["count"] == 2 and len(month["days"]) == 31
+    assert month["count"] == 1 and len(month["days"]) == 31
     assert (month["days"][2]["attended"], month["days"][19]["attended"]) == (True, False)
     assert month["days"][0]["attended"] is None
     assert (

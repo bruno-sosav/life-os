@@ -32,14 +32,14 @@ def test_every_api_route_requires_auth(anon_client: TestClient) -> None:
     assert checked > 40
 
 
-def test_login_and_me(anon_client: TestClient) -> None:
+def test_login_token_opens_protected_routes(anon_client: TestClient) -> None:
     response = anon_client.post(
         "/api/auth/login", json={"username": " Bruno ", "password": PASSWORD}
     )
     assert response.status_code == 200
     token = response.json()["access_token"]
-    me = anon_client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert me.json() == {"username": USERNAME}
+    habits = anon_client.get("/api/habits", headers={"Authorization": f"Bearer {token}"})
+    assert habits.status_code == 200
 
 
 def test_wrong_credentials_same_message(anon_client: TestClient) -> None:

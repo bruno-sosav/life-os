@@ -84,11 +84,16 @@ def _expected_habits(habits: Sequence[Habit], start: date, end: date) -> int:
     return int(expected_per_day(_days(start, end), [], habits).sum())
 
 
+def _done_habits(inp: StatsInput, start: date, end: date) -> int:
+    """Hábitos cumplidos en el rango, contando solo los días en que tocaban."""
+    return int(done_per_day(_days(start, end), [], inp.habits, _done(inp)).sum())
+
+
 # ─── Cumplimiento semanal ───────────────────────────────────
 def week_compliance(inp: StatsInput, week: Period) -> dict[str, Any]:
     """% de lo agendado (hábitos y bloques) que se hizo en la semana, contando hasta hoy.
 
-    Cada día suma como mucho lo que tenía agendado: hacer algo extra no tapa lo que faltó.
+    Cada día suma solo lo que tenía agendado: hacer algo extra no tapa lo que faltó.
     pct es None si en la semana no había nada agendado.
     """
     end = min(week.end, inp.today)
@@ -96,7 +101,7 @@ def week_compliance(inp: StatsInput, week: Period) -> dict[str, Any]:
         return {"pct": None, "done": 0, "expected": 0}
     days = _days(week.start, end)
     expected = expected_per_day(days, inp.blocks, inp.habits)
-    done = done_per_day(days, _done_dates(inp)).clip(upper=expected)
+    done = done_per_day(days, inp.blocks, inp.habits, _done(inp))
     total, did = int(expected.sum()), int(done.sum())
     return {"pct": js_round(did / total * 100) if total else None, "done": did, "expected": total}
 
@@ -121,15 +126,17 @@ def compliance_history(inp: StatsInput) -> list[dict[str, Any]]:
 
 
 # ─── Cumplimiento diario (misma regla del 70 % que la racha del dashboard) ──
-def _done_dates(inp: StatsInput) -> list[date]:
-    """Una fecha por cada hábito o bloque cumplido."""
-    return list(pd.concat([inp.habit_logs["date"], inp.completions["date"]]).dt.date)
+def _done(inp: StatsInput) -> list[tuple[str, date]]:
+    """(id, fecha) de cada hábito o bloque cumplido."""
+    habits = zip(inp.habit_logs["habit_id"], inp.habit_logs["date"].dt.date, strict=True)
+    blocks = zip(inp.completions["block_id"], inp.completions["date"].dt.date, strict=True)
+    return [*habits, *blocks]
 
 
 def daily_status(inp: StatsInput) -> pd.Series:
     """Estado de cada uno de los últimos 90 días, contando hábitos y bloques de rutina."""
     days = _days(inp.today - timedelta(days=HEATMAP_DAYS - 1), inp.today)
-    return day_status(inp.today, days, inp.blocks, inp.habits, _done_dates(inp))
+    return day_status(inp.today, days, inp.blocks, inp.habits, _done(inp))
 
 
 # ─── KPIs ───────────────────────────────────────────────────
@@ -139,8 +146,8 @@ def kpis(inp: StatsInput) -> dict[str, Any]:
     current_streak, best_streak = streaks(daily_status(inp))
 
     expected_month = _expected_habits(inp.habits, month_start, today)
-    done_month = len(_between(inp.habit_logs, month_start, today))
-    habit_month_pct = min(100, js_round(done_month / expected_month * 100)) if expected_month else 0
+    done_month = _done_habits(inp, month_start, today)
+    habit_month_pct = js_round(done_month / expected_month * 100) if expected_month else 0
 
     weights = inp.weights.sort_values("date")
     last_weight = float(weights["kg"].iloc[-1]) if len(weights) else None
@@ -185,7 +192,7 @@ def habits_by_week(inp: StatsInput) -> dict[str, Any]:
 # ─── Radar semanal ──────────────────────────────────────────
 def _radar_metrics(inp: StatsInput, week: Period) -> dict[str, int]:
     expected = _expected_habits(inp.habits, week.start, week.end)
-    done = len(_between(inp.habit_logs, week.start, week.end))
+    done = _done_habits(inp, week.start, week.end)
     workouts = len(_between(inp.workouts, week.start, week.end))
     mental_dates = pd.concat(
         [
