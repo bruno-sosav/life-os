@@ -1,23 +1,22 @@
 import { useEffect, useState } from 'react'
-import Modal from '../../components/Modal.jsx'
-import Button from '../../components/Button.jsx'
-import DrumPicker from '../../components/DrumPicker.jsx'
-import LabelPicker from '../../components/LabelPicker.jsx'
-import { useAsync } from '../../hooks/useAsync.js'
-import { upsertRoutineBlock, deleteRoutineBlock, fetchBlockCategories } from './queries.js'
-import { toast } from '../../store/toastStore.js'
+import Modal from '../../../components/Modal.jsx'
+import Button from '../../../components/Button.jsx'
+import DrumPicker from '../../../components/DrumPicker.jsx'
+import LabelPicker from '../../../components/LabelPicker.jsx'
+import { useAsync } from '../../../hooks/useAsync.js'
+import { deleteRoutineBlock, fetchBlockCategories, upsertRoutineBlock } from '../api/bloques.api.js'
+import { toast } from '../../../store/toastStore.js'
 
 const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
-const EMOJIS = ['🏋️', '🥊', '📖', '💼', '🍳', '🧘', '🏃', '☕', '💻', '🎯', '🛌', '🎵']
 const empty = {
   days_of_week: [], hour_start: 7, hour_min: 0, hour_end: 8, activity: '',
   category: '', emoji: '', repeat_weekly: true, specific_date: ''
 }
 
-export default function EditRoutineModal({ open, onClose, initial, selectedWeekday, onSaved }) {
+export default function BlockModal({ open, onClose, initial, selectedWeekday, onSaved }) {
   const [form, setForm] = useState(empty)
   const categoriesQ = useAsync(() => (open ? fetchBlockCategories() : Promise.resolve([])), [open])
 
@@ -61,7 +60,7 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
         category: form.category.trim() || null,
         emoji: form.emoji || null
       })
-      toast.success(initial?.id ? 'Bloque actualizado ✓' : 'Bloque creado ✓')
+      toast.success(initial?.id ? 'Bloque actualizado' : 'Bloque creado')
       onSaved()
       onClose()
     } catch (e) {
@@ -98,36 +97,20 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
       <div className="space-y-3">
         <div>
           <label className="label">Actividad</label>
-          <input className="input" value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })} placeholder="Gym, MMA, Trabajo…" />
+          <input className="input" value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })} placeholder="Trabajo, Facultad, Gym…" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Emoji</label>
-            <div className="flex gap-1.5 flex-wrap">
-              {EMOJIS.map((e) => (
-                <button
-                  key={e} type="button"
-                  onClick={() => setForm({ ...form, emoji: form.emoji === e ? '' : e })}
-                  className={`w-8 h-8 rounded-lg text-base grid place-items-center transition ${form.emoji === e ? 'bg-white/[0.15] ring-1 ring-white/20' : 'bg-white/[0.05] hover:bg-white/[0.1]'}`}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-          </div>
-          <LabelPicker id="block-category" label="Categoría (opcional)" value={form.category}
+        <LabelPicker id="block-category" label="Categoría (opcional)" value={form.category}
             onChange={(category) => setForm({ ...form, category })}
             options={categoriesQ.data || []} placeholder="Estudio, Trabajo…" />
-        </div>
 
         <div>
           <label className="label">Horario</label>
           <div className="flex items-end justify-center gap-1">
             <DrumPicker values={HOURS} selected={form.hour_start} onChange={(h) => setForm({ ...form, hour_start: h })} label="Inicio" />
-            <span className="text-2xl font-bold text-white/30 pb-2">:</span>
+            <span className="text-2xl font-bold text-ink-400 pb-2">:</span>
             <DrumPicker values={MINUTES} selected={form.hour_min} onChange={(m) => setForm({ ...form, hour_min: m })} label="Min" />
-            <span className="text-xs text-white/25 pb-3 px-2">hasta</span>
+            <span className="text-xs text-ink-500 pb-3 px-2">hasta</span>
             <DrumPicker values={HOURS} selected={form.hour_end} onChange={(h) => setForm({ ...form, hour_end: h })} label="Fin" />
           </div>
         </div>
@@ -138,14 +121,14 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
             <button
               type="button"
               onClick={() => setForm({ ...form, repeat_weekly: true })}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${form.repeat_weekly ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/50'}`}
+              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${form.repeat_weekly ? 'bg-accent text-ink-100' : 'bg-ink-700 text-ink-400'}`}
             >
               Semanal
             </button>
             <button
               type="button"
               onClick={() => setForm({ ...form, repeat_weekly: false })}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${!form.repeat_weekly ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/50'}`}
+              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${!form.repeat_weekly ? 'bg-accent text-ink-100' : 'bg-ink-700 text-ink-400'}`}
             >
               Solo ese día
             </button>
@@ -162,7 +145,7 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
                   <button
                     key={i} type="button"
                     onClick={() => toggleDay(i)}
-                    className={`flex-1 h-9 rounded-xl text-xs font-bold transition ${active ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/40'}`}
+                    className={`flex-1 h-9 rounded-xl text-xs font-bold transition ${active ? 'bg-accent text-ink-100' : 'bg-ink-700 text-ink-400'}`}
                   >
                     {d}
                   </button>

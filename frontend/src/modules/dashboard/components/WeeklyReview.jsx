@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import Modal from '../../components/Modal.jsx'
-import Button from '../../components/Button.jsx'
-import { useAsync } from '../../hooks/useAsync.js'
-import { toast } from '../../store/toastStore.js'
-import { fetchWeeklyReview, saveWeeklyReview } from './queries.js'
+import Modal from '../../../components/Modal.jsx'
+import Button from '../../../components/Button.jsx'
+import { useAsync } from '../../../hooks/useAsync.js'
+import { toast } from '../../../store/toastStore.js'
+import { fetchWeeklyReview } from '../api/dashboard.api.js'
+import { saveWeeklyReview } from '../api/revisiones.api.js'
 
 const MOOD_LABELS = {
   excelente: 'Excelente semana',
@@ -21,10 +22,9 @@ function fmt(d) {
 // `diff` viene calculado; null = sin datos de la semana anterior
 function Delta({ diff }) {
   if (diff == null) return null
-  const color = diff >= 0 ? '#2EBD85' : '#F6465D'
   const arrow = diff >= 0 ? '↑' : '↓'
   return (
-    <span className="text-xs font-semibold ml-1.5" style={{ color }}>
+    <span className={`text-xs font-semibold ${diff >= 0 ? 'text-up' : 'text-down'}`}>
       {arrow} {Math.abs(diff)}% vs semana ant.
     </span>
   )
@@ -48,7 +48,7 @@ export default function WeeklyReview({ open, onClose }) {
     setSaving(true)
     try {
       await saveWeeklyReview({ week_start: week.week_start, went_well: wentWell.trim(), would_change: wouldChange.trim() })
-      toast.success('Revisión guardada ✓')
+      toast.success('Revisión guardada')
       onClose()
     } catch (e) {
       toast.error('Error: ' + e.message)
@@ -70,31 +70,30 @@ export default function WeeklyReview({ open, onClose }) {
     >
       <div className="space-y-5">
         {/* Semana */}
-        <p className="text-xs text-white/35 -mt-1">{weekLabel}</p>
+        <p className="text-xs text-ink-400 -mt-1">{weekLabel}</p>
 
         {/* KPIs */}
         {weekQ.loading ? (
-          <div className="text-sm text-white/30 text-center py-4">Cargando datos…</div>
+          <div className="text-sm text-ink-400 text-center py-4">Cargando datos…</div>
         ) : week ? (
           <div className="grid grid-cols-2 gap-2.5">
             <KPITile
               label="Hábitos"
               value={`${week.habit_pct}%`}
-              color={week.habit_pct >= 70 ? '#2EBD85' : week.habit_pct >= 50 ? '#FF9F0A' : '#F6465D'}
+              tone={week.habit_pct >= 70 ? 'text-up' : week.habit_pct >= 50 ? 'text-warn' : 'text-down'}
               sub={<Delta diff={week.habit_pct_delta} />}
             />
             <KPITile
               label="Mood promedio"
               value={week.avg_mood != null ? `${week.avg_mood.toFixed(1)}/5` : '—'}
-              color="#BF5AF2"
               sub={MOOD_LABELS[week.mood_level] ?? ''}
             />
             {week.activity_days.map((a) => (
-              <KPITile key={a.id} label={`Días de ${a.emoji ? `${a.emoji} ` : ''}${a.name}`} value={a.days} color={a.color || '#2EBD85'} />
+              <KPITile key={a.id} label={`Días de ${a.name}`} value={a.days} dot={a.color} />
             ))}
           </div>
         ) : (
-          <div className="text-sm text-white/30 text-center py-2">Sin datos por ahora.</div>
+          <div className="text-sm text-ink-400 text-center py-2">Sin datos por ahora.</div>
         )}
 
         {/* Reflection */}
@@ -121,12 +120,15 @@ export default function WeeklyReview({ open, onClose }) {
   )
 }
 
-function KPITile({ label, value, color, sub }) {
+function KPITile({ label, value, tone = 'text-ink-100', dot, sub }) {
   return (
-    <div className="bg-white/[0.05] border border-white/[0.07] rounded-[16px] p-3.5">
-      <div className="text-[11px] text-white/35 mb-1">{label}</div>
-      <div className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</div>
-      {sub && <div className="text-[11px] text-white/40 mt-0.5">{sub}</div>}
+    <div className="bg-ink-900 border border-ink-700 rounded-xl p-3.5">
+      <div className="text-[11px] text-ink-400 mb-1 flex items-center gap-1.5">
+        {dot && <span className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />}
+        {label}
+      </div>
+      <div className={`font-mono text-2xl font-bold ${tone}`}>{value}</div>
+      {sub && <div className="text-[11px] text-ink-400 mt-0.5">{sub}</div>}
     </div>
   )
 }

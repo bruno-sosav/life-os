@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import Button from '../../components/Button.jsx'
-import Modal from '../../components/Modal.jsx'
-import DrumPicker from '../../components/DrumPicker.jsx'
-import { createHabit, updateHabit, deleteHabit } from './queries.js'
-import { toast } from '../../store/toastStore.js'
+import Button from '../../../components/Button.jsx'
+import Modal from '../../../components/Modal.jsx'
+import DrumPicker from '../../../components/DrumPicker.jsx'
+import { createHabit, deleteHabit, updateHabit } from '../api/habitos.api.js'
+import { toast } from '../../../store/toastStore.js'
+import { PICK_COLORS as COLORS } from '../../../lib/constants.js'
 
-const COLORS = ['#2EBD85', '#BF5AF2', '#FF9F0A', '#F6465D', '#7C5CFF', '#5AC8FA']
-const EMOJIS = ['✨', '💧', '🏋️', '🥊', '📖', '🧘', '🍳', '💼', '🛌', '🏃', '🎯', '☕']
 const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
@@ -57,7 +56,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
     try {
       if (initial?.id) await updateHabit(initial.id, payload)
       else await createHabit(payload)
-      toast.success(initial?.id ? 'Hábito actualizado ✓' : 'Hábito creado ✓')
+      toast.success(initial?.id ? 'Hábito actualizado' : 'Hábito creado')
       onSaved()
       onClose()
     } catch (e) {
@@ -109,15 +108,15 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
                 <button
                   key={i} type="button"
                   onClick={() => toggleDay(i)}
-                  className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${active ? 'text-white' : 'bg-white/[0.06] text-white/30'}`}
-                  style={active ? { background: form.color } : {}}
+                  aria-pressed={active}
+                  className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${active ? 'bg-accent text-ink-100' : 'bg-ink-700 text-ink-400'}`}
                 >
                   {d}
                 </button>
               )
             })}
           </div>
-          <p className="text-[11px] text-white/30 mt-1.5">Sin selección = todos los días</p>
+          <p className="text-[11px] text-ink-400 mt-1.5">Sin selección = todos los días</p>
         </div>
 
         <div>
@@ -126,7 +125,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
             <button
               type="button"
               onClick={() => setForm({ ...form, hasTime: !form.hasTime })}
-              className={`text-xs px-3 py-1 rounded-full font-semibold transition ${form.hasTime ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.08] text-white/40'}`}
+              className={`text-xs px-3 py-1 rounded-full font-semibold transition ${form.hasTime ? 'bg-accent text-ink-100' : 'bg-ink-600 text-ink-400'}`}
             >
               {form.hasTime ? 'Con horario' : 'Sin horario fijo'}
             </button>
@@ -135,7 +134,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2">
                 <DrumPicker values={HOURS} selected={form.hour} onChange={(h) => setForm({ ...form, hour: h })} label="Hora" />
-                <span className="text-2xl font-bold text-white/40 mt-5">:</span>
+                <span className="text-2xl font-bold text-ink-400 mt-5">:</span>
                 <DrumPicker values={MINUTES} selected={form.minute} onChange={(m) => setForm({ ...form, minute: m })} label="Min" />
               </div>
               <div>
@@ -151,23 +150,13 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
           <div className="flex gap-2">
             {COLORS.map((c) => (
               <button key={c} type="button" onClick={() => setForm({ ...form, color: c })}
-                className={`w-8 h-8 rounded-full border-2 transition ${form.color === c ? 'border-white scale-110' : 'border-transparent'}`}
+                aria-label={`Color ${c}`} aria-pressed={form.color === c}
+                className={`w-8 h-8 rounded-full border-2 transition ${form.color === c ? 'border-ink-100 scale-110' : 'border-transparent'}`}
                 style={{ backgroundColor: c }} />
             ))}
           </div>
         </div>
 
-        <div>
-          <label className="label">Emoji (opcional)</label>
-          <div className="flex gap-1.5 flex-wrap">
-            {EMOJIS.map((e) => (
-              <button key={e} type="button" onClick={() => setForm({ ...form, emoji: form.emoji === e ? '' : e })}
-                className={`w-9 h-9 rounded-lg text-lg grid place-items-center transition ${form.emoji === e ? 'bg-white/[0.15] ring-1 ring-white/20' : 'bg-white/[0.05] hover:bg-white/[0.1]'}`}>
-                {e}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </Modal>
   )

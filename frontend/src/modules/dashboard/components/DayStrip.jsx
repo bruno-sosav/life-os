@@ -24,20 +24,20 @@ export default function DayStrip({ week, selected, onChange }) {
           <button
             key={day.date}
             onClick={() => onChange(day.date)}
+            aria-pressed={isSelected}
             className="flex flex-col items-center gap-1 shrink-0 transition-all duration-200 active:scale-95"
           >
-            <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wide">
+            <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">
               {DAYS_SHORT[day.weekday]}
             </span>
             <span
-              className={`w-9 h-9 rounded-full grid place-items-center text-sm font-bold transition-all duration-200 ${
+              className={`w-10 h-10 rounded-xl grid place-items-center font-mono text-sm font-semibold border transition-all duration-200 ${
                 isSelected
-                  ? 'text-white shadow-lg'
+                  ? 'bg-accent border-accent text-ink-100'
                   : day.is_today
-                  ? 'text-[#7C5CFF]'
-                  : 'text-white/60 hover:text-white'
+                  ? 'border-accent/60 text-accent'
+                  : 'border-ink-700 text-ink-300 hover:text-ink-100 hover:border-ink-600'
               }`}
-              style={isSelected ? { background: '#7C5CFF' } : {}}
             >
               {Number(day.date.slice(8))}
             </span>

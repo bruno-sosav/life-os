@@ -1,20 +1,20 @@
-import RoutineItem from './RoutineItem.jsx'
-import { colorFor } from '../../lib/constants.js'
+import AgendaItem from './AgendaItem.jsx'
+import { colorFor } from '../../../lib/constants.js'
 
 // Color de cada ítem: el propio, o el de su categoría (bloques) / verde (hábitos)
 function itemColor(item) {
   if (item.color) return item.color
   return item.kind === 'block'
-    ? (item.category ? colorFor(item.category) : '#5b5b68')
+    ? (item.category ? colorFor(item.category) : '#8C948F')
     : '#2EBD85'
 }
 
-export default function RoutineList({ sections, onToggle, onEditBlock, onEditHabit, onDeleteHabit }) {
+export default function Agenda({ sections, onToggle, onEditBlock, onEditHabit, onDeleteHabit }) {
   if (sections.length === 0) {
     return (
-      <div className="text-center py-10 text-white/30 text-sm">
-        Sin actividades para este día.<br />
-        <span className="text-xs">Tocá "Editar rutina" para agregar.</span>
+      <div className="text-center py-10 text-ink-400 text-sm">
+        Nada agendado este día.<br />
+        <span className="text-xs">Agregá un bloque o un hábito con los botones de arriba.</span>
       </div>
     )
   }
@@ -25,7 +25,7 @@ export default function RoutineList({ sections, onToggle, onEditBlock, onEditHab
         <div key={section.key}>
           <div className={`section-header ${i === 0 ? '' : 'mt-5'}`}>{section.label}</div>
           {section.items.map((item) => (
-            <RoutineItem
+            <AgendaItem
               key={`${item.kind}-${item.id}`}
               item={item}
               color={itemColor(item)}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function RoutineItem({ item, color, onToggle, onEdit, onDelete }) {
+export default function AgendaItem({ item, color, onToggle, onEdit, onDelete }) {
   const done = item.done
   const [localDone, setLocalDone] = useState(done)
   const [busy, setBusy] = useState(false)
@@ -25,14 +25,14 @@ export default function RoutineItem({ item, color, onToggle, onEdit, onDelete })
 
   return (
     <div
-      className="group flex items-center gap-3 px-3 py-3.5 rounded-[14px] active:bg-white/[0.06] hover:bg-white/[0.04] transition-colors cursor-pointer select-none"
+      className="group flex items-center gap-3 px-3 py-3 rounded-xl active:bg-ink-700 hover:bg-ink-900 transition-colors cursor-pointer select-none"
       onClick={handleToggle}
     >
       {/* Checkbox animado */}
       <motion.div
         className="shrink-0 w-6 h-6 rounded-full border-2 grid place-items-center"
         animate={{
-          borderColor: localDone ? color : 'rgba(255,255,255,0.2)',
+          borderColor: localDone ? color : '#5E6662',
           backgroundColor: localDone ? color : 'rgba(0,0,0,0)',
           scale: busy ? 0.9 : 1,
         }}
@@ -48,7 +48,7 @@ export default function RoutineItem({ item, color, onToggle, onEdit, onDelete })
               transition={{ type: 'spring', stiffness: 600, damping: 22 }}
               width="11" height="11" viewBox="0 0 12 12" fill="none"
             >
-              <path d="M2.5 6l2.8 2.8 4.2-4.8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2.5 6l2.8 2.8 4.2-4.8" stroke="#07090A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </motion.svg>
           )}
         </AnimatePresence>
@@ -56,39 +56,35 @@ export default function RoutineItem({ item, color, onToggle, onEdit, onDelete })
 
       {/* Hora */}
       {item.time && (
-        <span className="text-[11px] font-semibold text-white/35 w-10 shrink-0 tabular-nums">{item.time}</span>
+        <span className="font-mono text-xs text-ink-400 w-11 shrink-0">{item.time}</span>
       )}
 
-      {/* Emoji */}
-      {item.emoji && <span className="text-lg leading-none shrink-0">{item.emoji}</span>}
-
       {/* Nombre */}
-      <span className={`flex-1 text-[15px] font-medium leading-snug transition-colors duration-200 ${localDone ? 'line-through text-white/25' : 'text-white/90'}`}>
+      <span className={`flex-1 text-[15px] font-medium leading-snug transition-colors duration-200 ${localDone ? 'line-through text-ink-400' : 'text-ink-100'}`}>
         {item.title}
       </span>
 
       {/* Categoría pill */}
       {item.category && (
-        <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 hidden sm:inline"
-          style={{ background: `${color}22`, color }}
-        >
+        <span className="text-[10px] font-bold tracking-wider uppercase shrink-0 hidden sm:inline" style={{ color }}>
           {item.category}
         </span>
       )}
 
       {/* Acciones */}
-      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
+      <div className="md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit?.() }}
-          className="w-7 h-7 rounded-lg text-white/25 hover:text-white/70 hover:bg-white/[0.07] text-sm grid place-items-center transition"
+          className="w-9 h-9 md:w-7 md:h-7 rounded-lg text-ink-400 hover:text-ink-300 hover:bg-ink-700 text-sm grid place-items-center transition"
           title="Editar"
+          aria-label={`Editar ${item.title}`}
         >✎</button>
         {onDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete?.() }}
-            className="w-7 h-7 rounded-lg text-white/25 hover:text-red-400 hover:bg-white/[0.07] text-sm grid place-items-center transition"
+            className="w-9 h-9 md:w-7 md:h-7 rounded-lg text-ink-400 hover:text-down hover:bg-ink-700 text-sm grid place-items-center transition"
             title="Eliminar"
+            aria-label={`Eliminar ${item.title}`}
           >✕</button>
         )}
       </div>
