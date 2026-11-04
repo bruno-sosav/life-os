@@ -21,7 +21,7 @@ function fmt(d) {
 // `diff` viene calculado; null = sin datos de la semana anterior
 function Delta({ diff }) {
   if (diff == null) return null
-  const color = diff >= 0 ? '#30D158' : '#FF453A'
+  const color = diff >= 0 ? '#2EBD85' : '#F6465D'
   const arrow = diff >= 0 ? '↑' : '↓'
   return (
     <span className="text-xs font-semibold ml-1.5" style={{ color }}>
@@ -80,7 +80,7 @@ export default function WeeklyReview({ open, onClose }) {
             <KPITile
               label="Hábitos"
               value={`${week.habit_pct}%`}
-              color={week.habit_pct >= 70 ? '#30D158' : week.habit_pct >= 50 ? '#FF9F0A' : '#FF453A'}
+              color={week.habit_pct >= 70 ? '#2EBD85' : week.habit_pct >= 50 ? '#FF9F0A' : '#F6465D'}
               sub={<Delta diff={week.habit_pct_delta} />}
             />
             <KPITile
@@ -90,7 +90,7 @@ export default function WeeklyReview({ open, onClose }) {
               sub={MOOD_LABELS[week.mood_level] ?? ''}
             />
             {week.activity_days.map((a) => (
-              <KPITile key={a.id} label={`Días de ${a.emoji ? `${a.emoji} ` : ''}${a.name}`} value={a.days} color={a.color || '#30D158'} />
+              <KPITile key={a.id} label={`Días de ${a.emoji ? `${a.emoji} ` : ''}${a.name}`} value={a.days} color={a.color || '#2EBD85'} />
             ))}
           </div>
         ) : (

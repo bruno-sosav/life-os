@@ -138,14 +138,14 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
             <button
               type="button"
               onClick={() => setForm({ ...form, repeat_weekly: true })}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${form.repeat_weekly ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/50'}`}
+              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${form.repeat_weekly ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/50'}`}
             >
               Semanal
             </button>
             <button
               type="button"
               onClick={() => setForm({ ...form, repeat_weekly: false })}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${!form.repeat_weekly ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/50'}`}
+              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition ${!form.repeat_weekly ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/50'}`}
             >
               Solo ese día
             </button>
@@ -162,7 +162,7 @@ export default function EditRoutineModal({ open, onClose, initial, selectedWeekd
                   <button
                     key={i} type="button"
                     onClick={() => toggleDay(i)}
-                    className={`flex-1 h-9 rounded-xl text-xs font-bold transition ${active ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/40'}`}
+                    className={`flex-1 h-9 rounded-xl text-xs font-bold transition ${active ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/40'}`}
                   >
                     {d}
                   </button>

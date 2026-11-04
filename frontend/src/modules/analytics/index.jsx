@@ -17,7 +17,7 @@ import { fetchAnalyticsSummary } from './queries.js'
 
 // Todos los números vienen calculados desde /api/analytics/summary: acá solo se dibujan.
 
-const HABIT_COLORS = ['#BF5AF2', '#0A84FF', '#30D158', '#FF9F0A', '#FF453A', '#5AC8FA', '#FFD700', '#FF2D55', '#34C759', '#AF52DE']
+const HABIT_COLORS = ['#BF5AF2', '#7C5CFF', '#2EBD85', '#FF9F0A', '#F6465D', '#5AC8FA', '#FFD700', '#FF2D55', '#34C759', '#AF52DE']
 const TT = {
   contentStyle: { background: '#18181f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, fontSize: 12 },
 }
@@ -26,7 +26,7 @@ const GR = { stroke: 'rgba(255,255,255,0.04)', vertical: false }
 
 // Mismos cortes que el cierre semanal del dashboard; 70 % es la regla de la racha
 const complianceColor = (pct) =>
-  pct == null ? '#8E8E93' : pct >= 70 ? '#30D158' : pct >= 50 ? '#FF9F0A' : '#FF453A'
+  pct == null ? '#8E8E93' : pct >= 70 ? '#2EBD85' : pct >= 50 ? '#FF9F0A' : '#F6465D'
 
 function deltaNote(delta) {
   if (delta == null) return 'sin semana anterior para comparar'
@@ -88,11 +88,11 @@ function KPICard({ label, value, suffix, color, note }) {
 
 // Misma regla que la racha: cumplido = 70 % o más de lo agendado ese día
 const DAY_STATUS = {
-  cumplido: { color: '#30D158', label: 'Cumplido' },
+  cumplido: { color: '#2EBD85', label: 'Cumplido' },
   parcial: { color: '#FF9F0A', label: 'Parcial' },
-  sin_cumplir: { color: '#FF453A', label: 'Sin cumplir' },
+  sin_cumplir: { color: '#F6465D', label: 'Sin cumplir' },
   libre: { color: 'rgba(255,255,255,0.06)', label: 'Sin nada agendado' },
-  pendiente: { color: 'rgba(10,132,255,0.35)', label: 'Hoy, en curso' },
+  pendiente: { color: 'rgba(124,92,255,0.35)', label: 'Hoy, en curso' },
 }
 
 function HeatmapGrid({ cells }) {
@@ -188,11 +188,11 @@ export default function Analytics() {
           label="Racha actual"
           value={kpis.current_streak}
           suffix=" días"
-          color={kpis.current_streak >= 7 ? '#FF9F0A' : kpis.current_streak >= 3 ? '#30D158' : '#0A84FF'}
+          color={kpis.current_streak >= 7 ? '#FF9F0A' : kpis.current_streak >= 3 ? '#2EBD85' : '#7C5CFF'}
           note="seguidos con 70 % o más"
         />
         <KPICard label="Mejor racha" value={kpis.best_streak} suffix=" días" color="#FFD700" note="en los últimos 90 días" />
-        <KPICard label="Entrenos (mes)" value={kpis.workouts_month} color="#30D158" note="todas las actividades" />
+        <KPICard label="Entrenos (mes)" value={kpis.workouts_month} color="#2EBD85" note="todas las actividades" />
         <KPICard label="Hábitos (mes)" value={`${kpis.habit_month_pct}%`} color="#BF5AF2" note="completados del total" />
         <KPICard
           label="Peso actual"
@@ -240,24 +240,24 @@ export default function Analytics() {
                 <AreaChart data={s.compliance_history}>
                   <defs>
                     <linearGradient id="complianceGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#30D158" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#30D158" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#2EBD85" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#2EBD85" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid {...GR} />
                   <XAxis dataKey="week_start" tickFormatter={fmtDay} {...AX} />
                   <YAxis {...AX} domain={[0, 100]} />
                   <Tooltip {...TT} labelFormatter={fmtDay} formatter={(v) => [`${v}%`, 'Cumplimiento']} />
-                  <ReferenceLine y={70} stroke="#30D158" strokeDasharray="4 3" opacity={0.4}
-                    label={{ value: '70%', position: 'insideTopRight', fill: 'rgba(48,209,88,0.6)', fontSize: 10 }} />
+                  <ReferenceLine y={70} stroke="#2EBD85" strokeDasharray="4 3" opacity={0.4}
+                    label={{ value: '70%', position: 'insideTopRight', fill: 'rgba(46,189,133,0.6)', fontSize: 10 }} />
                   <Area
                     type="monotone" dataKey="pct"
-                    stroke="#30D158" strokeWidth={2.5}
+                    stroke="#2EBD85" strokeWidth={2.5}
                     fill="url(#complianceGrad)"
                     dot={({ cx, cy, payload }) => payload.pct == null ? <g key={payload.week_start} /> : (
                       <circle key={payload.week_start} cx={cx} cy={cy}
                         r={payload.is_current ? 5 : 2.5}
-                        fill="#30D158"
+                        fill="#2EBD85"
                         stroke={payload.is_current ? 'white' : 'none'}
                         strokeWidth={payload.is_current ? 2 : 0}
                       />
@@ -283,7 +283,7 @@ export default function Analytics() {
                   <PolarGrid stroke="rgba(255,255,255,0.07)" />
                   <PolarAngleAxis dataKey="axis" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                   <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                  <Radar dataKey="semana" stroke="#0A84FF" fill="#0A84FF" fillOpacity={0.2} name="Esta semana" />
+                  <Radar dataKey="semana" stroke="#7C5CFF" fill="#7C5CFF" fillOpacity={0.2} name="Esta semana" />
                   <Radar dataKey="anterior" stroke="#FF9F0A" fill="#FF9F0A" fillOpacity={0.08} strokeDasharray="4 2" name="Sem. anterior" />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Tooltip {...TT} formatter={(v) => [`${v}%`]} />
@@ -342,7 +342,7 @@ export default function Analytics() {
                   <Tooltip {...TT} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line type="monotone" dataKey="mood" stroke="#BF5AF2" strokeWidth={2.5} dot={{ r: 2 }} name="Mood" />
-                  <Line type="monotone" dataKey="sleep" stroke="#0A84FF" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" name="Sueño (h)" />
+                  <Line type="monotone" dataKey="sleep" stroke="#7C5CFF" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" name="Sueño (h)" />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -381,8 +381,8 @@ export default function Analytics() {
                 <YAxis {...AX} />
                 <Tooltip {...TT} labelFormatter={fmtMonth} formatter={(v) => [`$${v.toLocaleString()}`, '']} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="income" fill="#30D158" radius={[4, 4, 0, 0]} name="Ingresos" />
-                <Bar dataKey="expenses" fill="#FF453A" radius={[4, 4, 0, 0]} name="Gastos" />
+                <Bar dataKey="income" fill="#2EBD85" radius={[4, 4, 0, 0]} name="Ingresos" />
+                <Bar dataKey="expenses" fill="#F6465D" radius={[4, 4, 0, 0]} name="Gastos" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -390,7 +390,7 @@ export default function Analytics() {
             {s.finance_monthly.slice(-3).map((m) => (
               <div key={m.month} className="text-center">
                 <div className="text-[11px] text-white/35">{fmtMonth(m.month)}</div>
-                <div className="text-xl font-bold" style={{ color: m.savings_pct != null && m.savings_pct >= 0 ? '#30D158' : '#FF453A' }}>
+                <div className="text-xl font-bold" style={{ color: m.savings_pct != null && m.savings_pct >= 0 ? '#2EBD85' : '#F6465D' }}>
                   {m.savings_pct != null ? `${m.savings_pct}%` : '—'}
                 </div>
                 <div className="text-[10px] text-white/25">ahorro</div>

@@ -18,7 +18,7 @@ import {
 const DOW = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Actividad({ activity }) {
-  const color = activity.color || '#0A84FF'
+  const color = activity.color || '#7C5CFF'
   const sessionsQ = useAsync(() => fetchSessions(activity.id), [activity.id])
   const weekQ = useAsync(() => fetchAttendanceWeek(activity.id), [activity.id])
   const [refDate, setRefDate] = useState(new Date())
@@ -68,13 +68,13 @@ export default function Actividad({ activity }) {
                   onClick={() => quickToggle(iso)}
                   className="flex flex-col items-center gap-1 py-3 rounded-[14px] transition-all active:scale-95"
                   style={{
-                    background: attended ? '#30D15822' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${attended ? '#30D15840' : isToday ? 'rgba(10,132,255,0.5)' : 'rgba(255,255,255,0.06)'}`
+                    background: attended ? '#2EBD8522' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${attended ? '#2EBD8540' : isToday ? 'rgba(124,92,255,0.5)' : 'rgba(255,255,255,0.06)'}`
                   }}
                 >
                   <span className="text-[10px] font-semibold text-white/40">{DOW[i]}</span>
                   <span className="text-base">{attended ? '✓' : '○'}</span>
-                  <span className="text-[10px] font-bold" style={{ color: attended ? '#30D158' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.25)' }}>{fmt(iso, 'd')}</span>
+                  <span className="text-[10px] font-bold" style={{ color: attended ? '#2EBD85' : isToday ? '#7C5CFF' : 'rgba(255,255,255,0.25)' }}>{fmt(iso, 'd')}</span>
                 </button>
               )
             })}
@@ -120,9 +120,9 @@ export default function Actividad({ activity }) {
                   onClick={() => quickToggle(iso)}
                   className="aspect-square rounded-xl text-[11px] grid place-items-center transition"
                   style={{
-                    background: attended ? '#30D15820' : hasSession ? '#FF453A15' : isToday ? '#0A84FF15' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isToday ? '#0A84FF50' : 'transparent'}`,
-                    color: attended ? '#30D158' : hasSession ? '#FF453A' : isToday ? '#0A84FF' : 'rgba(255,255,255,0.5)',
+                    background: attended ? '#2EBD8520' : hasSession ? '#F6465D15' : isToday ? '#7C5CFF15' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isToday ? '#7C5CFF50' : 'transparent'}`,
+                    color: attended ? '#2EBD85' : hasSession ? '#F6465D' : isToday ? '#7C5CFF' : 'rgba(255,255,255,0.5)',
                     fontWeight: (hasSession || isToday) ? 700 : 400
                   }}
                 >
@@ -165,8 +165,8 @@ function SessionRow({ session, activity, onDeleted }) {
       <span
         className="w-7 h-7 rounded-full grid place-items-center text-xs font-bold shrink-0"
         style={session.attended
-          ? { background: '#30D15820', color: '#30D158' }
-          : { background: '#FF453A20', color: '#FF453A' }}
+          ? { background: '#2EBD8520', color: '#2EBD85' }
+          : { background: '#F6465D20', color: '#F6465D' }}
       >
         {session.attended ? '✓' : '✗'}
       </span>
@@ -176,7 +176,7 @@ function SessionRow({ session, activity, onDeleted }) {
         {session.notes && <div className="text-xs text-white/30 truncate">{session.notes}</div>}
       </div>
       <button onClick={remove} aria-label="Eliminar sesión"
-        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/25 hover:text-[#FF453A] text-xs">✕</button>
+        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/25 hover:text-[#F6465D] text-xs">✕</button>
     </li>
   )
 }
@@ -304,11 +304,11 @@ function NewSessionModal({ open, activity, onClose, onSaved }) {
                   <input type="number" min={0} className="input col-span-2 text-sm" aria-label="Series" value={e.sets} onChange={(ev) => updateExercise(i, 'sets', ev.target.value)} />
                   <input type="number" min={0} className="input col-span-2 text-sm" aria-label="Repeticiones" value={e.reps} onChange={(ev) => updateExercise(i, 'reps', ev.target.value)} />
                   <input type="number" min={0} step="0.5" className="input col-span-2 text-sm" aria-label="Kilos" value={e.weight_kg} onChange={(ev) => updateExercise(i, 'weight_kg', ev.target.value)} placeholder="—" />
-                  <button type="button" onClick={() => setExercises(exercises.filter((_, x) => x !== i))} aria-label="Quitar ejercicio" className="text-white/25 hover:text-[#FF453A] text-xs">✕</button>
+                  <button type="button" onClick={() => setExercises(exercises.filter((_, x) => x !== i))} aria-label="Quitar ejercicio" className="text-white/25 hover:text-[#F6465D] text-xs">✕</button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={() => setExercises([...exercises, emptyExercise()])} className="mt-2 text-xs text-[#0A84FF] hover:underline">+ Agregar ejercicio</button>
+            <button type="button" onClick={() => setExercises([...exercises, emptyExercise()])} className="mt-2 text-xs text-[#7C5CFF] hover:underline">+ Agregar ejercicio</button>
           </div>
         )}
 
@@ -357,7 +357,7 @@ function FieldInput({ field, value, onChange }) {
           {choices.map((c) => (
             <button key={String(c.v)} type="button" aria-pressed={value === c.v}
               onClick={() => onChange(value === c.v ? null : c.v)}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${value === c.v ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.06] text-white/50'}`}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${value === c.v ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.06] text-white/50'}`}
             >{c.label}</button>
           ))}
         </div>

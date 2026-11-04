@@ -15,7 +15,7 @@ export default function BottomNav() {
               end={item.exact}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center gap-[3px] py-2.5 min-h-[52px] ${
-                  isActive ? 'text-[#0A84FF]' : 'text-white/30'
+                  isActive ? 'text-up' : 'text-ink-400'
                 }`
               }
             >

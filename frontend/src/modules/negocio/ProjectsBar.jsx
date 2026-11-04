@@ -5,18 +5,18 @@ import { createProject } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
 const EMOJIS = ['📁', '🚀', '💼', '🌐', '🏢', '📱', '⚡', '🎯', '💡', '🛠']
-const COLORS = ['#0A84FF', '#30D158', '#BF5AF2', '#FF9F0A', '#FF453A', '#5AC8FA']
+const COLORS = ['#7C5CFF', '#2EBD85', '#BF5AF2', '#FF9F0A', '#F6465D', '#5AC8FA']
 
 export default function ProjectsBar({ projects, selected, onSelect, onRefetch }) {
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ name: '', emoji: '📁', color: '#0A84FF', description: '' })
+  const [form, setForm] = useState({ name: '', emoji: '📁', color: '#7C5CFF', description: '' })
 
   async function save() {
     if (!form.name.trim()) return
     try {
       await createProject({ name: form.name.trim(), emoji: form.emoji, color: form.color, description: form.description || null })
       toast.success('Proyecto creado ✓')
-      setForm({ name: '', emoji: '📁', color: '#0A84FF', description: '' })
+      setForm({ name: '', emoji: '📁', color: '#7C5CFF', description: '' })
       setAdding(false)
       onRefetch()
     } catch (e) {
@@ -32,7 +32,7 @@ export default function ProjectsBar({ projects, selected, onSelect, onRefetch })
           className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
             !selected ? 'text-white shadow' : 'text-white/45 hover:text-white'
           }`}
-          style={!selected ? { background: '#0A84FF' } : { background: 'rgba(255,255,255,0.07)' }}
+          style={!selected ? { background: '#7C5CFF' } : { background: 'rgba(255,255,255,0.07)' }}
         >
           Todos
         </button>
@@ -59,7 +59,7 @@ export default function ProjectsBar({ projects, selected, onSelect, onRefetch })
 
       <Modal
         open={adding} onClose={() => setAdding(false)} title="Nuevo proyecto"
-        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save} color="blue">Crear</Button></div>}
+        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save}>Crear</Button></div>}
       >
         <div className="space-y-3">
           <div><label className="label">Nombre</label><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Mi proyecto" /></div>

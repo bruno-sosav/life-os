@@ -61,15 +61,15 @@ export default function Finanzas() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <Card>
           <div className="text-[11px] text-white/35">Ingresos</div>
-          <div className="text-lg font-bold text-[#30D158] mt-0.5 tabular-nums">{fmt$(summary.income)}</div>
+          <div className="text-lg font-bold text-[#2EBD85] mt-0.5 tabular-nums">{fmt$(summary.income)}</div>
         </Card>
         <Card>
           <div className="text-[11px] text-white/35">Gastos</div>
-          <div className="text-lg font-bold text-[#FF453A] mt-0.5 tabular-nums">{fmt$(summary.expenses)}</div>
+          <div className="text-lg font-bold text-[#F6465D] mt-0.5 tabular-nums">{fmt$(summary.expenses)}</div>
         </Card>
         <Card>
           <div className="text-[11px] text-white/35">Ahorro</div>
-          <div className={`text-lg font-bold mt-0.5 tabular-nums ${summary.savings >= 0 ? 'text-[#0A84FF]' : 'text-[#FF453A]'}`}>{fmt$(summary.savings)}</div>
+          <div className={`text-lg font-bold mt-0.5 tabular-nums ${summary.savings >= 0 ? 'text-[#7C5CFF]' : 'text-[#F6465D]'}`}>{fmt$(summary.savings)}</div>
           {summary.savings_pct != null && <div className="text-[10px] text-white/30 mt-0.5">{summary.savings_pct}% del ingreso</div>}
         </Card>
       </div>
@@ -86,7 +86,7 @@ export default function Finanzas() {
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${summary.spent_pct}%`,
-                background: summary.savings_pct >= 20 ? '#30D158' : summary.savings_pct >= 0 ? '#FF9F0A' : '#FF453A'
+                background: summary.savings_pct >= 20 ? '#2EBD85' : summary.savings_pct >= 0 ? '#FF9F0A' : '#F6465D'
               }}
             />
           </div>
@@ -98,7 +98,7 @@ export default function Finanzas() {
         <Card
           title="Ingresos"
          
-          action={<Button size="sm" color="green" onClick={() => setAddingIncome(true)}>+ Ingreso</Button>}
+          action={<Button size="sm" onClick={() => setAddingIncome(true)}>+ Ingreso</Button>}
         >
           {!income.length ? (
             <EmptyState icon="💵" title="Sin ingresos" description="Anotá lo que entra este mes." />
@@ -110,10 +110,10 @@ export default function Finanzas() {
                     <div className="text-sm font-semibold">{item.source || 'Ingreso'}</div>
                     {item.notes && <div className="text-xs text-white/35">{item.notes}</div>}
                   </div>
-                  <span className="text-sm font-bold text-[#30D158] tabular-nums">{fmt$(item.amount)}</span>
+                  <span className="text-sm font-bold text-[#2EBD85] tabular-nums">{fmt$(item.amount)}</span>
                   <button
                     onClick={() => deleteIncome(item.id).then(() => { toast.success('Eliminado'); refetch() })}
-                    className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs"
+                    className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs"
                   >✕</button>
                 </li>
               ))}
@@ -149,7 +149,7 @@ export default function Finanzas() {
         <Card
           title="Gastos"
          
-          action={<Button size="sm" color="red" onClick={() => setAddingExpense(true)}>+ Gasto</Button>}
+          action={<Button size="sm" onClick={() => setAddingExpense(true)}>+ Gasto</Button>}
           className="lg:col-span-2"
         >
           {!expenses.length ? (
@@ -164,10 +164,10 @@ export default function Finanzas() {
                       <div className="text-sm font-semibold">{exp.description || exp.category}</div>
                       <div className="text-xs text-white/35">{fmt(exp.date, "d 'de' MMM")} · {exp.category}</div>
                     </div>
-                    <span className="text-sm font-bold text-[#FF453A] tabular-nums">{fmt$(exp.amount)}</span>
+                    <span className="text-sm font-bold text-[#F6465D] tabular-nums">{fmt$(exp.amount)}</span>
                     <button
                       onClick={() => deleteExpense(exp.id).then(() => { toast.success('Eliminado'); refetch() })}
-                      className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs"
+                      className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs"
                     >✕</button>
                   </li>
                 )
@@ -204,7 +204,7 @@ function IncomeModal({ open, onClose, refDate, onSaved, sources }) {
 
   return (
     <Modal open={open} onClose={onClose} title="Nuevo ingreso"
-      footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button color="green" onClick={save}>Guardar</Button></div>}
+      footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button onClick={save}>Guardar</Button></div>}
     >
       <div className="space-y-3">
         <div>
@@ -246,7 +246,7 @@ function ExpenseModal({ open, onClose, onSaved, categories }) {
 
   return (
     <Modal open={open} onClose={onClose} title="Nuevo gasto"
-      footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button color="red" onClick={save}>Guardar</Button></div>}
+      footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button onClick={save}>Guardar</Button></div>}
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">

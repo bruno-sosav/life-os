@@ -66,7 +66,7 @@ export default function MentalIdeas() {
       <Card
         title="Frases & Ideas"
        
-        action={<Button size="sm" color="purple" onClick={() => setAdding(true)}>+ Nueva</Button>}
+        action={<Button size="sm" onClick={() => setAdding(true)}>+ Nueva</Button>}
       >
         {!ideas.length ? (
           <EmptyState icon="💡" title="Sin ideas" description="Guardá frases, ideas y aprendizajes." />
@@ -86,7 +86,7 @@ export default function MentalIdeas() {
                   <button
                     onClick={() => remove(idea.id)}
                     aria-label="Eliminar idea"
-                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/25 hover:text-[#FF453A] text-xs shrink-0 mt-0.5"
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/25 hover:text-[#F6465D] text-xs shrink-0 mt-0.5"
                   >✕</button>
                 </li>
               )
@@ -96,7 +96,7 @@ export default function MentalIdeas() {
       </Card>
 
       <Modal open={adding} onClose={() => setAdding(false)} title="Nueva frase o idea"
-        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save} color="purple">Guardar</Button></div>}
+        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save}>Guardar</Button></div>}
       >
         <div className="space-y-3">
           <div><label className="label">Texto</label><textarea className="input min-h-[100px]" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder='"La disciplina es hacer lo que tenés que hacer..."' /></div>

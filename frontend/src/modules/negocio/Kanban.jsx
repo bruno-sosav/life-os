@@ -9,7 +9,7 @@ import { createTask, updateTask, deleteTask } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
 const COLUMNS = Object.keys(STATUS_LABELS)
-const COL_COLORS = { pendiente: '#ffffff22', en_progreso: '#FF9F0A', hecho: '#30D158' }
+const COL_COLORS = { pendiente: '#ffffff22', en_progreso: '#FF9F0A', hecho: '#2EBD85' }
 
 export default function Kanban({ board, projects, onChange }) {
   const [modal, setModal] = useState({ open: false, initial: null, status: null })
@@ -55,7 +55,7 @@ export default function Kanban({ board, projects, onChange }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ background: COL_COLORS[col] }} />
-                    <h3 className="font-display font-bold text-sm">{STATUS_LABELS[col]}</h3>
+                    <h3 className="font-bold text-sm">{STATUS_LABELS[col]}</h3>
                     <span className="text-[11px] text-white/30 px-1.5 py-0.5 rounded-md bg-white/[0.05]">{grouped[col].length}</span>
                   </div>
                   <button
@@ -87,7 +87,7 @@ export default function Kanban({ board, projects, onChange }) {
                                 onClick={() => quickDone(t)}
                                 className="mt-0.5 w-5 h-5 rounded-full border-2 grid place-items-center shrink-0 transition-all ios-checkbox"
                                 style={t.status === 'hecho'
-                                  ? { background: '#30D158', borderColor: '#30D158' }
+                                  ? { background: '#2EBD85', borderColor: '#2EBD85' }
                                   : { borderColor: 'rgba(255,255,255,0.2)' }}
                               >
                                 {t.status === 'hecho' && <span className="text-white text-[9px] font-bold">✓</span>}

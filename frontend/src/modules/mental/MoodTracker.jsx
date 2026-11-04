@@ -85,7 +85,7 @@ export default function MoodTracker() {
               <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Una línea…" />
             </div>
           </div>
-          <Button className="w-full" color="purple" onClick={save}>Guardar</Button>
+          <Button className="w-full" onClick={save}>Guardar</Button>
         </div>
       </Card>
 
@@ -100,7 +100,7 @@ export default function MoodTracker() {
                 <Tooltip contentStyle={{ background: '#18181f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="mood" stroke="#BF5AF2" strokeWidth={2.5} dot={{ r: 3 }} name="Mood" />
-                <Line type="monotone" dataKey="sueño" stroke="#0A84FF" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" name="Sueño" />
+                <Line type="monotone" dataKey="sueño" stroke="#7C5CFF" strokeWidth={2} dot={{ r: 2 }} strokeDasharray="4 3" name="Sueño" />
               </LineChart>
             </ResponsiveContainer>
           ) : (

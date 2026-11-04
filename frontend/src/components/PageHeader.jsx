@@ -1,4 +1,3 @@
-import { useUIStore } from '../store/uiStore.js'
 import { useAuthStore } from '../store/authStore.js'
 
 function LogoutIcon() {
@@ -11,56 +10,25 @@ function LogoutIcon() {
   )
 }
 
-function SunIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-  )
-}
-
-function MoonIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-    </svg>
-  )
-}
-
 export default function PageHeader({ title, subtitle, actions }) {
-  const { theme, toggleTheme } = useUIStore()
   const logout = useAuthStore((s) => s.logout)
 
   return (
     <div className="mb-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {title}
           </h1>
-          {subtitle && <p className="text-sm text-white/40 mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-ink-400 mt-1">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2">
           {actions}
           <button
-            onClick={toggleTheme}
-            className="md:hidden w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] grid place-items-center text-white/50 hover:text-white/90 transition"
-            title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-          >
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </button>
-          <button
             onClick={logout}
-            className="md:hidden w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.14] grid place-items-center text-white/50 hover:text-[#FF453A] transition"
+            className="md:hidden w-9 h-9 rounded-lg bg-ink-800 border border-ink-700 grid place-items-center text-ink-400 hover:text-down transition"
             title="Cerrar sesión"
+            aria-label="Cerrar sesión"
           >
             <LogoutIcon />
           </button>

@@ -34,10 +34,10 @@ export default function DayStrip({ week, selected, onChange }) {
                 isSelected
                   ? 'text-white shadow-lg'
                   : day.is_today
-                  ? 'text-[#0A84FF]'
+                  ? 'text-[#7C5CFF]'
                   : 'text-white/60 hover:text-white'
               }`}
-              style={isSelected ? { background: '#0A84FF' } : {}}
+              style={isSelected ? { background: '#7C5CFF' } : {}}
             >
               {Number(day.date.slice(8))}
             </span>

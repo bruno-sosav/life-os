@@ -40,24 +40,24 @@ export default function Goals() {
           {goalsQ.data.map((g) => (
             <li key={g.id} className="group">
               <div className="flex items-center justify-between mb-1.5">
-                <span className={`text-sm font-medium ${g.completed ? 'text-[#30D158] line-through opacity-60' : ''}`}>{g.title}</span>
+                <span className={`text-sm font-medium ${g.completed ? 'text-[#2EBD85] line-through opacity-60' : ''}`}>{g.title}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold" style={{ color: g.completed ? '#30D158' : 'rgba(255,255,255,0.4)' }}>{g.progress}%</span>
+                  <span className="text-xs font-bold" style={{ color: g.completed ? '#2EBD85' : 'rgba(255,255,255,0.4)' }}>{g.progress}%</span>
                   <button onClick={() => deleteGoal(g.id).then(() => { toast.success('Eliminado'); goalsQ.refetch() })}
-                    className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs">✕</button>
+                    className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs">✕</button>
                 </div>
               </div>
               <div className="h-1.5 bg-white/[0.07] rounded-full overflow-hidden mb-1.5">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${g.progress}%`, background: g.completed ? '#30D158' : '#0A84FF' }}
+                  style={{ width: `${g.progress}%`, background: g.completed ? '#2EBD85' : '#7C5CFF' }}
                 />
               </div>
               <input
                 type="range" min={0} max={100} step={5}
                 value={g.progress}
                 onChange={(e) => setProgress(g.id, Number(e.target.value))}
-                className="w-full accent-[#0A84FF] opacity-0 group-hover:opacity-100 transition h-1"
+                className="w-full accent-[#7C5CFF] opacity-0 group-hover:opacity-100 transition h-1"
               />
             </li>
           ))}

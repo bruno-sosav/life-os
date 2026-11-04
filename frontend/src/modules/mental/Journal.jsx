@@ -52,7 +52,7 @@ export default function Journal() {
             onChange={(e) => setContent(e.target.value)}
           />
         </div>
-        <Button onClick={save} color="purple" className="w-full">Guardar entrada</Button>
+        <Button onClick={save} className="w-full">Guardar entrada</Button>
       </Card>
 
       {/* Entry list */}
@@ -84,7 +84,7 @@ export default function Journal() {
                           e.stopPropagation()
                           deleteJournalEntry(entry.id).then(() => { toast.success('Eliminada'); entriesQ.refetch() })
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs"
+                        className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs"
                       >✕</button>
                       <span className="text-white/25 text-xs">{expanded === entry.id ? '▲' : '▼'}</span>
                     </div>

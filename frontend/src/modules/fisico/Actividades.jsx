@@ -8,7 +8,7 @@ import { toast } from '../../store/toastStore.js'
 import { createActivity, updateActivity, deleteActivity, fetchActiveHabits } from './queries.js'
 import { FIELD_TYPES } from './campos.js'
 
-const COLORS = ['#BF5AF2', '#0A84FF', '#30D158', '#FF9F0A', '#FF453A', '#5AC8FA']
+const COLORS = ['#BF5AF2', '#7C5CFF', '#2EBD85', '#FF9F0A', '#F6465D', '#5AC8FA']
 const EMOJIS = ['🏋️', '🤸', '🏃', '🧘', '🥊', '🚴', '🏊', '⚽', '🧗', '🎾']
 const TYPE_LABEL = Object.fromEntries(FIELD_TYPES.map((t) => [t.value, t.label]))
 
@@ -37,7 +37,7 @@ export default function Actividades({ activities, onChanged }) {
             const fields = a.fields.filter((f) => !f.archived)
             return (
               <li key={a.id} className="py-3 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl grid place-items-center text-lg shrink-0" style={{ background: `${a.color || '#0A84FF'}25` }}>
+                <span className="w-9 h-9 rounded-xl grid place-items-center text-lg shrink-0" style={{ background: `${a.color || '#7C5CFF'}25` }}>
                   {a.emoji || '✨'}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -210,7 +210,7 @@ function ActivityModal({ initial, onClose, onSaved }) {
                     {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                   <button type="button" onClick={() => removeField(i)} aria-label={`Quitar ${f.name || 'campo'}`}
-                    className="px-2 text-white/30 hover:text-[#FF453A] text-sm">✕</button>
+                    className="px-2 text-white/30 hover:text-[#F6465D] text-sm">✕</button>
                 </div>
                 {f.type === 'numero' && (
                   <input className="input text-sm" aria-label="Unidad" value={f.unit} maxLength={20}
@@ -224,7 +224,7 @@ function ActivityModal({ initial, onClose, onSaved }) {
             ))}
           </div>
           <button type="button" onClick={() => setForm({ ...form, fields: [...form.fields, newField()] })}
-            className="mt-2 text-xs text-[#0A84FF] hover:underline">+ Agregar campo</button>
+            className="mt-2 text-xs text-[#7C5CFF] hover:underline">+ Agregar campo</button>
         </div>
 
         {archived.length > 0 && (

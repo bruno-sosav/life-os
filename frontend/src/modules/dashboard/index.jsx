@@ -95,7 +95,7 @@ export default function Dashboard() {
           <div className="h-1.5 bg-white/[0.07] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${agenda.pct}%`, background: '#30D158' }}
+              style={{ width: `${agenda.pct}%`, background: '#2EBD85' }}
             />
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <Card>
           <div className="text-[11px] text-white/35">Hoy</div>
-          <div className="stat-num text-[#30D158]">{agenda ? `${agenda.completed}/${agenda.total}` : '—'}</div>
+          <div className="stat-num text-[#2EBD85]">{agenda ? `${agenda.completed}/${agenda.total}` : '—'}</div>
         </Card>
         <StreakCard streak={globalStreak} />
         <Card>
@@ -152,7 +152,7 @@ export default function Dashboard() {
 }
 
 function StreakCard({ streak }) {
-  const color = streak >= 7 ? '#FF9F0A' : streak >= 3 ? '#30D158' : '#0A84FF'
+  const color = streak >= 7 ? '#FF9F0A' : streak >= 3 ? '#2EBD85' : '#7C5CFF'
   return (
     <Card>
       <div className="text-[11px] text-white/35">Racha</div>

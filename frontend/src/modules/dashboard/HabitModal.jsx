@@ -5,7 +5,7 @@ import DrumPicker from '../../components/DrumPicker.jsx'
 import { createHabit, updateHabit, deleteHabit } from './queries.js'
 import { toast } from '../../store/toastStore.js'
 
-const COLORS = ['#30D158', '#BF5AF2', '#FF9F0A', '#FF453A', '#0A84FF', '#5AC8FA']
+const COLORS = ['#2EBD85', '#BF5AF2', '#FF9F0A', '#F6465D', '#7C5CFF', '#5AC8FA']
 const EMOJIS = ['✨', '💧', '🏋️', '🥊', '📖', '🧘', '🍳', '💼', '🛌', '🏃', '🎯', '☕']
 const DAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -89,7 +89,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
           {initial?.id ? <Button variant="danger" size="sm" onClick={remove}>Eliminar</Button> : <span />}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button onClick={save} color="green">Guardar</Button>
+            <Button onClick={save}>Guardar</Button>
           </div>
         </div>
       }
@@ -126,7 +126,7 @@ export default function HabitModal({ open, onClose, initial, onSaved }) {
             <button
               type="button"
               onClick={() => setForm({ ...form, hasTime: !form.hasTime })}
-              className={`text-xs px-3 py-1 rounded-full font-semibold transition ${form.hasTime ? 'bg-[#0A84FF] text-white' : 'bg-white/[0.08] text-white/40'}`}
+              className={`text-xs px-3 py-1 rounded-full font-semibold transition ${form.hasTime ? 'bg-[#7C5CFF] text-white' : 'bg-white/[0.08] text-white/40'}`}
             >
               {form.hasTime ? 'Con horario' : 'Sin horario fijo'}
             </button>

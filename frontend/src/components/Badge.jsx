@@ -1,13 +1,7 @@
-export default function Badge({ children, color = 'rgba(255,255,255,0.4)' }) {
+// Etiqueta de estado: texto de color sobre un fondo apenas teñido
+export default function Badge({ children, color = '#8C948F' }) {
   return (
-    <span
-      className="chip font-semibold"
-      style={{
-        backgroundColor: `${color}1a`,
-        color,
-        border: `1px solid ${color}33`
-      }}
-    >
+    <span className="chip" style={{ backgroundColor: `${color}14`, color }}>
       {children}
     </span>
   )

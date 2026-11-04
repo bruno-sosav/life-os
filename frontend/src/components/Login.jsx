@@ -35,12 +35,12 @@ export default function Login() {
         <div className="flex items-center gap-2.5 mb-6">
           <div
             className="w-10 h-10 rounded-[12px] grid place-items-center"
-            style={{ background: 'linear-gradient(135deg, #BF5AF2, #0A84FF)' }}
+            style={{ background: 'linear-gradient(135deg, #BF5AF2, #7C5CFF)' }}
           >
             <span className="text-white text-lg font-black">L</span>
           </div>
           <div>
-            <div className="font-display font-bold">Life OS</div>
+            <div className="font-bold">Life OS</div>
             <div className="text-xs text-white/35">Iniciá sesión para continuar</div>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function Login() {
           />
         </div>
 
-        {error && <p className="text-sm text-[#FF453A]">{error}</p>}
+        {error && <p className="text-sm text-[#F6465D]">{error}</p>}
 
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
           {loading ? 'Entrando…' : 'Entrar'}

@@ -48,7 +48,7 @@ export default function Ideas() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={(e) => { e.stopPropagation(); deleteIdea(idea.id).then(() => { toast.success('Eliminada'); ideasQ.refetch() }) }}
-                      className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#FF453A] text-xs">✕</button>
+                      className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs">✕</button>
                     <span className="text-white/25 text-xs">{expanded === idea.id ? '▲' : '▼'}</span>
                   </div>
                 </div>
@@ -61,7 +61,7 @@ export default function Ideas() {
         </ul>
       )}
       <Modal open={adding} onClose={() => setAdding(false)} title="Nueva idea"
-        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save} color="purple">Guardar</Button></div>}
+        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button><Button onClick={save}>Guardar</Button></div>}
       >
         <div className="space-y-3">
           <div><label className="label">Título</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>

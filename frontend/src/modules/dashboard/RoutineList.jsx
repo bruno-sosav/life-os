@@ -6,7 +6,7 @@ function itemColor(item) {
   if (item.color) return item.color
   return item.kind === 'block'
     ? (item.category ? colorFor(item.category) : '#5b5b68')
-    : '#30D158'
+    : '#2EBD85'
 }
 
 export default function RoutineList({ sections, onToggle, onEditBlock, onEditHabit, onDeleteHabit }) {
