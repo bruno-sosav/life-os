@@ -4,9 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
 from app.modules.fisico.models.peso_model import WeightGoal, WeightLog
-from app.modules.fisico.repositories import (
-    peso_repository,
-)
+from app.modules.fisico.repositories import peso_repository
 from app.modules.fisico.schemas.peso_schema import WeightGoalIn, WeightLogIn
 
 

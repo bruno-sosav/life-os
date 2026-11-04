@@ -7,10 +7,7 @@ from app.core.errores_util import get_or_404
 from app.core.fechas_util import days_between, month_bounds, week_bounds
 from app.modules.fisico.models.actividades_model import Activity
 from app.modules.fisico.models.sesiones_model import ActivitySession
-from app.modules.fisico.repositories import (
-    actividades_repository,
-    sesiones_repository,
-)
+from app.modules.fisico.repositories import actividades_repository, sesiones_repository
 from app.modules.fisico.schemas.asistencia_schema import (
     ActivityMonth,
     AttendanceDay,

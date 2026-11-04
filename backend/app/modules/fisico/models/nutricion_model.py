@@ -1,13 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import (
-    CheckConstraint,
-    Date,
-    Integer,
-    Numeric,
-    Text,
-)
+from sqlalchemy import CheckConstraint, Date, Integer, Numeric, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base_model import Base, CreatedAt, UUIDPk

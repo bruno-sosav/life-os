@@ -7,9 +7,7 @@ from app.core.database import base_repository
 from app.core.errores_util import get_or_404, unprocessable
 from app.modules.fisico.models.actividades_model import Activity
 from app.modules.fisico.models.sesiones_model import ActivitySession, SessionExercise
-from app.modules.fisico.repositories import (
-    sesiones_repository,
-)
+from app.modules.fisico.repositories import sesiones_repository
 from app.modules.fisico.schemas.actividades_schema import CHARTABLE
 from app.modules.fisico.schemas.sesiones_schema import ProgressionPoint, SessionIn
 

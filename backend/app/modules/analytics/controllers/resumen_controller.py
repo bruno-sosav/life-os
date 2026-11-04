@@ -4,10 +4,10 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.core.database.conexion_database import SessionDep
-from app.modules.analytics import analytics_service as service
-from app.modules.analytics.analytics_schema import AnalyticsSummary
+from app.modules.analytics.schemas.resumen_schema import AnalyticsSummary
+from app.modules.analytics.services import resumen_service as service
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+router = APIRouter()
 
 
 @router.get("/summary", response_model=AnalyticsSummary)

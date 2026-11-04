@@ -1,13 +1,6 @@
 from typing import Any
 
-from sqlalchemy import (
-    CHAR,
-    JSON,
-    Boolean,
-    ForeignKey,
-    Integer,
-    String,
-)
+from sqlalchemy import CHAR, JSON, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base_model import COLOR, EMOJI, NAME, Base, CreatedAt, UUIDPk

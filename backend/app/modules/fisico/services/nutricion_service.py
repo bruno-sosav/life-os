@@ -4,9 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
 from app.modules.fisico.models.nutricion_model import NutritionLog
-from app.modules.fisico.repositories import (
-    nutricion_repository,
-)
+from app.modules.fisico.repositories import nutricion_repository
 from app.modules.fisico.schemas.nutricion_schema import NutritionAverage, NutritionLogIn
 
 
