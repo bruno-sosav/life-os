@@ -35,6 +35,12 @@ export default function RegisterSessionModal({ open, activities, onClose, onSave
   const fields = activity ? activity.fields.filter((f) => !f.archived && f.type !== 'ejercicios') : []
   const withExercises = activity ? hasExercises(activity) : false
 
+  // Cada tipo tiene sus campos: al cambiar, lo cargado para el anterior no sirve
+  function pickType(id) {
+    if (id !== activityId) setValues({})
+    setActivityId(id)
+  }
+
   function setExercise(i, patch) {
     setExercises((list) => list.map((e, x) => (x === i ? { ...e, ...patch } : e)))
   }
@@ -55,7 +61,7 @@ export default function RegisterSessionModal({ open, activities, onClose, onSave
         fields: [{ name: 'Ejercicios', type: 'ejercicios' }]
       })
       await onTypeCreated()
-      setActivityId(created.id)
+      pickType(created.id)
       setNewType(null)
     } catch (e) { toast.error('Error: ' + e.message) }
   }
@@ -68,7 +74,8 @@ export default function RegisterSessionModal({ open, activities, onClose, onSave
         date,
         attended: true,
         notes: notes.trim() || null,
-        values,
+        // Solo los campos del tipo elegido: un valor cargado en otro tipo no se manda
+        values: Object.fromEntries(fields.filter((f) => values[f.id] != null).map((f) => [f.id, values[f.id]])),
         exercises: withExercises
           ? exercises.filter((e) => e.exercise_name.trim()).map((e) => ({
             exercise_name: e.exercise_name.trim(),
@@ -95,7 +102,7 @@ export default function RegisterSessionModal({ open, activities, onClose, onSave
             {activities.map((a) => {
               const on = a.id === activityId
               return (
-                <button key={a.id} type="button" aria-pressed={on} onClick={() => setActivityId(a.id)}
+                <button key={a.id} type="button" aria-pressed={on} onClick={() => pickType(a.id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                     on ? 'bg-ink-700 border-ink-600 text-ink-100' : 'border-ink-700 text-ink-400 hover:text-ink-100'
                   }`}>
