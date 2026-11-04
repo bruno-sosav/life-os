@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from app.modules.rutina.rutina_schema import HabitOut, RoutineBlockOut, WeeklyReviewOut
+from app.modules.rutina import HabitOut, RoutineBlockOut, WeeklyReviewOut
 
 
 class StreakOut(BaseModel):

@@ -21,6 +21,7 @@ from app.modules.rutina import (
     STREAK_WINDOW_DAYS,
     Habit,
     RoutineBlock,
+    WeeklyReviewOut,
     block_completions,
     block_runs_on,
     completed_habit_logs,
@@ -34,7 +35,6 @@ from app.modules.rutina import (
     streaks,
 )
 from app.modules.rutina import get_weekly_review as weekly_review_of
-from app.modules.rutina.rutina_schema import WeeklyReviewOut
 
 
 def global_streak(
