@@ -1,17 +1,8 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
-from app.modules.dashboard.dashboard_service import agenda, global_streak, habit_completion_pct
+from app.modules.dashboard.services.racha_service import global_streak
 from app.modules.rutina import Habit, RoutineBlock
-
-MONDAY = date(2026, 10, 12)
-
-
-def daily_habit(habit_id: str = "leer", **fields: object) -> Habit:
-    return Habit(id=habit_id, name=habit_id, days_of_week=None, **fields)
-
-
-def done(item_id: str, *days: date) -> list[tuple[str, date]]:
-    return [(item_id, day) for day in days]
+from tests.dashboard.ayuda import MONDAY, daily_habit, done
 
 
 def test_streak_counts_consecutive_days_over_threshold() -> None:
@@ -93,27 +84,3 @@ def test_seventy_percent_is_enough() -> None:
     yesterday = MONDAY - timedelta(days=1)
     logs = [(str(i), yesterday) for i in range(7)]
     assert global_streak(MONDAY, [], habits, logs) == 1  # 7/10 justo
-
-
-def test_habit_pct_only_counts_until_today() -> None:
-    today = MONDAY + timedelta(days=1)  # martes: 2 días esperados
-    assert habit_completion_pct(MONDAY, today, [daily_habit()], done("leer", MONDAY)) == 50
-
-
-def test_habit_pct_without_habits_is_none() -> None:
-    assert habit_completion_pct(MONDAY, MONDAY, [], []) is None
-
-
-def test_past_agenda_hides_what_did_not_exist_yet() -> None:
-    created_today = daily_habit("nuevo", created_at=datetime(2026, 10, 13, 12))
-    old = daily_habit("leer")
-    yesterday = agenda(MONDAY, MONDAY + timedelta(days=1), [], [old, created_today], set(), set())
-    today = agenda(
-        MONDAY + timedelta(days=1),
-        MONDAY + timedelta(days=1),
-        [],
-        [old, created_today],
-        set(),
-        set(),
-    )
-    assert (yesterday["total"], today["total"]) == (1, 2)

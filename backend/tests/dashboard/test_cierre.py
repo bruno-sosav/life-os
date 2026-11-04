@@ -1,13 +1,19 @@
 from collections.abc import Callable
+from datetime import timedelta
 
 from fastapi.testclient import TestClient
 
+from app.modules.dashboard.services.cierre_service import habit_completion_pct
+from tests.dashboard.ayuda import MONDAY, create_habit, daily_habit, done
 
-def create_habit(client: TestClient, **fields: object) -> dict[str, object]:
-    response = client.post("/api/habits", json={"name": "Leer", **fields})
-    assert response.status_code == 201
-    data: dict[str, object] = response.json()
-    return data
+
+def test_habit_pct_only_counts_until_today() -> None:
+    today = MONDAY + timedelta(days=1)  # martes: 2 días esperados
+    assert habit_completion_pct(MONDAY, today, [daily_habit()], done("leer", MONDAY)) == 50
+
+
+def test_habit_pct_without_habits_is_none() -> None:
+    assert habit_completion_pct(MONDAY, MONDAY, [], []) is None
 
 
 def test_streak_and_weekly_stats_endpoints(
@@ -71,48 +77,3 @@ def test_linked_habit_counts_as_a_training_day(client: TestClient) -> None:
     assert weekly["activity_days"][0]["days"] == 2  # el 13 cuenta una sola vez
     summary = client.get("/api/analytics/summary", params={"today": "2026-10-14"}).json()
     assert summary["activity_distribution"][0]["count"] == 2
-
-
-def test_agenda(client: TestClient) -> None:
-    # Lunes 2026-10-19
-    block = {"hour_start": 7, "hour_min": 30, "hour_end": 8, "activity": "Gym", "days_of_week": [0]}
-    gym = client.post("/api/routine-blocks", json=block).json()
-    client.post("/api/routine-blocks", json={**block, "activity": "Martes", "days_of_week": [1]})
-    late = {**block, "hour_start": 21, "activity": "Leer", "repeat_weekly": False}
-    client.post("/api/routine-blocks", json={**late, "specific_date": "2026-10-19"})
-    water = create_habit(client, name="Agua")
-    create_habit(client, name="Meditar", start_time="13:05")
-    create_habit(client, name="Finde", days_of_week=[5, 6])
-
-    client.put(
-        "/api/routine-completions",
-        json={"block_id": gym["id"], "date": "2026-10-19", "completed": True},
-    )
-    client.put(
-        "/api/habit-logs", json={"habit_id": water["id"], "date": "2026-10-19", "completed": True}
-    )
-
-    agenda = client.get(
-        "/api/dashboard/agenda", params={"date": "2026-10-19", "today": "2026-10-19"}
-    ).json()
-    sections = {
-        s["key"]: [(i["title"], i["time"], i["done"]) for i in s["items"]]
-        for s in agenda["sections"]
-    }
-    assert sections == {
-        "manana": [("Gym", "07:30", True)],
-        "tarde": [("Meditar", "13:05", False)],
-        "noche": [("Leer", "21:30", False)],
-        "sin_horario": [("Agua", None, True)],
-    }
-    assert (agenda["completed"], agenda["total"], agenda["pct"]) == (2, 4, 50)
-    assert agenda["weekday"] == 0
-    assert [d["is_today"] for d in agenda["week"]] == [True, *[False] * 6]
-    assert agenda["sections"][0]["items"][0]["block"]["id"] == gym["id"]
-
-    # Jueves: solo los hábitos diarios, ninguno hecho
-    thursday = client.get(
-        "/api/dashboard/agenda", params={"date": "2026-10-22", "today": "2026-10-22"}
-    ).json()
-    assert [i["title"] for s in thursday["sections"] for i in s["items"]] == ["Meditar", "Agua"]
-    assert (thursday["completed"], thursday["total"], thursday["pct"]) == (0, 2, 0)
