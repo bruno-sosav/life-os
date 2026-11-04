@@ -1,13 +1,14 @@
+// La prioridad se muestra como texto de color (ya no ordena: el orden del tablero es manual)
 export const PRIORITY_COLORS = {
-  alta: '#D85A30',
-  media: '#7F77DD',
-  baja: '#1D9E75'
+  alta: '#F6465D',
+  media: '#E0B84A',
+  baja: '#8C948F'
 }
 
 export const STATUS_LABELS = {
   pendiente: 'Pendiente',
-  en_progreso: 'En progreso',
-  hecho: 'Hecho'
+  en_progreso: 'En proceso',
+  hecho: 'Finalizado'
 }
 
 export const MOOD_ICONS = ['😞', '😕', '😐', '🙂', '😄']

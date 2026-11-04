@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import Card from '../../components/Card.jsx'
-import Button from '../../components/Button.jsx'
-import Modal from '../../components/Modal.jsx'
-import Badge from '../../components/Badge.jsx'
-import { useAsync } from '../../hooks/useAsync.js'
-import { fetchIdeas, createIdea, deleteIdea } from './queries.js'
-import { fmt } from '../../lib/dates.js'
-import { toast } from '../../store/toastStore.js'
+import Card from '../../../components/Card.jsx'
+import Button from '../../../components/Button.jsx'
+import Modal from '../../../components/Modal.jsx'
+import Badge from '../../../components/Badge.jsx'
+import { useAsync } from '../../../hooks/useAsync.js'
+import { fetchIdeas, createIdea, deleteIdea } from '../api/ideas.api.js'
+import { fmt } from '../../../lib/dates.js'
+import { colorFor } from '../../../lib/constants.js'
+import { toast } from '../../../store/toastStore.js'
 
 export default function Ideas() {
   const ideasQ = useAsync(() => fetchIdeas(), [])
@@ -32,9 +33,9 @@ export default function Ideas() {
   return (
     <Card title="Ideas" action={<Button size="sm" onClick={() => setAdding(true)}>+ Idea</Button>}>
       {!(ideasQ.data || []).length ? (
-        <p className="text-sm text-white/30 text-center py-6">Sin ideas todavía.</p>
+        <p className="text-sm text-ink-400 text-center py-6">Sin ideas todavía.</p>
       ) : (
-        <ul className="divide-y divide-white/[0.04]">
+        <ul className="divide-y divide-ink-700">
           {ideasQ.data.map((idea) => (
             <li key={idea.id} className="py-3 group">
               <button onClick={() => setExpanded(expanded === idea.id ? null : idea.id)} className="w-full text-left">
@@ -42,19 +43,19 @@ export default function Ideas() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold">{idea.title}</span>
-                      {(idea.tags || []).map((t) => <Badge key={t} color="#BF5AF2">#{t}</Badge>)}
+                      {(idea.tags || []).map((t) => <Badge key={t} color={colorFor(t)}>#{t}</Badge>)}
                     </div>
-                    <div className="text-[11px] text-white/30 mt-0.5">{fmt(idea.created_at, "d MMM yyyy")}</div>
+                    <div className="text-[11px] text-ink-400 mt-0.5">{fmt(idea.created_at, "d MMM yyyy")}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={(e) => { e.stopPropagation(); deleteIdea(idea.id).then(() => { toast.success('Eliminada'); ideasQ.refetch() }) }}
-                      className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs">✕</button>
-                    <span className="text-white/25 text-xs">{expanded === idea.id ? '▲' : '▼'}</span>
+                      className="opacity-0 group-hover:opacity-100 text-ink-500 hover:text-down text-xs">✕</button>
+                    <span className="text-ink-500 text-xs">{expanded === idea.id ? '▲' : '▼'}</span>
                   </div>
                 </div>
               </button>
               {expanded === idea.id && idea.body && (
-                <p className="text-sm text-white/70 mt-2 whitespace-pre-wrap">{idea.body}</p>
+                <p className="text-sm text-ink-300 mt-2 whitespace-pre-wrap">{idea.body}</p>
               )}
             </li>
           ))}
