@@ -61,19 +61,3 @@ def test_streaks_current_and_best() -> None:
 
     inp.habit_logs = logs(*[("h1", d) for d in [TODAY, *days]])
     assert indicadores_service.kpis(inp)["current_streak"] == 4
-
-
-def test_heatmap_grid_and_status() -> None:
-    inp = StatsInput(
-        today=TODAY,
-        habits=[habit("h1"), habit("h2", "Agua")],
-        habit_logs=logs(("h1", TODAY), ("h2", TODAY), ("h1", TODAY - timedelta(1))),
-    )
-    result = cumplimiento_service.heatmap(inp)
-    cells = result["cells"]
-    real = [c for c in cells if c["date"] is not None]
-    assert len(cells) % 7 == 0 and len(real) == 90
-    first = TODAY - timedelta(days=89)
-    assert cells[: first.weekday()] == [{"date": None, "status": None}] * first.weekday()
-    assert [c["status"] for c in real[-3:]] == ["sin_cumplir", "parcial", "cumplido"]
-    assert (result["cumplido"], result["parcial"], result["sin_cumplir"]) == (1, 1, 88)

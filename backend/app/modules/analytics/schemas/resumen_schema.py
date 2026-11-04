@@ -2,7 +2,7 @@ import datetime as dt
 
 from pydantic import BaseModel
 
-from app.modules.analytics.schemas.cumplimiento_schema import Compliance, CompliancePoint, Heatmap
+from app.modules.analytics.schemas.cumplimiento_schema import Compliance, CompliancePoint
 from app.modules.analytics.schemas.indicadores_schema import HabitsByWeek, KPIs, RadarAxis
 from app.modules.analytics.schemas.series_schema import (
     ActivityCount,
@@ -20,7 +20,6 @@ class AnalyticsSummary(BaseModel):
     kpis: KPIs
     habits_by_week: HabitsByWeek
     radar: list[RadarAxis]
-    heatmap: Heatmap
     weight_series: list[WeightPoint]
     mood_series: list[MoodPoint]
     activity_distribution: list[ActivityCount]

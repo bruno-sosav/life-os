@@ -21,7 +21,7 @@ export default function ProjectTabs({ projects, selected, onSelect, onCreated, o
   const isNew = !editing?.id
 
   function open(project) {
-    setForm(project?.id ? { name: project.name, color: project.color || COLORS[5] } : { name: '', color: COLORS[0] })
+    setForm(project?.id ? { name: project.name, color: project.color || COLORS[0] } : { name: '', color: COLORS[0] })
     setEditing(project)
   }
 
@@ -65,7 +65,7 @@ export default function ProjectTabs({ projects, selected, onSelect, onCreated, o
                 aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-2 pl-3.5 py-2 text-sm font-semibold ${active ? 'text-ink-100 pr-1.5' : 'text-ink-400 hover:text-ink-100 pr-3.5'}`}
               >
-                <span className="w-2 h-2 rounded-full" style={{ background: p.color || COLORS[5] }} />
+                <span className="w-2 h-2 rounded-full" style={{ background: p.color || '#8C948F' }} />
                 {p.name}
               </button>
               {active && (

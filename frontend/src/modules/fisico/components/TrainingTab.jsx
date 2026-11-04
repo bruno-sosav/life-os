@@ -24,7 +24,7 @@ export default function TrainingTab({ activities, onActivitiesChanged }) {
   const monthQ = useAsync(() => fetchTrainingMonth(month), [month])
 
   const byId = Object.fromEntries(activities.map((a) => [a.id, a]))
-  const colorOf = (id) => byId[id]?.color || PICK_COLORS[5]
+  const colorOf = (id) => byId[id]?.color || '#8C948F'
   const active = activities.filter((a) => a.active)
 
   function refresh() {

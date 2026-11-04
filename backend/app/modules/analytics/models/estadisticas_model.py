@@ -7,6 +7,7 @@ datetime64) y devuelven estructuras listas para serializar.
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
+from typing import Any
 
 import pandas as pd
 
@@ -54,3 +55,11 @@ def between(df: pd.DataFrame, start: date, end: date, column: str = "date") -> p
 
 def day_range(start: date, end: date) -> pd.DatetimeIndex:
     return pd.date_range(ts(start), ts(end), freq="D")
+
+
+def frame(rows: list[tuple[Any, ...]], columns: list[str], dates: tuple[str, ...]) -> pd.DataFrame:
+    """Filas leídas de la base → DataFrame, con las columnas de fecha como datetime64."""
+    df = pd.DataFrame(rows, columns=columns)
+    for column in dates:
+        df[column] = pd.to_datetime(df[column])
+    return df

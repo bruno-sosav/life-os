@@ -106,7 +106,7 @@ export default function RegisterSessionModal({ open, activities, onClose, onSave
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
                     on ? 'bg-ink-700 border-ink-600 text-ink-100' : 'border-ink-700 text-ink-400 hover:text-ink-100'
                   }`}>
-                  <span className="w-2 h-2 rounded-full" style={{ background: a.color || PICK_COLORS[5] }} />
+                  <span className="w-2 h-2 rounded-full" style={{ background: a.color || '#8C948F' }} />
                   {a.name}
                 </button>
               )

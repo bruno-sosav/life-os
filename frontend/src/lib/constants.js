@@ -5,8 +5,9 @@ export const PRIORITY_COLORS = {
   baja: '#8C948F'
 }
 
-// Colores para elegir en un proyecto o un tipo de entrenamiento
-export const PICK_COLORS = ['#2EBD85', '#7C5CFF', '#E0B84A', '#5AC8FA', '#F58FB0', '#8C948F']
+// Colores de identidad (proyectos, tipos de entrenamiento), en este orden. Validados para
+// daltonismo sobre el fondo de las tarjetas; no se confunden con up/down/warn/accent.
+export const PICK_COLORS = ['#3987E5', '#D95926', '#199E70', '#C98500', '#D55181', '#9085E9']
 
 export const STATUS_LABELS = {
   pendiente: 'Pendiente',

@@ -35,7 +35,7 @@ export default function Actividades({ activities, onChanged }) {
             const fields = a.fields.filter((f) => !f.archived)
             return (
               <li key={a.id} className="py-3 flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: a.color || COLORS[5] }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: a.color || '#8C948F' }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
                     {a.name}

@@ -1,4 +1,4 @@
-"""Cumplimiento: % de lo agendado por semana, estado de cada día y el mapa de 90 días."""
+"""Cumplimiento: % de lo agendado por semana y estado de cada día."""
 
 from collections.abc import Sequence
 from datetime import date, timedelta
@@ -10,8 +10,6 @@ from app.core.fechas_util import Period, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.analytics.models.estadisticas_model import StatsInput, day_range
 from app.modules.rutina import STREAK_WINDOW_DAYS, Habit, day_status, done_per_day, expected_per_day
-
-HEATMAP_DAYS = STREAK_WINDOW_DAYS
 
 HISTORY_WEEKS = 12
 
@@ -69,25 +67,5 @@ def done_pairs(inp: StatsInput) -> list[tuple[str, date]]:
 
 def daily_status(inp: StatsInput) -> pd.Series:
     """Estado de cada uno de los últimos 90 días, contando hábitos y bloques de rutina."""
-    days = day_range(inp.today - timedelta(days=HEATMAP_DAYS - 1), inp.today)
+    days = day_range(inp.today - timedelta(days=STREAK_WINDOW_DAYS - 1), inp.today)
     return day_status(inp.today, days, inp.blocks, inp.habits, done_pairs(inp))
-
-
-def heatmap(inp: StatsInput) -> dict[str, Any]:
-    """Celdas por día en columnas de semana (lunes arriba) y cuántos días hubo de cada estado.
-
-    Las celdas de relleno van con nulls.
-    """
-    status = daily_status(inp)
-    blank: dict[str, Any] = {"date": None, "status": None}
-    days = pd.DatetimeIndex(status.index)
-    cells = [blank] * days[0].weekday()
-    cells += [{"date": day.date(), "status": s} for day, s in zip(days, status, strict=True)]
-    cells += [blank] * (-len(cells) % 7)
-    counts = status.value_counts()
-    return {
-        "cells": cells,
-        "cumplido": int(counts.get("cumplido", 0)),
-        "parcial": int(counts.get("parcial", 0)),
-        "sin_cumplir": int(counts.get("sin_cumplir", 0)),
-    }

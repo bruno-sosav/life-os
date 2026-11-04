@@ -1,5 +1,5 @@
-import { api } from '../../lib/api.js'
-import { todayISO } from '../../lib/dates.js'
+import { api } from '../../../lib/api.js'
+import { todayISO } from '../../../lib/dates.js'
 
 // Stats ya calculadas por el backend. weekOffset mueve la semana del cumplimiento y el radar.
 export const fetchAnalyticsSummary = (weekOffset = 0) =>
