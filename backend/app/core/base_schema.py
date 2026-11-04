@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 
 
 class ORMModel(BaseModel):
@@ -18,3 +18,6 @@ UTCDateTime = Annotated[dt.datetime, AfterValidator(_as_utc)]
 
 # Etiqueta libre que elige el usuario (categoría, etiqueta…): se muestra tal cual, emoji incluido
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
+
+# Puntaje opcional de 1 a 5 (rating de un libro, mood, energía)
+Score = Field(default=None, ge=1, le=5)
