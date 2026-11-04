@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import Card from '../../components/Card.jsx'
-import Button from '../../components/Button.jsx'
-import Modal from '../../components/Modal.jsx'
-import EmptyState from '../../components/EmptyState.jsx'
-import { useAsync } from '../../hooks/useAsync.js'
-import { toast } from '../../store/toastStore.js'
-import { createActivity, updateActivity, deleteActivity, fetchActiveHabits } from './queries.js'
-import { FIELD_TYPES } from './campos.js'
+import Button from '../../../components/Button.jsx'
+import Modal from '../../../components/Modal.jsx'
+import EmptyState from '../../../components/EmptyState.jsx'
+import { useAsync } from '../../../hooks/useAsync.js'
+import { toast } from '../../../store/toastStore.js'
+import { createActivity, updateActivity, deleteActivity, fetchActiveHabits } from '../api/actividades.api.js'
+import { FIELD_TYPES } from '../campos.js'
+import { PICK_COLORS as COLORS } from '../../../lib/constants.js'
 
-const COLORS = ['#BF5AF2', '#7C5CFF', '#2EBD85', '#FF9F0A', '#F6465D', '#5AC8FA']
-const EMOJIS = ['🏋️', '🤸', '🏃', '🧘', '🥊', '🚴', '🏊', '⚽', '🧗', '🎾']
 const TYPE_LABEL = Object.fromEntries(FIELD_TYPES.map((t) => [t.value, t.label]))
 
 export default function Actividades({ activities, onChanged }) {
@@ -24,28 +22,26 @@ export default function Actividades({ activities, onChanged }) {
   }
 
   return (
-    <Card
-      title="Tus actividades"
-      subtitle="Pausá las que no estés haciendo: su historial queda guardado"
-      action={<Button size="sm" onClick={() => setEditing({})}>+ Actividad</Button>}
-    >
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-xs text-ink-400">Pausá los que no estés haciendo: su historial queda guardado</p>
+        <Button size="sm" onClick={() => setEditing({})}>+ Tipo</Button>
+      </div>
       {!activities.length ? (
-        <EmptyState icon="🏃" title="Sin actividades" description="Creá la primera: gym, correr, estiramientos…" />
+        <EmptyState icon="+" title="Sin tipos" description="Creá el primero: gym, calistenia, correr…" />
       ) : (
-        <ul className="divide-y divide-white/[0.04]">
+        <ul className="divide-y divide-ink-700">
           {activities.map((a) => {
             const fields = a.fields.filter((f) => !f.archived)
             return (
               <li key={a.id} className="py-3 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-xl grid place-items-center text-lg shrink-0" style={{ background: `${a.color || '#7C5CFF'}25` }}>
-                  {a.emoji || '✨'}
-                </span>
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: a.color || COLORS[5] }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold flex items-center gap-2">
                     {a.name}
-                    {!a.active && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/[0.08] text-white/50">PAUSADA</span>}
+                    {!a.active && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-ink-600 text-ink-400">PAUSADA</span>}
                   </div>
-                  <div className="text-xs text-white/35 truncate">
+                  <div className="text-xs text-ink-400 truncate">
                     {fields.length ? fields.map((f) => f.name).join(' · ') : 'Solo asistencia'}
                   </div>
                 </div>
@@ -62,7 +58,7 @@ export default function Actividades({ activities, onChanged }) {
         onClose={() => setEditing(null)}
         onSaved={onChanged}
       />
-    </Card>
+    </div>
   )
 }
 
@@ -128,22 +124,22 @@ function ActivityModal({ initial, onClose, onSaved }) {
     try {
       if (isNew) await createActivity(payload)
       else await updateActivity(initial.id, payload)
-      toast.success('Actividad guardada ✓')
+      toast.success('Tipo guardado')
       onSaved(); onClose()
     } catch (e) { toast.error('Error: ' + e.message) }
   }
 
   async function remove() {
-    if (!confirm(`¿Borrar "${initial.name}" y TODAS sus sesiones? Si solo querés dejar de verla, pausala.`)) return
+    if (!confirm(`¿Borrar "${initial.name}" y TODAS sus sesiones? Si solo querés dejar de verlo, pausalo.`)) return
     try {
       await deleteActivity(initial.id)
-      toast.success('Actividad borrada')
+      toast.success('Tipo borrado')
       onSaved(); onClose()
     } catch (e) { toast.error('Error: ' + e.message) }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isNew ? 'Nueva actividad' : `Editar ${initial.name}`} size="lg"
+    <Modal open={open} onClose={onClose} title={isNew ? 'Nuevo tipo' : `Editar ${initial.name}`} size="lg"
       footer={
         <div className="flex justify-between gap-2">
           {!isNew ? <Button variant="danger" onClick={remove}>Borrar</Button> : <span />}
@@ -161,17 +157,7 @@ function ActivityModal({ initial, onClose, onSaved }) {
             onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Calistenia, Correr…" />
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <span className="label">Emoji</span>
-            <div className="flex gap-1.5 flex-wrap">
-              {EMOJIS.map((e) => (
-                <button key={e} type="button" aria-pressed={form.emoji === e}
-                  onClick={() => setForm({ ...form, emoji: form.emoji === e ? '' : e })}
-                  className={`w-9 h-9 rounded-xl text-lg transition ${form.emoji === e ? 'bg-white/[0.16]' : 'bg-white/[0.05]'}`}>{e}</button>
-              ))}
-            </div>
-          </div>
+        <div>
           <div>
             <span className="label">Color</span>
             <div className="flex gap-2">
@@ -190,17 +176,17 @@ function ActivityModal({ initial, onClose, onSaved }) {
           <select id="activity-habit" className="input" value={form.habit_id}
             onChange={(e) => setForm({ ...form, habit_id: e.target.value })}>
             <option value="">Ninguno: la asistencia se marca en las sesiones</option>
-            {(habitsQ.data || []).map((h) => <option key={h.id} value={h.id}>{h.emoji ? `${h.emoji} ` : ''}{h.name}</option>)}
+            {(habitsQ.data || []).map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>
-          <p className="text-[11px] text-white/30 mt-1.5">Con un hábito vinculado, marcar la asistencia acá también lo marca en el dashboard.</p>
+          <p className="text-[11px] text-ink-400 mt-1.5">Con un hábito vinculado, marcar la asistencia acá también lo marca en el dashboard.</p>
         </div>
 
         <div>
           <span className="label">Qué anotás en cada sesión</span>
           <div className="space-y-2">
-            {visible.length === 0 && <p className="text-xs text-white/30">Sin campos: solo se registra si fuiste.</p>}
+            {visible.length === 0 && <p className="text-xs text-ink-400">Sin campos: solo se registra si fuiste.</p>}
             {form.fields.map((f, i) => f.archived ? null : (
-              <div key={f.id || `nuevo-${i}`} className="p-3 rounded-xl bg-white/[0.04] space-y-2">
+              <div key={f.id || `nuevo-${i}`} className="p-3 rounded-xl bg-ink-700 space-y-2">
                 <div className="flex gap-2">
                   <input className="input flex-1 text-sm" aria-label="Nombre del campo" value={f.name} maxLength={60}
                     onChange={(e) => setField(i, { name: e.target.value })} placeholder="Distancia, Sensación…" />
@@ -210,7 +196,7 @@ function ActivityModal({ initial, onClose, onSaved }) {
                     {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                   <button type="button" onClick={() => removeField(i)} aria-label={`Quitar ${f.name || 'campo'}`}
-                    className="px-2 text-white/30 hover:text-[#F6465D] text-sm">✕</button>
+                    className="px-2 text-ink-400 hover:text-down text-sm">✕</button>
                 </div>
                 {f.type === 'numero' && (
                   <input className="input text-sm" aria-label="Unidad" value={f.unit} maxLength={20}
@@ -224,17 +210,17 @@ function ActivityModal({ initial, onClose, onSaved }) {
             ))}
           </div>
           <button type="button" onClick={() => setForm({ ...form, fields: [...form.fields, newField()] })}
-            className="mt-2 text-xs text-[#7C5CFF] hover:underline">+ Agregar campo</button>
+            className="mt-2 text-xs text-up hover:underline">+ Agregar campo</button>
         </div>
 
         {archived.length > 0 && (
           <div>
             <span className="label">Archivados</span>
-            <p className="text-[11px] text-white/30 mb-2">No se cargan más, pero tus sesiones viejas los siguen mostrando.</p>
+            <p className="text-[11px] text-ink-400 mb-2">No se cargan más, pero tus sesiones viejas los siguen mostrando.</p>
             <div className="flex flex-wrap gap-1.5">
               {form.fields.map((f, i) => !f.archived ? null : (
                 <button key={f.id} type="button" onClick={() => setField(i, { archived: false })}
-                  className="text-xs px-2.5 py-1.5 rounded-lg bg-white/[0.05] text-white/50 hover:text-white">
+                  className="text-xs px-2.5 py-1.5 rounded-lg bg-ink-700 text-ink-400 hover:text-ink-100">
                   {f.name} · {TYPE_LABEL[f.type]} · Restaurar
                 </button>
               ))}

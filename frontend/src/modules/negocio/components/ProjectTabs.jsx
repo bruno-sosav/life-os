@@ -2,9 +2,9 @@ import { useState } from 'react'
 import Button from '../../../components/Button.jsx'
 import Modal from '../../../components/Modal.jsx'
 import { toast } from '../../../store/toastStore.js'
+import { PICK_COLORS as COLORS } from '../../../lib/constants.js'
 import { createProject, deleteProject, updateProject } from '../api/proyectos.api.js'
 
-const COLORS = ['#2EBD85', '#7C5CFF', '#E0B84A', '#5AC8FA', '#F58FB0', '#8C948F']
 
 function PencilIcon() {
   return (

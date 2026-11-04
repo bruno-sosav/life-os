@@ -16,6 +16,6 @@ export const hasExercises = (activity) =>
 // Cómo se muestra un valor guardado en el historial
 export function formatValue(field, value) {
   if (field.type === 'si_no') return value ? 'Sí' : 'No'
-  if (field.type === 'escala') return '★'.repeat(value)
+  if (field.type === 'escala') return `${value}/5`
   return field.unit ? `${value} ${field.unit}` : String(value)
 }

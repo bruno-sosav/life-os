@@ -5,6 +5,9 @@ export const PRIORITY_COLORS = {
   baja: '#8C948F'
 }
 
+// Colores para elegir en un proyecto o un tipo de entrenamiento
+export const PICK_COLORS = ['#2EBD85', '#7C5CFF', '#E0B84A', '#5AC8FA', '#F58FB0', '#8C948F']
+
 export const STATUS_LABELS = {
   pendiente: 'Pendiente',
   en_progreso: 'En proceso',

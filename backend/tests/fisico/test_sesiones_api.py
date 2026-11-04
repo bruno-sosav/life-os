@@ -62,14 +62,13 @@ def test_sessions_with_exercises(client: TestClient) -> None:
     assert any(e["weight_kg"] == 60.5 for e in sessions[1]["exercises"])  # número, no string
 
     assert client.delete(f"/api/sessions/{created['id']}").status_code == 204
-    names = client.get(f"/api/activities/{activity['id']}/exercises/names").json()
+    names = client.get("/api/exercises/names").json()
     assert names == []  # los ejercicios se borran con la sesión
     assert client.delete("/api/sessions/no-existe").status_code == 404
 
 
-def test_exercise_names_and_progression(client: TestClient) -> None:
-    activity = gym(client)
-    other = gym(client)  # otra actividad con lista de ejercicios: no se mezcla
+def test_exercises_across_types(client: TestClient) -> None:
+    activity, other = gym(client), gym(client)
     create_session(
         client,
         activity_id=activity["id"],
@@ -81,15 +80,31 @@ def test_exercise_names_and_progression(client: TestClient) -> None:
     )
     create_session(
         client,
-        activity_id=activity["id"],
-        exercises=[{"exercise_name": "sentadilla", "weight_kg": 85}],
+        activity_id=other["id"],
+        date="2026-10-12",
+        exercises=[
+            {"exercise_name": "sentadilla", "sets": 4, "reps": 6, "weight_kg": 85},
+            {"exercise_name": "Remo", "sets": 3, "reps": 10},
+        ],
     )
-    create_session(client, activity_id=other["id"], exercises=[{"exercise_name": "Remo"}])
 
-    base = f"/api/activities/{activity['id']}/exercises"
-    assert client.get(f"{base}/names").json() == ["Sentadilla", "sentadilla"]
-    points = client.get(f"{base}/progression", params={"name": "SENTADILLA"}).json()
-    assert points == [{"date": "2026-10-05", "value": 90.0}, {"date": "2026-10-12", "value": 85.0}]
+    # Sin distinguir mayúsculas y de cualquier tipo; el más usado primero
+    names = client.get("/api/exercises/names").json()
+    assert len(names) == 2 and names[0].lower() == "sentadilla" and names[1] == "Remo"
+
+    last = client.get("/api/exercises/last", params={"name": " SENTADILLA "}).json()
+    assert (last["date"], last["activity_id"]) == ("2026-10-12", other["id"])
+    assert [(x["sets"], x["reps"], x["weight_kg"]) for x in last["sets"]] == [(4, 6, 85.0)]
+    assert client.get("/api/exercises/last", params={"name": "Nunca"}).json() is None
+
+    progression = client.get("/api/exercises/progression", params={"name": "sentadilla"}).json()
+    assert progression["points"] == [
+        {"date": "2026-10-05", "value": 90.0},
+        {"date": "2026-10-12", "value": 85.0},
+    ]
+    assert progression["best"] == {"date": "2026-10-05", "value": 90.0}
+    empty = client.get("/api/exercises/progression", params={"name": "Remo"}).json()
+    assert empty["best"] is None
 
 
 def test_field_series(client: TestClient) -> None:

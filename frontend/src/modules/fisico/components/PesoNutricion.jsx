@@ -1,19 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import Card from '../../components/Card.jsx'
-import Button from '../../components/Button.jsx'
-import Tabs from '../../components/Tabs.jsx'
-import { useAsync } from '../../hooks/useAsync.js'
-import {
-  fetchWeightLogs,
-  upsertWeightLog,
-  fetchNutritionLogs,
-  upsertNutritionLog,
-  fetchNutritionAverage,
-  fetchWeightGoal,
-  saveWeightGoal
-} from './queries.js'
-import { todayISO } from '../../lib/dates.js'
-import { toast } from '../../store/toastStore.js'
+import Card from '../../../components/Card.jsx'
+import Button from '../../../components/Button.jsx'
+import Tabs from '../../../components/Tabs.jsx'
+import { useAsync } from '../../../hooks/useAsync.js'
+import { fetchWeightGoal, fetchWeightLogs, saveWeightGoal, upsertWeightLog } from '../api/peso.api.js'
+import { fetchNutritionAverage, fetchNutritionLogs, upsertNutritionLog } from '../api/nutricion.api.js'
+import { todayISO } from '../../../lib/dates.js'
+import { toast } from '../../../store/toastStore.js'
 import {
   ResponsiveContainer,
   LineChart,
@@ -32,7 +25,7 @@ const RANGES = [
   { value: 365, label: '1a' }
 ]
 
-export default function Peso() {
+export default function PesoNutricion() {
   const [range, setRange] = useState(30)
   const goalQ = useAsync(() => fetchWeightGoal(), [])
   const goal = goalQ.data?.weight_kg ?? null
@@ -117,16 +110,16 @@ export default function Peso() {
           {chartData.length > 1 ? (
             <ResponsiveContainer>
               <LineChart data={chartData}>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="date" stroke="#5b5b68" fontSize={10} />
-                <YAxis stroke="#5b5b68" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
+                <CartesianGrid stroke="#1A201E" vertical={false} />
+                <XAxis dataKey="date" stroke="#8C948F" fontSize={10} />
+                <YAxis stroke="#8C948F" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
                 <Tooltip
-                  contentStyle={{ background: '#1d1d22', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}
+                  contentStyle={{ background: '#0F1312', border: '1px solid #1F2623', borderRadius: 8 }}
                 />
                 {goal !== null && (
-                  <ReferenceLine y={goal} stroke="#1D9E75" strokeDasharray="4 4" label={{ value: `Meta ${goal}kg`, position: 'right', fill: '#1D9E75', fontSize: 10 }} />
+                  <ReferenceLine y={goal} stroke="#2EBD85" strokeDasharray="4 4" label={{ value: `Meta ${goal}kg`, position: 'right', fill: '#2EBD85', fontSize: 10 }} />
                 )}
-                <Line type="monotone" dataKey="weight" stroke="#7F77DD" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="weight" stroke="#7C5CFF" strokeWidth={2.5} dot={{ r: 3, fill: '#7C5CFF' }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (

@@ -42,3 +42,16 @@ class SessionOut(ORMModel):
 class ProgressionPoint(BaseModel):
     date: dt.date
     value: float | None  # carga máxima del ejercicio, o el valor del campo ese día
+
+
+class ExerciseProgression(BaseModel):
+    points: list[ProgressionPoint]
+    best: ProgressionPoint | None  # el récord: la carga más alta (la primera vez que se logró)
+
+
+class LastExercise(BaseModel):
+    """Lo que hiciste de un ejercicio la última vez, para tenerlo a mano al cargar."""
+
+    date: dt.date
+    activity_id: str
+    sets: list[ExerciseIn]

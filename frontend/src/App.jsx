@@ -17,7 +17,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/fisico/*" element={<Fisico />} />
+        <Route path="/fisico" element={<Fisico />} />
         <Route path="/negocio" element={<Negocio />} />
         <Route path="/mental" element={<Mental />} />
         <Route path="/finanzas" element={<Finanzas />} />

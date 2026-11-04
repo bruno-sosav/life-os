@@ -60,8 +60,11 @@ def test_weekly_review_days_per_activity(client: TestClient) -> None:
 def test_linked_habit_counts_as_a_training_day(client: TestClient) -> None:
     habit = create_habit(client, name="Ir al gym")
     gym = client.post("/api/activities", json={"name": "Gym", "habit_id": habit["id"]}).json()
-    client.put(f"/api/activities/{gym['id']}/attendance/2026-10-13")  # marca el hábito
-    client.post("/api/sessions", json={"activity_id": gym["id"], "date": "2026-10-13"})  # mismo día
+    # Marcado desde el dashboard y con sesión el mismo día
+    client.put(
+        "/api/habit-logs", json={"habit_id": habit["id"], "date": "2026-10-13", "completed": True}
+    )
+    client.post("/api/sessions", json={"activity_id": gym["id"], "date": "2026-10-13"})
     client.post("/api/sessions", json={"activity_id": gym["id"], "date": "2026-10-14"})
 
     weekly = client.get("/api/dashboard/weekly-review", params={"today": "2026-10-14"}).json()

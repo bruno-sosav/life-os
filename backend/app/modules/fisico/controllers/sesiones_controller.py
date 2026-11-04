@@ -2,7 +2,13 @@ from fastapi import APIRouter, Response, status
 
 from app.core.database.conexion_database import SessionDep
 from app.modules.fisico.models.sesiones_model import ActivitySession
-from app.modules.fisico.schemas.sesiones_schema import ProgressionPoint, SessionIn, SessionOut
+from app.modules.fisico.schemas.sesiones_schema import (
+    ExerciseProgression,
+    LastExercise,
+    ProgressionPoint,
+    SessionIn,
+    SessionOut,
+)
 from app.modules.fisico.services import sesiones_service as service
 
 router = APIRouter()
@@ -10,18 +16,19 @@ CREATED = status.HTTP_201_CREATED
 NO_CONTENT = status.HTTP_204_NO_CONTENT
 
 
-@router.get("/activities/{activity_id}/exercises/names", response_model=list[str])
-def list_exercise_names(activity_id: str, session: SessionDep) -> list[str]:
-    return service.list_exercise_names(session, activity_id)
+@router.get("/exercises/names", response_model=list[str])
+def list_exercise_names(session: SessionDep) -> list[str]:
+    return service.list_exercise_names(session)
 
 
-@router.get(
-    "/activities/{activity_id}/exercises/progression", response_model=list[ProgressionPoint]
-)
-def exercise_progression(
-    activity_id: str, name: str, session: SessionDep
-) -> list[ProgressionPoint]:
-    return service.exercise_progression(session, activity_id, name)
+@router.get("/exercises/last", response_model=LastExercise | None)
+def last_exercise(name: str, session: SessionDep) -> LastExercise | None:
+    return service.last_exercise(session, name)
+
+
+@router.get("/exercises/progression", response_model=ExerciseProgression)
+def exercise_progression(name: str, session: SessionDep) -> ExerciseProgression:
+    return service.exercise_progression(session, name)
 
 
 @router.get(

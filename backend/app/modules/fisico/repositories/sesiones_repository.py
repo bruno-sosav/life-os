@@ -21,22 +21,14 @@ def list_sessions(session: Session, activity_id: str | None, limit: int) -> list
     return list(session.scalars(query))
 
 
-def sessions_between(
-    session: Session, activity_id: str, start: date, end: date
-) -> list[ActivitySession]:
-    query = select(ActivitySession).where(
-        ActivitySession.activity_id == activity_id, ActivitySession.date.between(start, end)
+def attended_on(session: Session, activity_id: str, day: date) -> int:
+    """Cuántas sesiones asistidas tiene la actividad ese día."""
+    query = select(func.count()).where(
+        ActivitySession.activity_id == activity_id,
+        ActivitySession.date == day,
+        ActivitySession.attended.is_(True),
     )
-    return list(session.scalars(query))
-
-
-def session_of(session: Session, activity_id: str, day: date) -> ActivitySession | None:
-    query = (
-        select(ActivitySession)
-        .where(ActivitySession.activity_id == activity_id, ActivitySession.date == day)
-        .order_by(ActivitySession.created_at.desc())
-    )
-    return session.scalars(query).first()
+    return int(session.scalar(query) or 0)
 
 
 def attended_sessions(session: Session, start: date, end: date) -> list[tuple[str, date]]:
@@ -56,25 +48,37 @@ def field_values(session: Session, activity_id: str) -> list[tuple[date, dict[st
     return [(day, values) for day, values in session.execute(query)]
 
 
-def list_exercise_names(session: Session, activity_id: str) -> list[str]:
+def list_exercise_names(session: Session) -> list[str]:
+    """Los ejercicios que ya usaste, en cualquier tipo, del más hecho al menos.
+
+    Sin distinguir mayúsculas: "Sentadilla" y "sentadilla" son el mismo.
+    """
+    key = func.lower(SessionExercise.exercise_name)
     query = (
-        select(SessionExercise.exercise_name)
-        .join(ActivitySession)
-        .where(ActivitySession.activity_id == activity_id)
-        .distinct()
-        .order_by(SessionExercise.exercise_name)
+        select(func.max(SessionExercise.exercise_name))
+        .group_by(key)
+        .order_by(func.count().desc(), key)
     )
-    return list(session.scalars(query))
+    return [name for name in session.scalars(query) if name]
 
 
-def exercise_progression(
-    session: Session, activity_id: str, name: str
-) -> Sequence[Row[date, Decimal | None]]:
-    """Por fecha: carga máxima del ejercicio. `name` llega en minúsculas (no distingue)."""
+def last_exercise(session: Session, name: str) -> list[tuple[ActivitySession, SessionExercise]]:
+    """Las filas de ese ejercicio en la última sesión que lo tuvo. `name` llega en minúsculas."""
+    query = (
+        select(ActivitySession, SessionExercise)
+        .join(ActivitySession, ActivitySession.id == SessionExercise.session_id)
+        .where(func.lower(SessionExercise.exercise_name) == name)
+        .order_by(ActivitySession.date.desc(), ActivitySession.created_at.desc())
+    )
+    rows = [(s, e) for s, e in session.execute(query)]
+    return [(s, e) for s, e in rows if s.id == rows[0][0].id] if rows else []
+
+
+def exercise_progression(session: Session, name: str) -> Sequence[Row[date, Decimal | None]]:
+    """Por fecha: carga máxima del ejercicio, en cualquier tipo. `name` llega en minúsculas."""
     query = (
         select(ActivitySession.date, func.max(SessionExercise.weight_kg))
         .join(ActivitySession)
-        .where(ActivitySession.activity_id == activity_id)
         .where(func.lower(SessionExercise.exercise_name) == name)
         .group_by(ActivitySession.date)
         .order_by(ActivitySession.date)
