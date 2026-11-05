@@ -1,6 +1,6 @@
 // Animaciones compartidas: todas las pantallas se mueven igual
 
-export const EASE = [0.2, 0.8, 0.2, 1]
+const EASE = [0.2, 0.8, 0.2, 1]
 
 // Una lista que aparece en cascada: el contenedor lleva `list`, cada hijo `item`
 export const list = {

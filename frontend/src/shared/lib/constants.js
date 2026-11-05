@@ -15,8 +15,6 @@ export const STATUS_LABELS = {
   hecho: 'Finalizado'
 }
 
-export const MOOD_ICONS = ['😞', '😕', '😐', '🙂', '😄']
-
 
 // Etiquetas libres (categorías, etiquetas de ideas…): cada texto toma siempre el mismo color
 export function colorFor(label) {

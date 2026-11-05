@@ -9,6 +9,7 @@ import Agenda from '../components/Agenda.jsx'
 import BlockModal from '../components/BlockModal.jsx'
 import HabitModal from '../components/HabitModal.jsx'
 import WeeklyReview from '../components/WeeklyReview.jsx'
+import MoodRow from '../components/MoodRow.jsx'
 import { useAsync } from '../../../shared/hooks/useAsync.js'
 import { toast } from '../../../shared/store/toastStore.js'
 import { toggleRoutineCompletion } from '../api/bloques.api.js'
@@ -89,6 +90,9 @@ export default function HoyPage() {
         <DaySummary agenda={agenda} />
         <StreakCard streak={globalStreak} />
       </div>
+
+      {/* Ánimo y sueño de hoy: un toque y queda guardado */}
+      {selectedDate === todayISO() && <MoodRow />}
 
       {/* Routine list */}
       <Card

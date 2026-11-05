@@ -47,7 +47,7 @@ export default function MentalIdeas() {
       <div className="flex gap-1.5 mb-4 flex-wrap">
         <button
           onClick={() => setFilter(null)}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${!filter ? 'bg-white/[0.14] text-white' : 'text-white/35 hover:text-white'}`}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${!filter ? 'bg-ink-600 text-ink-100' : 'text-ink-400 hover:text-ink-100'}`}
         >Todas</button>
         {(tagsQ.data || []).map(({ tag, count }) => {
           const color = tagColor(tag)
@@ -56,7 +56,7 @@ export default function MentalIdeas() {
               key={tag}
               aria-pressed={filter === tag}
               onClick={() => setFilter(filter === tag ? null : tag)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${filter === tag ? 'text-white' : 'text-white/35 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${filter === tag ? 'text-ink-100' : 'text-ink-400 hover:text-ink-100'}`}
               style={filter === tag ? { background: `${color}33`, border: `1px solid ${color}50`, color } : { background: 'rgba(255,255,255,0.06)' }}
             >{tag} <span className="opacity-60">· {count}</span></button>
           )
@@ -69,24 +69,24 @@ export default function MentalIdeas() {
         action={<Button size="sm" onClick={() => setAdding(true)}>+ Nueva</Button>}
       >
         {!ideas.length ? (
-          <EmptyState icon="💡" title="Sin ideas" description="Guardá frases, ideas y aprendizajes." />
+          <EmptyState icon="—" title="Sin ideas" description="Guardá frases, ideas y aprendizajes." />
         ) : (
-          <ul className="divide-y divide-white/[0.04]">
+          <ul className="divide-y divide-ink-700">
             {ideas.map((idea) => {
               return (
                 <li key={idea.id} className="py-3 group flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium leading-snug">"{idea.text}"</p>
-                    {idea.author && <p className="text-xs text-white/35 mt-0.5">— {idea.author}</p>}
+                    {idea.author && <p className="text-xs text-ink-400 mt-0.5">— {idea.author}</p>}
                     <div className="flex items-center gap-2 mt-1.5">
                       <Badge color={tagColor(idea.tag)}>{idea.tag}</Badge>
-                      <span className="text-[11px] text-white/25">{fmt(idea.created_at, 'd MMM')}</span>
+                      <span className="text-[11px] text-ink-500">{fmt(idea.created_at, 'd MMM')}</span>
                     </div>
                   </div>
                   <button
                     onClick={() => remove(idea.id)}
                     aria-label="Eliminar idea"
-                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/25 hover:text-[#F6465D] text-xs shrink-0 mt-0.5"
+                    className="md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 w-8 h-8 -mr-1 rounded-md grid place-items-center text-ink-500 hover:text-down hover:bg-ink-700 text-xs shrink-0"
                   >✕</button>
                 </li>
               )

@@ -7,5 +7,3 @@ export const createActivity = (payload) => api('/activities', { method: 'POST', 
 export const updateActivity = (id, patch) => api(`/activities/${id}`, { method: 'PATCH', body: patch })
 // Borra también todas sus sesiones. Para dejar de verlo sin perder nada: pausarlo.
 export const deleteActivity = (id) => api(`/activities/${id}`, { method: 'DELETE' })
-// Para elegir el hábito vinculado: entrenar lo marca en el dashboard
-export const fetchActiveHabits = () => api('/habits', { params: { active: true } })
