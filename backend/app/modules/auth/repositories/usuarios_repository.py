@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.modules.auth.auth_model import User
+from app.modules.auth.models.usuarios_model import User
 
 
 def user_by_username(session: Session, username: str) -> User | None:

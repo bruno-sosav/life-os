@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request
 
 from app.core.database.conexion_database import SessionDep
-from app.modules.auth import auth_service as service
-from app.modules.auth.auth_schema import LoginIn, TokenOut
+from app.modules.auth.schemas.sesion_schema import LoginIn, TokenOut
+from app.modules.auth.services import sesion_service
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
 
 def _client_ip(request: Request) -> str:
@@ -16,5 +16,7 @@ def _client_ip(request: Request) -> str:
 
 @router.post("/login", response_model=TokenOut)
 def login(payload: LoginIn, request: Request, session: SessionDep) -> TokenOut:
-    token, expires = service.login(session, payload.username, payload.password, _client_ip(request))
+    token, expires = sesion_service.login(
+        session, payload.username, payload.password, _client_ip(request)
+    )
     return TokenOut(access_token=token, expires_at=expires)

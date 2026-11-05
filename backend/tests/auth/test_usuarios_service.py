@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.modules.auth import auth_service as service
-from app.modules.auth.auth_model import User
+from app.modules.auth import User
+from app.modules.auth.services import sesion_service
+from app.modules.auth.services import usuarios_service as service
 from tests.conftest import PASSWORD, USERNAME
 
 NEW_PASSWORD = "otra-clave-bien-larga"
@@ -13,7 +14,7 @@ def test_create_user_normalizes_and_hashes(db: sessionmaker[Session]) -> None:
         user = service.create_user(session, "  Ana  ", NEW_PASSWORD)
         assert user.username == "ana"
         assert user.password_hash.startswith("$argon2id$")
-        assert service.authenticate(session, "ANA", NEW_PASSWORD) is not None
+        assert sesion_service.authenticate(session, "ANA", NEW_PASSWORD) is not None
 
 
 @pytest.mark.parametrize(
@@ -37,8 +38,8 @@ def test_set_password_revokes_sessions(db: sessionmaker[Session]) -> None:
         token_version = session.query(User).one().token_version
         user = service.set_password(session, USERNAME, NEW_PASSWORD)
         assert user.token_version == token_version + 1
-        assert service.authenticate(session, USERNAME, PASSWORD) is None
-        assert service.authenticate(session, USERNAME, NEW_PASSWORD) is not None
+        assert sesion_service.authenticate(session, USERNAME, PASSWORD) is None
+        assert sesion_service.authenticate(session, USERNAME, NEW_PASSWORD) is not None
 
 
 def test_set_password_unknown_user(db: sessionmaker[Session]) -> None:

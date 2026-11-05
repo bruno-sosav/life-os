@@ -1,7 +1,12 @@
 """Auth: login, sesión (JWT) y el único usuario de la app. Es lo único que ven los otros módulos."""
 
-from app.modules.auth.auth_controller import router
-from app.modules.auth.auth_dependency import get_current_user
-from app.modules.auth.auth_model import User
+from fastapi import APIRouter
+
+from app.modules.auth.controllers import sesion_controller
+from app.modules.auth.controllers.sesion_dependency import get_current_user
+from app.modules.auth.models.usuarios_model import User
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+router.include_router(sesion_controller.router)
 
 __all__ = ["User", "get_current_user", "router"]

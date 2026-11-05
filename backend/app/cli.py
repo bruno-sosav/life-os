@@ -9,7 +9,7 @@ import getpass
 import sys
 
 from app.core.database.conexion_database import SessionLocal
-from app.modules.auth import auth_service as service
+from app.modules.auth.services import usuarios_service as service
 
 
 def ask_password() -> str:
