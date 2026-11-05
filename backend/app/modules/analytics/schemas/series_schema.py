@@ -8,12 +8,6 @@ class WeightPoint(BaseModel):
     kg: float
 
 
-class MoodPoint(BaseModel):
-    date: dt.date
-    mood: int | None
-    sleep: float | None
-
-
 class ActivityCount(BaseModel):
     id: str
     name: str

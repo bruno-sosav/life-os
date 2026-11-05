@@ -17,7 +17,7 @@ from app.modules.fisico.schemas.sesiones_schema import (
     ProgressionPoint,
     SessionIn,
 )
-from app.modules.rutina import Habit, HabitLogUpsert, upsert_habit_log
+from app.modules.rutina import mark_linked_habit
 
 MAX_TEXT = 2000
 
@@ -90,15 +90,12 @@ def delete_session(session: Session, session_id: str) -> None:
 
 
 def _sync_habit(session: Session, activity: Activity, day: date) -> None:
-    """Con hábito vinculado, el hábito de ese día queda cumplido si hay alguna sesión asistida.
+    """El hábito vinculado de ese día queda cumplido si hay alguna sesión asistida.
 
     Así entrenar marca "Ir al gym" en el dashboard, y borrar la única sesión lo desmarca.
     """
-    habit = session.get(Habit, activity.habit_id) if activity.habit_id else None
-    if habit is None or not habit.active:
-        return
     done = sesiones_repository.attended_on(session, activity.id, day) > 0
-    upsert_habit_log(session, HabitLogUpsert(habit_id=habit.id, date=day, completed=done))
+    mark_linked_habit(session, activity.habit_id, day, done)
 
 
 def list_exercise_names(session: Session) -> list[str]:

@@ -46,6 +46,6 @@ def test_activity_distribution_includes_paused_with_sessions() -> None:
 def test_series_empty_inputs() -> None:
     inp = StatsInput(today=TODAY)
     result = resumen_service.summary(inp, 0)
-    assert result["weight_series"] == [] and result["mood_series"] == []
+    assert result["weight_series"] == [] and result["skills_by_week"]["skills"] == []
     assert result["compliance"]["pct"] is None and result["compliance"]["delta"] is None
     assert result["kpis"]["current_streak"] == 0

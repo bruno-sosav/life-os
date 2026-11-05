@@ -3,8 +3,6 @@
 from datetime import timedelta
 from typing import Any
 
-import pandas as pd
-
 from app.core.fechas_util import Period, week_bounds
 from app.core.numeros_util import js_round
 from app.modules.analytics.models.estadisticas_model import StatsInput, between, ts
@@ -68,20 +66,36 @@ def habits_by_week(inp: StatsInput) -> dict[str, Any]:
     }
 
 
+def skills_by_week(inp: StatsInput) -> dict[str, Any]:
+    """Minutos de práctica por skill en ventanas de 7 días que terminan hoy, hace 7, 14…
+
+    Entran las skills que estás practicando y las que tuvieron práctica en esas semanas.
+    """
+    first = inp.today - timedelta(days=HABIT_WEEKS * 7 - 1)
+    recent = set(between(inp.practices, first, inp.today)["skill_id"])
+    skills = [s for s in inp.skills if s.stage == "practicando" or s.id in recent]
+    weeks = []
+    for w in range(HABIT_WEEKS - 1, -1, -1):
+        end = inp.today - timedelta(days=w * 7)
+        start = end - timedelta(days=6)
+        totals = between(inp.practices, start, end).groupby("skill_id")["minutes"].sum()
+        row: dict[str, Any] = {"week_start": start.isoformat()}
+        row.update({s.id: int(totals.get(s.id, 0)) for s in skills})
+        weeks.append(row)
+    return {"skills": [{"id": s.id, "name": s.name} for s in skills], "weeks": weeks}
+
+
 def _radar_metrics(inp: StatsInput, week: Period) -> dict[str, int]:
     expected = expected_habits(inp.habits, week.start, week.end)
     done = done_habits(inp, week.start, week.end)
     workouts = len(between(inp.workouts, week.start, week.end))
-    mental_dates = pd.concat(
-        [
-            between(inp.journal, week.start, week.end)["date"],
-            between(inp.moods, week.start, week.end)["date"],
-        ]
-    ).nunique()
+    practiced = int(between(inp.practices, week.start, week.end)["minutes"].sum())
+    # La meta de Mental es la suma de las metas semanales de lo que estás practicando
+    goal = sum(s.weekly_goal_min or 0 for s in inp.skills if s.stage == "practicando")
     return {
         "Hábitos": js_round(done / expected * 100) if expected else 0,
         "Entrenos": js_round(min(workouts / WORKOUT_GOAL, 1) * 100),
-        "Mental": js_round(min(mental_dates / 7, 1) * 100),
+        "Mental": js_round(min(practiced / goal, 1) * 100) if goal else 0,
     }
 
 

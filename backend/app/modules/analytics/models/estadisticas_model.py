@@ -12,6 +12,7 @@ from typing import Any
 import pandas as pd
 
 from app.modules.fisico import Activity
+from app.modules.mental import Skill
 from app.modules.rutina import Habit, RoutineBlock
 
 
@@ -38,8 +39,9 @@ class StatsInput:
     # Días con cada actividad (sesión asistida o hábito vinculado cumplido): activity_id, date
     workouts: pd.DataFrame = field(default_factory=lambda: _empty("activity_id", "date"))
     weights: pd.DataFrame = field(default_factory=lambda: _empty("date", "kg"))
-    moods: pd.DataFrame = field(default_factory=lambda: _empty("date", "mood", "sleep"))
-    journal: pd.DataFrame = field(default_factory=lambda: _empty("date"))
+    # Skills de Mental (con su meta semanal) y sus prácticas: skill_id, date, minutes
+    skills: Sequence[Skill] = ()
+    practices: pd.DataFrame = field(default_factory=lambda: _empty("skill_id", "date", "minutes"))
     books_finished: Sequence[date] = ()
     income: pd.DataFrame = field(default_factory=lambda: _empty("month", "amount"))
     expenses: pd.DataFrame = field(default_factory=lambda: _empty("date", "amount"))

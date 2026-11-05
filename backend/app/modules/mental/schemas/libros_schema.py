@@ -17,6 +17,7 @@ class BookIn(BaseModel):
     notes: str | None = None
     started_at: dt.date | None = None
     finished_at: dt.date | None = None
+    skill_id: str | None = None  # para qué skill lo leés
 
 
 class BookUpdate(BaseModel):
@@ -27,6 +28,7 @@ class BookUpdate(BaseModel):
     notes: str | None = None
     started_at: dt.date | None = None
     finished_at: dt.date | None = None
+    skill_id: str | None = None
 
 
 class BookOut(BookIn, ORMModel):

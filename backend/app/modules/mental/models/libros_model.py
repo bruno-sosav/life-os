@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Date, Integer, String, Text
+from sqlalchemy import CHAR, CheckConstraint, Date, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database.base_model import NAME, STATUS, Base, CreatedAt, UUIDPk
@@ -17,3 +17,7 @@ class Book(UUIDPk, CreatedAt, Base):
     notes: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[date | None] = mapped_column(Date)
     finished_at: Mapped[date | None] = mapped_column(Date)
+    # La skill para la que lo estás leyendo, si es para aprender algo
+    skill_id: Mapped[str | None] = mapped_column(
+        CHAR(36), ForeignKey("skills.id", ondelete="SET NULL")
+    )

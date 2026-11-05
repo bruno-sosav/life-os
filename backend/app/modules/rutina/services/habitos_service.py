@@ -39,3 +39,12 @@ def upsert_habit_log(session: Session, payload: HabitLogUpsert) -> HabitLog:
     )
     log.completed = payload.completed
     return base_repository.save(session, log)
+
+
+def mark_linked_habit(session: Session, habit_id: str | None, day: date, done: bool) -> None:
+    """Para los módulos que tienen un hábito vinculado (Físico, Mental): lo deja cumplido o no
+    ese día. Un hábito borrado o pausado no se toca."""
+    habit = session.get(Habit, habit_id) if habit_id else None
+    if habit is None or not habit.active:
+        return
+    upsert_habit_log(session, HabitLogUpsert(habit_id=habit.id, date=day, completed=done))

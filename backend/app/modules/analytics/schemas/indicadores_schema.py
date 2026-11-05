@@ -24,6 +24,17 @@ class HabitsByWeek(BaseModel):
     weeks: list[dict[str, int | str]]
 
 
+class SkillRef(BaseModel):
+    id: str
+    name: str
+
+
+class SkillsByWeek(BaseModel):
+    skills: list[SkillRef]
+    # Una fila por semana: {"week_start": "...", "<skill_id>": minutos, ...}
+    weeks: list[dict[str, int | str]]
+
+
 class RadarAxis(BaseModel):
     axis: str
     semana: int

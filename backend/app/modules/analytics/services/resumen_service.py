@@ -14,13 +14,17 @@ from app.modules.analytics.services.cumplimiento_service import (
     compliance,
     compliance_history,
 )
-from app.modules.analytics.services.indicadores_service import habits_by_week, kpis, radar
+from app.modules.analytics.services.indicadores_service import (
+    habits_by_week,
+    kpis,
+    radar,
+    skills_by_week,
+)
 from app.modules.analytics.services.series_service import (
     FINANCE_MONTHS,
     activity_distribution,
     finance_monthly,
     months_back,
-    mood_series,
     weight_series,
 )
 from app.modules.fisico import attended_days, list_activities
@@ -44,7 +48,7 @@ def summary(inp: StatsInput, week_offset: int) -> dict[str, Any]:
         "habits_by_week": habits_by_week(inp),
         "radar": radar(inp, week_offset),
         "weight_series": weight_series(inp),
-        "mood_series": mood_series(inp),
+        "skills_by_week": skills_by_week(inp),
         "activity_distribution": activity_distribution(inp),
         "finance_monthly": finance_monthly(inp),
     }
@@ -62,7 +66,6 @@ def earliest_needed(today: date, week_offset: int) -> date:
 def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSummary:
     start = earliest_needed(today, week_offset)
     finance_start = min(start, months_back(today, FINANCE_MONTHS - 1))
-    mood_start = min(start, today - timedelta(days=30))
 
     inp = StatsInput(
         today=today,
@@ -79,11 +82,9 @@ def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSum
             list(attended_days(session, start, today)), ["activity_id", "date"], ("date",)
         ),
         weights=frame(repository.weights(session), ["date", "kg"], ("date",)),
-        moods=frame(
-            repository.moods(session, mood_start, today), ["date", "mood", "sleep"], ("date",)
-        ),
-        journal=frame(
-            [(d,) for d in repository.journal_dates(session, start)], ["date"], ("date",)
+        skills=repository.skills(session),
+        practices=frame(
+            repository.practices(session, start), ["skill_id", "date", "minutes"], ("date",)
         ),
         books_finished=repository.finished_book_dates(session),
         income=frame(repository.income(session, finance_start), ["month", "amount"], ("month",)),

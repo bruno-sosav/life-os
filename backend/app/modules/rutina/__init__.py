@@ -30,6 +30,7 @@ from app.modules.rutina.services.cumplimiento_service import (
 from app.modules.rutina.services.habitos_service import (
     completed_habit_logs,
     list_habits,
+    mark_linked_habit,
     upsert_habit_log,
 )
 from app.modules.rutina.services.revisiones_service import get_weekly_review
@@ -57,6 +58,7 @@ __all__ = [
     "habit_runs_on",
     "list_habits",
     "list_routine_blocks",
+    "mark_linked_habit",
     "router",
     "scheduled_on",
     "streaks",

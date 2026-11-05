@@ -19,19 +19,6 @@ def weight_series(inp: StatsInput) -> list[dict[str, Any]]:
     ]
 
 
-def mood_series(inp: StatsInput) -> list[dict[str, Any]]:
-    moods = inp.moods.sort_values("date").tail(30)
-    rows = zip(moods["date"].dt.date, moods["mood"].tolist(), moods["sleep"].tolist(), strict=True)
-    return [
-        {
-            "date": day,
-            "mood": None if pd.isna(mood) else int(mood),
-            "sleep": None if pd.isna(sleep) else float(sleep),
-        }
-        for day, mood, sleep in rows
-    ]
-
-
 def activity_distribution(inp: StatsInput) -> list[dict[str, Any]]:
     """Días de cada actividad en los últimos 30 días, de la más hecha a la menos."""
     recent = between(inp.workouts, inp.today - timedelta(days=30), inp.today)
