@@ -12,8 +12,10 @@ export default function LabelPicker({ id, label, value, onChange, options, place
             const selected = value === option
             return (
               <button key={option} type="button" aria-pressed={selected} onClick={() => onChange(option)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${selected ? 'text-white' : 'bg-white/[0.06] text-white/40'}`}
-                style={selected ? { background: `${color}33`, border: `1px solid ${color}50`, color } : {}}
+                className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+                  selected ? '' : 'border-ink-600 bg-ink-900 text-ink-300 hover:text-ink-100'
+                }`}
+                style={selected ? { background: `${color}24`, borderColor: `${color}66`, color } : {}}
               >{option}</button>
             )
           })}

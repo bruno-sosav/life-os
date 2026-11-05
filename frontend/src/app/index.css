@@ -48,3 +48,7 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 .ios-checkbox { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* La fila que se acaba de cargar destella en verde y se apaga */
+@keyframes flash-new { from { background-color: rgba(46, 189, 133, 0.22); } to { background-color: transparent; } }
+.flash-new { animation: flash-new 1.6s ease-out; }

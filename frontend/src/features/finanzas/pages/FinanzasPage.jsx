@@ -1,28 +1,25 @@
 import { useState } from 'react'
-import { format, addMonths, subMonths } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { addMonths, format } from 'date-fns'
 import PageHeader from '../../../shared/components/ui/PageHeader.jsx'
-import Card from '../../../shared/components/ui/Card.jsx'
-import Button from '../../../shared/components/ui/Button.jsx'
-import EmptyState from '../../../shared/components/ui/EmptyState.jsx'
-import { colorFor } from '../../../shared/lib/constants.js'
 import { useAsync } from '../../../shared/hooks/useAsync.js'
-import { toast } from '../../../shared/store/toastStore.js'
-import { deleteExpense, fetchMonthExpenses } from '../api/gastos.api.js'
-import { deleteIncome, fetchMonthIncome } from '../api/ingresos.api.js'
+import { fmt } from '../../../shared/lib/dates.js'
+import { fetchMonthExpenses } from '../api/gastos.api.js'
+import { fetchMonthIncome } from '../api/ingresos.api.js'
 import { fetchLabels, fetchMonthSummary } from '../api/resumen.api.js'
+import MonthSummary from '../components/MonthSummary.jsx'
+import CategoryBreakdown from '../components/CategoryBreakdown.jsx'
+import IncomeList from '../components/IncomeList.jsx'
+import ExpenseTable from '../components/ExpenseTable.jsx'
 import IncomeModal from '../components/IncomeModal.jsx'
 import ExpenseModal from '../components/ExpenseModal.jsx'
-import { fmt } from '../../../shared/lib/dates.js'
 
-function fmt$ (n) {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
-}
+const EMPTY_SUMMARY = { income: 0, expenses: 0, savings: 0, savings_pct: null, spent_pct: null, by_category: [] }
+const capitalize = (s) => s.replace(/^\w/, (c) => c.toUpperCase())
 
 export default function FinanzasPage() {
   const [refDate, setRefDate] = useState(new Date())
-  const [addingIncome, setAddingIncome] = useState(false)
-  const [addingExpense, setAddingExpense] = useState(false)
+  const [adding, setAdding] = useState(null) // null | 'ingreso' | 'gasto'
+  const [highlight, setHighlight] = useState(null) // la fila recién cargada, para el destello
 
   const monthKey = format(refDate, 'yyyy-MM')
   const summaryQ = useAsync(() => fetchMonthSummary(refDate), [monthKey])
@@ -30,153 +27,49 @@ export default function FinanzasPage() {
   const expensesQ = useAsync(() => fetchMonthExpenses(refDate), [monthKey])
   const labelsQ = useAsync(() => fetchLabels(), [])
 
-  const income = incomeQ.data || []
-  const expenses = expensesQ.data || []
   // Todos los totales vienen calculados del backend
-  const summary = summaryQ.data || { income: 0, expenses: 0, savings: 0, savings_pct: null, spent_pct: null, by_category: [] }
+  const summary = summaryQ.data || EMPTY_SUMMARY
   const labels = labelsQ.data || { expense_categories: [], income_sources: [] }
-
-  const monthLabel = format(refDate, "MMMM yyyy", { locale: es }).replace(/^\w/, c => c.toUpperCase())
 
   function refetch() { summaryQ.refetch(); incomeQ.refetch(); expensesQ.refetch(); labelsQ.refetch() }
 
+  function onSaved(created) {
+    setHighlight(created.id)
+    refetch()
+  }
+
   return (
-    <div>
+    <div className="space-y-4">
       <PageHeader
         title="Finanzas"
-       
         subtitle="Ingresos, gastos y ahorro"
         actions={
-          <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setRefDate(subMonths(refDate, 1))}>◀</Button>
-            <span className="px-3 py-1.5 text-sm font-semibold text-white/70">{monthLabel}</span>
-            <Button variant="ghost" size="sm" onClick={() => setRefDate(addMonths(refDate, 1))}>▶</Button>
+          <div className="flex items-center gap-1 rounded-xl bg-ink-900 border border-ink-700 p-1">
+            <button onClick={() => setRefDate(addMonths(refDate, -1))} aria-label="Mes anterior"
+              className="w-8 h-8 rounded-lg grid place-items-center text-ink-400 hover:text-ink-100 hover:bg-ink-700">‹</button>
+            <span className="px-2 text-sm font-semibold min-w-[8.5rem] text-center">{capitalize(fmt(refDate, 'MMMM yyyy'))}</span>
+            <button onClick={() => setRefDate(addMonths(refDate, 1))} aria-label="Mes siguiente"
+              className="w-8 h-8 rounded-lg grid place-items-center text-ink-400 hover:text-ink-100 hover:bg-ink-700">›</button>
           </div>
         }
       />
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <Card>
-          <div className="text-[11px] text-white/35">Ingresos</div>
-          <div className="text-lg font-bold text-[#2EBD85] mt-0.5 tabular-nums">{fmt$(summary.income)}</div>
-        </Card>
-        <Card>
-          <div className="text-[11px] text-white/35">Gastos</div>
-          <div className="text-lg font-bold text-[#F6465D] mt-0.5 tabular-nums">{fmt$(summary.expenses)}</div>
-        </Card>
-        <Card>
-          <div className="text-[11px] text-white/35">Ahorro</div>
-          <div className={`text-lg font-bold mt-0.5 tabular-nums ${summary.savings >= 0 ? 'text-[#7C5CFF]' : 'text-[#F6465D]'}`}>{fmt$(summary.savings)}</div>
-          {summary.savings_pct != null && <div className="text-[10px] text-white/30 mt-0.5">{summary.savings_pct}% del ingreso</div>}
-        </Card>
-      </div>
-
-      {/* Savings bar */}
-      {summary.spent_pct != null && (
-        <div className="mb-4 px-1">
-          <div className="flex justify-between text-[11px] text-white/35 mb-1">
-            <span>Gastos sobre ingresos</span>
-            <span>{summary.spent_pct}%</span>
-          </div>
-          <div className="h-2 bg-white/[0.07] rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${summary.spent_pct}%`,
-                background: summary.savings_pct >= 20 ? '#2EBD85' : summary.savings_pct >= 0 ? '#FF9F0A' : '#F6465D'
-              }}
-            />
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Ingresos */}
-        <Card
-          title="Ingresos"
-         
-          action={<Button size="sm" onClick={() => setAddingIncome(true)}>+ Ingreso</Button>}
-        >
-          {!income.length ? (
-            <EmptyState icon="💵" title="Sin ingresos" description="Anotá lo que entra este mes." />
-          ) : (
-            <ul className="divide-y divide-white/[0.04]">
-              {income.map((item) => (
-                <li key={item.id} className="py-2.5 flex items-center gap-3 group">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold">{item.source || 'Ingreso'}</div>
-                    {item.notes && <div className="text-xs text-white/35">{item.notes}</div>}
-                  </div>
-                  <span className="text-sm font-bold text-[#2EBD85] tabular-nums">{fmt$(item.amount)}</span>
-                  <button
-                    onClick={() => deleteIncome(item.id).then(() => { toast.success('Eliminado'); refetch() })}
-                    className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs"
-                  >✕</button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        {/* Por categoría */}
-        <Card title="Por categoría">
-          {!summary.by_category.length ? (
-            <EmptyState icon="🗂" title="Sin gastos" description="Agregá gastos para ver el desglose." />
-          ) : (
-            <div className="space-y-2">
-              {summary.by_category.map((c) => (
-                <div key={c.category}>
-                  <div className="flex justify-between text-xs mb-0.5">
-                    <span>{c.category}</span>
-                    <span className="tabular-nums text-white/60">{fmt$(c.total)}</span>
-                  </div>
-                  <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${c.pct}%`, background: colorFor(c.category) }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Gastos */}
-        <Card
-          title="Gastos"
-         
-          action={<Button size="sm" onClick={() => setAddingExpense(true)}>+ Gasto</Button>}
-          className="lg:col-span-2"
-        >
-          {!expenses.length ? (
-            <EmptyState icon="💸" title="Sin gastos" description="Registrá tus gastos del mes." />
-          ) : (
-            <ul className="divide-y divide-white/[0.04]">
-              {expenses.map((exp) => {
-                return (
-                  <li key={exp.id} className="py-2.5 flex items-center gap-3 group">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorFor(exp.category) }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold">{exp.description || exp.category}</div>
-                      <div className="text-xs text-white/35">{fmt(exp.date, "d 'de' MMM")} · {exp.category}</div>
-                    </div>
-                    <span className="text-sm font-bold text-[#F6465D] tabular-nums">{fmt$(exp.amount)}</span>
-                    <button
-                      onClick={() => deleteExpense(exp.id).then(() => { toast.success('Eliminado'); refetch() })}
-                      className="opacity-0 group-hover:opacity-100 text-white/25 hover:text-[#F6465D] text-xs"
-                    >✕</button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </Card>
+        <MonthSummary summary={summary} />
+        <CategoryBreakdown categories={summary.by_category} />
       </div>
 
-      <IncomeModal open={addingIncome} onClose={() => setAddingIncome(false)} refDate={refDate} onSaved={refetch} sources={labels.income_sources} />
-      <ExpenseModal open={addingExpense} onClose={() => setAddingExpense(false)} onSaved={refetch} categories={labels.expense_categories} />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-3">
+          <ExpenseTable expenses={expensesQ.data || []} highlight={highlight} onAdd={() => setAdding('gasto')} onChanged={refetch} />
+        </div>
+        <div className="lg:col-span-2">
+          <IncomeList income={incomeQ.data || []} highlight={highlight} onAdd={() => setAdding('ingreso')} onChanged={refetch} />
+        </div>
+      </div>
+
+      <IncomeModal open={adding === 'ingreso'} onClose={() => setAdding(null)} refDate={refDate} onSaved={onSaved} sources={labels.income_sources} />
+      <ExpenseModal open={adding === 'gasto'} onClose={() => setAdding(null)} onSaved={onSaved} categories={labels.expense_categories} left={summary.savings} />
     </div>
   )
 }
