@@ -21,3 +21,6 @@ Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, ma
 
 # Puntaje opcional de 1 a 5 (rating de un libro, mood, energía)
 Score = Field(default=None, ge=1, le=5)
+
+# Un monto de plata: mayor que cero y con tope para que entre en la columna
+Amount = Field(gt=0, lt=10**10)

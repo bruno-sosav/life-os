@@ -14,12 +14,3 @@ class FinanceIncome(UUIDPk, CreatedAt, Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     source: Mapped[str | None] = mapped_column(String(NAME))  # libre: "Sueldo", "Freelance"…
     notes: Mapped[str | None] = mapped_column(Text)
-
-
-class FinanceExpense(UUIDPk, CreatedAt, Base):
-    __tablename__ = "finance_expenses"
-
-    date: Mapped[date] = mapped_column(Date, index=True)
-    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
-    category: Mapped[str] = mapped_column(String(NAME))
-    description: Mapped[str | None] = mapped_column(Text)
