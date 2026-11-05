@@ -7,14 +7,12 @@ from app.core.errores_util import get_or_404, unprocessable
 from app.core.fechas_util import week_bounds
 from app.modules.mental.models.skills_model import Skill
 from app.modules.mental.repositories import (
-    libros_repository,
     practicas_repository,
     recursos_repository,
     skills_repository,
 )
 from app.modules.mental.schemas.recursos_schema import ResourceOut
 from app.modules.mental.schemas.skills_schema import (
-    BookRef,
     SkillIn,
     SkillOut,
     SkillUpdate,
@@ -44,7 +42,6 @@ def list_skills(session: Session, today: date) -> list[SkillOut]:
         per_week[key] = per_week.get(key, 0) + minutes
     totals = practicas_repository.totals(session)
     resources = recursos_repository.list_resources(session)
-    books = libros_repository.books_for_skills(session)
 
     skills = sorted(skills_repository.list_skills(session), key=lambda s: STAGE_ORDER[s.stage])
     return [
@@ -60,11 +57,6 @@ def list_skills(session: Session, today: date) -> list[SkillOut]:
             last_practice=totals.get(s.id, (0, None))[1],
             weeks=[WeekMinutes(week_start=m, minutes=per_week.get((s.id, m), 0)) for m in mondays],
             resources=[ResourceOut.model_validate(r) for r in resources if r.skill_id == s.id],
-            books=[
-                BookRef(id=b.id, title=b.title, status=b.status)
-                for b in books
-                if b.skill_id == s.id
-            ],
             created_at=s.created_at,
         )
         for s in skills
@@ -89,5 +81,5 @@ def update_skill(session: Session, skill_id: str, payload: SkillUpdate) -> Skill
 
 
 def delete_skill(session: Session, skill_id: str) -> None:
-    """Borra la skill con sus prácticas y recursos; los libros vinculados quedan sin skill."""
+    """Borra la skill con sus prácticas y recursos."""
     base_repository.delete(session, get_or_404(session, Skill, skill_id))

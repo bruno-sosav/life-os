@@ -86,7 +86,6 @@ def get_summary(session: Session, today: date, week_offset: int) -> AnalyticsSum
         practices=frame(
             repository.practices(session, start), ["skill_id", "date", "minutes"], ("date",)
         ),
-        books_finished=repository.finished_book_dates(session),
         income=frame(repository.income(session, finance_start), ["month", "amount"], ("month",)),
         expenses=frame(repository.expenses(session, finance_start), ["date", "amount"], ("date",)),
     )

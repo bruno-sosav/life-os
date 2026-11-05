@@ -41,25 +41,28 @@ def test_week_total_and_last_six_weeks(client: TestClient) -> None:
     assert client.get("/api/skills/types").json() == ["Juego"]
 
 
-def test_order_by_stage_resources_and_books(client: TestClient) -> None:
+def test_order_by_stage_and_resources(client: TestClient) -> None:
     create_skill(client, name="Ciber", stage="la_tengo")
     paused = create_skill(client, name="Ventas", stage="en_pausa")
     ingles = create_skill(client, name="Inglés")
     assert list(skills(client)) == ["Inglés", "Ventas", "Ciber"]
 
-    resource = {"kind": "curso", "name": "Duolingo", "url": "https://duolingo.com"}
-    assert client.post(f"/api/skills/{ingles['id']}/resources", json=resource).status_code == 201
-    client.post("/api/books", json={"title": "Grammar in Use", "skill_id": ingles["id"]})
-    s = skills(client)["Inglés"]
-    assert [r["name"] for r in s["resources"]] == ["Duolingo"]
-    assert [b["title"] for b in s["books"]] == ["Grammar in Use"]
+    url = f"/api/skills/{ingles['id']}/resources"
+    course = {"kind": "curso", "name": "Duolingo", "url": "https://duolingo.com"}
+    assert client.post(url, json=course).status_code == 201
+    client.post(url, json={"kind": "libro", "name": "English Grammar in Use"})
+    resources = skills(client)["Inglés"]["resources"]
+    assert [(r["kind"], r["name"]) for r in resources] == [
+        ("curso", "Duolingo"),
+        ("libro", "English Grammar in Use"),
+    ]
+    assert client.post(url, json={"kind": "podcast", "name": "X"}).status_code == 422
 
     client.patch(f"/api/skills/{paused['id']}", json={"stage": "practicando", "name": "Ventas B2B"})
     # Dentro de la misma etapa, en el orden en que las creaste
     assert list(skills(client))[:2] == ["Ventas B2B", "Inglés"]
     client.delete(f"/api/skills/{ingles['id']}")
-    books = client.get("/api/books/library", params={"today": TODAY}).json()["shelves"]
-    assert books["pendiente"][0]["skill_id"] is None  # el libro queda, sin skill
+    assert "Inglés" not in skills(client)  # sus recursos se borran con ella
 
 
 def test_practice_marks_the_linked_habit(client: TestClient) -> None:

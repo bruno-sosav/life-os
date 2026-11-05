@@ -43,8 +43,7 @@ def kpis(inp: StatsInput) -> dict[str, Any]:
         "habit_month_pct": habit_month_pct,
         "last_weight": last_weight,
         "weight_trend": weight_trend,
-        "year": today.year,
-        "books_year": sum(1 for d in inp.books_finished if d.year == today.year),
+        "practice_month_minutes": int(between(inp.practices, month_start, today)["minutes"].sum()),
     }
 
 

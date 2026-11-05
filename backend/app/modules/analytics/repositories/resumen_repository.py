@@ -8,16 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.modules.finanzas import FinanceExpense, FinanceIncome
 from app.modules.fisico import WeightLog
-from app.modules.mental import Book, Practice, Skill
+from app.modules.mental import Practice, Skill
 
 
 def weights(session: Session) -> list[tuple[Any, ...]]:
     return [tuple(row) for row in session.execute(select(WeightLog.date, WeightLog.weight_kg))]
-
-
-def finished_book_dates(session: Session) -> list[date]:
-    query = select(Book.finished_at).where(Book.status == "leido", Book.finished_at.is_not(None))
-    return [d for d in session.scalars(query) if d is not None]
 
 
 def income(session: Session, start: date) -> list[tuple[Any, ...]]:

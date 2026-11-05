@@ -5,7 +5,7 @@ from app.core.database.base_model import NAME, STATUS, Base, CreatedAt, UUIDPk
 
 
 class SkillResource(UUIDPk, CreatedAt, Base):
-    """Un curso, link o video para aprender una skill. Los libros se vinculan desde Libros."""
+    """Un curso, libro, link o video para aprender una skill."""
 
     __tablename__ = "skill_resources"
 

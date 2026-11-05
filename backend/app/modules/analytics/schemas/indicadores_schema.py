@@ -8,8 +8,7 @@ class KPIs(BaseModel):
     habit_month_pct: int
     last_weight: float | None
     weight_trend: float | None  # kg contra el último registro de hace 30+ días
-    year: int
-    books_year: int
+    practice_month_minutes: int  # minutos de práctica de skills en el mes
 
 
 class HabitRef(BaseModel):

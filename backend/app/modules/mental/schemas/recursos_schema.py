@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.core.base_schema import ORMModel
 
-ResourceKind = Literal["curso", "link", "video", "otro"]
+ResourceKind = Literal["curso", "libro", "link", "video", "otro"]
 
 
 class ResourceIn(BaseModel):

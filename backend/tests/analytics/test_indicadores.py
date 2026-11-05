@@ -14,7 +14,10 @@ def test_kpis() -> None:
         habits=[habit("h1")],
         habit_logs=logs(*[("h1", date(2026, 10, d)) for d in range(1, 10)]),
         weights=frame(["date", "kg"], [(date(2026, 9, 1), 82.0), (date(2026, 10, 15), 80.4)]),
-        books_finished=[date(2026, 3, 1), date(2025, 12, 31)],
+        practices=frame(
+            ["skill_id", "date", "minutes"],
+            [("ingles", date(2026, 10, 3), 30), ("ingles", date(2026, 9, 28), 99)],
+        ),
         workouts=frame(
             ["activity_id", "date"], [("gym", date(2026, 10, 2)), ("mma", date(2026, 9, 30))]
         ),
@@ -22,7 +25,8 @@ def test_kpis() -> None:
     kpi = indicadores_service.kpis(inp)
     assert kpi["habit_month_pct"] == 50  # 9 de 18 días del mes
     assert (kpi["last_weight"], kpi["weight_trend"]) == (80.4, -1.6)
-    assert (kpi["year"], kpi["books_year"], kpi["workouts_month"]) == (2026, 1, 1)
+    # Solo lo del mes: la práctica de septiembre no suma
+    assert (kpi["practice_month_minutes"], kpi["workouts_month"]) == (30, 1)
 
 
 def test_habits_by_week_rows_keyed_by_habit_id() -> None:

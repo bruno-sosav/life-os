@@ -8,6 +8,9 @@ function weightNote(trend) {
   return 'igual que hace 30 días'
 }
 
+// "4 h 30" o "45 min": las horas sin decimales que confundan
+const practice = (min) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60}` : ''}` : `${min} min`)
+
 // Los números van en texto principal; el color queda para lo que significa algo (la racha)
 function Kpi({ label, value, suffix, note, tone = 'text-ink-100' }) {
   return (
@@ -31,7 +34,7 @@ export default function KpiGrid({ kpis }) {
       <Kpi label="Entrenos del mes" value={kpis.workouts_month} note="días entrenados" />
       <Kpi label="Hábitos del mes" value={`${kpis.habit_month_pct}%`} note="de lo que tocaba" />
       <Kpi label="Peso" value={kpis.last_weight != null ? kpis.last_weight.toFixed(1) : '—'} suffix="kg" note={weightNote(kpis.weight_trend)} />
-      <Kpi label={`Libros ${kpis.year}`} value={kpis.books_year} note="terminados este año" />
+      <Kpi label="Práctica del mes" value={practice(kpis.practice_month_minutes)} note="minutos en tus skills" />
     </motion.div>
   )
 }

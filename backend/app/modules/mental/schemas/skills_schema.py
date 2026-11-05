@@ -38,12 +38,6 @@ class WeekMinutes(BaseModel):
     minutes: int
 
 
-class BookRef(BaseModel):
-    id: str
-    title: str
-    status: str
-
-
 class SkillOut(BaseModel):
     """La skill con lo que llevás, ya calculado."""
 
@@ -58,5 +52,4 @@ class SkillOut(BaseModel):
     last_practice: dt.date | None
     weeks: list[WeekMinutes]  # las últimas 6 semanas, de la más vieja a la actual
     resources: list[ResourceOut]
-    books: list[BookRef]
     created_at: UTCDateTime

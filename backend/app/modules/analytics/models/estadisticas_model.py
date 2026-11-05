@@ -42,7 +42,6 @@ class StatsInput:
     # Skills de Mental (con su meta semanal) y sus prácticas: skill_id, date, minutes
     skills: Sequence[Skill] = ()
     practices: pd.DataFrame = field(default_factory=lambda: _empty("skill_id", "date", "minutes"))
-    books_finished: Sequence[date] = ()
     income: pd.DataFrame = field(default_factory=lambda: _empty("month", "amount"))
     expenses: pd.DataFrame = field(default_factory=lambda: _empty("date", "amount"))
 

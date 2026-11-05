@@ -19,7 +19,7 @@ UTCDateTime = Annotated[dt.datetime, AfterValidator(_as_utc)]
 # Etiqueta libre que elige el usuario (categoría, etiqueta…): se muestra tal cual, emoji incluido
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
 
-# Puntaje opcional de 1 a 5 (rating de un libro, mood, energía)
+# Puntaje opcional de 1 a 5 (mood, energía)
 Score = Field(default=None, ge=1, le=5)
 
 # Un monto de plata: mayor que cero y con tope para que entre en la columna

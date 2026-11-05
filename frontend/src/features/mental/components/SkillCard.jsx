@@ -9,7 +9,7 @@ import { deletePractice, fetchPractices } from '../api/practicas.api.js'
 import { createResource, deleteResource } from '../api/recursos.api.js'
 import { hm, stageOf } from '../lib/tiempo.js'
 
-const KINDS = ['curso', 'link', 'video', 'otro']
+const KINDS = ['curso', 'libro', 'link', 'video', 'otro']
 
 function lastText(day) {
   if (!day) return { text: 'Sin prácticas todavía', stale: false }
@@ -144,12 +144,6 @@ function Resources({ skill, onChanged }) {
     <div>
       <div className="label">Recursos</div>
       <ul className="space-y-1">
-        {skill.books.map((b) => (
-          <li key={b.id} className="flex items-center gap-3 text-sm">
-            <span className="text-[9px] font-bold tracking-wider uppercase text-accent w-12">Libro</span>
-            <span className="flex-1 min-w-0 truncate text-ink-300">{b.title}</span>
-          </li>
-        ))}
         {skill.resources.map((r) => (
           <li key={r.id} className="flex items-center gap-3 text-sm">
             <span className="text-[9px] font-bold tracking-wider uppercase w-12" style={{ color: '#3987E5' }}>{r.kind}</span>
@@ -161,8 +155,8 @@ function Resources({ skill, onChanged }) {
           </li>
         ))}
       </ul>
-      {!skill.books.length && !skill.resources.length && !draft && (
-        <p className="text-xs text-ink-400">Sin recursos. Los libros se vinculan desde Libros.</p>
+      {!skill.resources.length && !draft && (
+        <p className="text-xs text-ink-400">Sin recursos: cursos, libros, links o videos.</p>
       )}
       {draft ? (
         <div className="mt-2 space-y-2">
@@ -174,7 +168,7 @@ function Resources({ skill, onChanged }) {
                 }`}>{k}</button>
             ))}
           </div>
-          <input className="input !py-2 text-sm" aria-label="Nombre del recurso" placeholder="Nombre: Duolingo, curso de…" autoFocus
+          <input className="input !py-2 text-sm" aria-label="Nombre del recurso" placeholder="Nombre: Duolingo, un libro, un curso…" autoFocus
             value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
           <input className="input !py-2 text-sm" aria-label="Link (opcional)" placeholder="https://… (opcional)"
             value={draft.url} onChange={(e) => setDraft({ ...draft, url: e.target.value })}
