@@ -10,7 +10,7 @@ export default function WeekStrip({ data, colorOf }) {
       <div className="flex items-baseline justify-between mb-3">
         <h3 className="font-semibold text-base">Esta semana</h3>
         <span className="text-xs text-ink-400">
-          <span className="font-mono text-lg font-bold text-up mr-1">{data?.count ?? 0}</span>entrenos
+          <span className="font-mono text-lg font-bold text-up mr-1">{data?.count ?? 0}</span>{data?.count === 1 ? 'entreno' : 'entrenos'}
         </span>
       </div>
       <div className="grid grid-cols-7 gap-1.5">

@@ -6,7 +6,8 @@ import MonthGrid from '../../../shared/components/calendar/MonthGrid.jsx'
 import { useAsync } from '../../../shared/hooks/useAsync.js'
 import { fmt, todayISO } from '../../../shared/lib/dates.js'
 import { swap } from '../../../shared/lib/motion.js'
-import { fetchCalendar, fetchDay } from '../api/calendario.api.js'
+import { fetchDay } from '../api/agenda.api.js'
+import { fetchCalendar } from '../api/calendario.api.js'
 
 // Cada estado con su color y su texto: el color nunca va solo
 const DAY_STATUS = {

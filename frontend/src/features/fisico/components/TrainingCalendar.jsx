@@ -12,7 +12,7 @@ export default function TrainingCalendar({ month, onMonthChange, data, colorOf, 
   return (
     <Card
       title={capitalize(fmt(month, 'MMMM yyyy'))}
-      subtitle={<><span className="font-mono text-ink-100">{data?.count ?? 0}</span> días entrenados</>}
+      subtitle={<><span className="font-mono text-ink-100">{data?.count ?? 0}</span> {data?.count === 1 ? 'día entrenado' : 'días entrenados'}</>}
       action={
         <div className="flex gap-1">
           <button onClick={() => onMonthChange(addMonths(month, -1))} aria-label="Mes anterior"

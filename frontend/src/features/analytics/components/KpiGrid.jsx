@@ -31,7 +31,7 @@ export default function KpiGrid({ kpis }) {
       <Kpi label="Racha actual" value={kpis.current_streak} suffix="días" note="seguidos con 70 % o más"
         tone={kpis.current_streak > 0 ? 'text-up' : 'text-ink-100'} />
       <Kpi label="Mejor racha" value={kpis.best_streak} suffix="días" note="en los últimos 90 días" />
-      <Kpi label="Entrenos del mes" value={kpis.workouts_month} note="días entrenados" />
+      <Kpi label="Entrenos del mes" value={kpis.workouts_month} note={kpis.workouts_month === 1 ? 'día entrenado' : 'días entrenados'} />
       <Kpi label="Hábitos del mes" value={`${kpis.habit_month_pct}%`} note="de lo que tocaba" />
       <Kpi label="Peso" value={kpis.last_weight != null ? kpis.last_weight.toFixed(1) : '—'} suffix="kg" note={weightNote(kpis.weight_trend)} />
       <Kpi label="Práctica del mes" value={practice(kpis.practice_month_minutes)} note="minutos en tus skills" />
