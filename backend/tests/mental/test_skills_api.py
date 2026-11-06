@@ -99,3 +99,7 @@ def test_skill_validation(client: TestClient) -> None:
         == 422
     )
     assert client.post("/api/skills/nope/resources", json={"name": "X"}).status_code == 404
+    resources = f"/api/skills/{skill['id']}/resources"
+    for url in ("javascript:alert(1)", "www.duolingo.com", "ftp://x.com"):
+        assert client.post(resources, json={"name": "X", "url": url}).status_code == 422
+    assert client.post(resources, json={"name": "X", "url": "HTTPS://x.com"}).status_code == 201

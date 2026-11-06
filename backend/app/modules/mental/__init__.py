@@ -12,7 +12,6 @@ from app.modules.mental.controllers import (
     recursos_controller,
     skills_controller,
 )
-from app.modules.mental.models.mood_model import MoodLog
 from app.modules.mental.models.practicas_model import Practice
 from app.modules.mental.models.skills_model import Skill
 from app.modules.mental.services.mood_service import avg_mood
@@ -27,4 +26,4 @@ for controller in (
 ):
     router.include_router(controller.router)
 
-__all__ = ["MoodLog", "Practice", "Skill", "avg_mood", "router"]
+__all__ = ["Practice", "Skill", "avg_mood", "router"]

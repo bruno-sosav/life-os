@@ -1,15 +1,31 @@
 from collections.abc import Callable
 from datetime import timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 
-from app.modules.dashboard.services.cierre_service import habit_completion_pct
+from app.modules.dashboard.services.cierre_service import habit_completion_pct, mood_level
 from tests.dashboard.ayuda import MONDAY, create_habit, daily_habit, done
 
 
 def test_habit_pct_only_counts_until_today() -> None:
     today = MONDAY + timedelta(days=1)  # martes: 2 días esperados
     assert habit_completion_pct(MONDAY, today, [daily_habit()], done("leer", MONDAY)) == 50
+
+
+@pytest.mark.parametrize(
+    ("avg", "level"),
+    [
+        (None, None),
+        (4.5, "excelente"),
+        (4.4, "buena"),
+        (3.5, "buena"),
+        (2.5, "regular"),
+        (2.4, "dificil"),
+    ],
+)
+def test_mood_level_cuts(avg: float | None, level: str | None) -> None:
+    assert mood_level(avg) == level
 
 
 def test_habit_pct_without_habits_is_none() -> None:

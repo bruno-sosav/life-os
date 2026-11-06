@@ -59,6 +59,21 @@ def test_item_to_skill(client: TestClient) -> None:
     assert lists(client)["Quiero aprender"]["items"][0]["done"] is True
 
 
+def test_only_learning_lists_turn_into_skills(client: TestClient) -> None:
+    compras = client.post("/api/lists", json={"name": "Compras"}).json()
+    item = client.post(f"/api/lists/{compras['id']}/items", json={"text": "Rodillera"}).json()
+    assert client.post(f"/api/list-items/{item['id']}/skill").status_code == 422
+    assert lists(client)["Compras"]["items"][0]["done"] is False
+
+
+def test_edit_list(client: TestClient) -> None:
+    lst = client.post("/api/lists", json={"name": "Pelis", "color": "#D95926"}).json()
+    client.patch(f"/api/lists/{lst['id']}", json={"name": "Películas", "for_learning": True})
+    edited = lists(client)["Películas"]
+    assert (edited["color"], edited["for_learning"]) == ("#D95926", True)  # lo no enviado queda
+    assert client.patch("/api/lists/nope", json={"name": "X"}).status_code == 404
+
+
 def test_list_validation(client: TestClient) -> None:
     assert client.post("/api/lists", json={"name": ""}).status_code == 422
     assert client.post("/api/lists/nope/items", json={"text": "X"}).status_code == 404

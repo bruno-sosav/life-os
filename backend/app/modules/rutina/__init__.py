@@ -13,7 +13,7 @@ from app.modules.rutina.controllers import (
 from app.modules.rutina.models.bloques_model import RoutineBlock
 from app.modules.rutina.models.habitos_model import Habit, HabitLog
 from app.modules.rutina.schemas.bloques_schema import RoutineBlockOut
-from app.modules.rutina.schemas.habitos_schema import HabitLogUpsert, HabitOut
+from app.modules.rutina.schemas.habitos_schema import HabitOut
 from app.modules.rutina.schemas.revisiones_schema import WeeklyReviewOut
 from app.modules.rutina.services.bloques_service import block_completions, list_routine_blocks
 from app.modules.rutina.services.cumplimiento_service import (
@@ -31,7 +31,6 @@ from app.modules.rutina.services.habitos_service import (
     completed_habit_logs,
     list_habits,
     mark_linked_habit,
-    upsert_habit_log,
 )
 from app.modules.rutina.services.revisiones_service import get_weekly_review
 
@@ -44,7 +43,6 @@ __all__ = [
     "DayStatus",
     "Habit",
     "HabitLog",
-    "HabitLogUpsert",
     "HabitOut",
     "RoutineBlock",
     "RoutineBlockOut",
@@ -62,6 +60,5 @@ __all__ = [
     "router",
     "scheduled_on",
     "streaks",
-    "upsert_habit_log",
     "WeeklyReviewOut",
 ]

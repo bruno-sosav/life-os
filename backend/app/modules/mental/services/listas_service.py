@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.core.database import base_repository
-from app.core.errores_util import get_or_404
+from app.core.errores_util import get_or_404, unprocessable
 from app.modules.mental.models.listas_model import ListItem, UserList
 from app.modules.mental.models.skills_model import Skill
 from app.modules.mental.repositories import listas_repository
@@ -97,6 +97,8 @@ def clear_done(session: Session, list_id: str) -> None:
 def item_to_skill(session: Session, item_id: str) -> ToSkillOut:
     """ "Practicar →": el ítem pasa a ser una skill que estás practicando y queda tachado."""
     item = get_or_404(session, ListItem, item_id)
+    if not get_or_404(session, UserList, item.list_id).for_learning:
+        raise unprocessable("Solo los ítems de una lista para aprender pasan a ser skills")
     skill = Skill(name=item.text, stage="practicando")
     item.done = True
     session.add(skill)
