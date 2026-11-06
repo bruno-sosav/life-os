@@ -35,6 +35,17 @@ def test_lists_items_order_done_and_clear(client: TestClient) -> None:
     assert list(lists(client)) == ["Quiero aprender"]
 
 
+def test_unticked_item_goes_back_to_the_top(client: TestClient) -> None:
+    lst = client.post("/api/lists", json={"name": "Compras"}).json()
+    for text in ("C", "B", "A"):
+        client.post(f"/api/lists/{lst['id']}/items", json={"text": text})
+    c = lists(client)["Compras"]["items"][2]
+    client.patch(f"/api/list-items/{c['id']}", json={"done": True})
+    assert texts(client, "Compras") == ["A", "B", "C"]
+    client.patch(f"/api/list-items/{c['id']}", json={"done": False})
+    assert texts(client, "Compras") == ["C", "A", "B"]  # como lo muestra la pantalla al destachar
+
+
 def test_item_to_skill(client: TestClient) -> None:
     learn = client.post("/api/lists", json={"name": "Quiero aprender", "for_learning": True}).json()
     item = client.post(f"/api/lists/{learn['id']}/items", json={"text": "Ajedrez"}).json()

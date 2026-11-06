@@ -24,12 +24,12 @@ export default defineConfig({
         ],
         runtimeCaching: [
           {
-            // GETs a la API: red primero, cache como respaldo sin conexión
+            // GETs a la API: red primero, cache solo si no hay conexión. Sin timeout: con red
+            // lenta mostraría la copia vieja justo después de guardar algo
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 }
             }
           },

@@ -59,10 +59,12 @@ def add_item(session: Session, list_id: str, payload: ItemIn) -> ListItem:
 
 
 def update_item(session: Session, item_id: str, payload: ItemUpdate) -> ListItem:
+    """Editar o tachar. Un ítem que destachás vuelve arriba de los pendientes."""
     item = get_or_404(session, ListItem, item_id)
-    return base_repository.save(
-        session, base_repository.apply(item, payload.model_dump(exclude_unset=True))
-    )
+    changes = payload.model_dump(exclude_unset=True)
+    if item.done and changes.get("done") is False:
+        item.position = listas_repository.first_item_position(session, item.list_id)
+    return base_repository.save(session, base_repository.apply(item, changes))
 
 
 def move_item(session: Session, item_id: str, payload: ItemMove) -> ListItem:

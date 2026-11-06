@@ -22,7 +22,8 @@ export default function PracticeModal({ open, skills, initialSkill, onClose, onS
   useEffect(() => {
     if (!open) return
     setStep('form'); setMinutes(30); setCustom(''); setDate(todayISO()); setNote('')
-    setSkillId(initialSkill ?? skills[0]?.id ?? null)
+    // La skill abierta, si se puede practicar (una "Ya la tengo" no está en la lista)
+    setSkillId(skills.some((s) => s.id === initialSkill) ? initialSkill : skills[0]?.id ?? null)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const skill = skills.find((s) => s.id === skillId)
