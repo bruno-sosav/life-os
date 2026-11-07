@@ -113,7 +113,7 @@ export default function ActivityModal({ initial, onClose, onSaved }) {
               {COLORS.map((c) => (
                 <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={form.color === c}
                   onClick={() => setForm({ ...form, color: c })}
-                  className={`w-8 h-8 rounded-full border-2 transition ${form.color === c ? 'border-white scale-110' : 'border-transparent'}`}
+                  className={`w-8 h-8 rounded-full border-2 transition ${form.color === c ? 'border-ink-100 scale-110' : 'border-transparent'}`}
                   style={{ backgroundColor: c }} />
               ))}
             </div>

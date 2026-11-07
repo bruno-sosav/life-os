@@ -2,69 +2,66 @@ import { useEffect, useRef } from 'react'
 
 const ITEM_H = 40
 
+// Ruedita de valores (horas, minutos). Con el teclado: flechas arriba y abajo.
 export default function DrumPicker({ values, selected, onChange, label, width = 72 }) {
   const ref = useRef(null)
+  const settle = useRef(null)
   const idx = values.indexOf(selected)
 
-  // Scroll to selected on mount and when selected changes
+  // Lleva el valor elegido al centro, al abrir y cada vez que cambia
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+    ref.current?.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
   }, [idx])
 
+  useEffect(() => () => clearTimeout(settle.current), [])
+
+  // Elige recién cuando el scroll se detiene: durante la animación pasaría por valores intermedios
   function onScroll() {
-    const el = ref.current
-    if (!el) return
-    const i = Math.round(el.scrollTop / ITEM_H)
-    const clamped = Math.max(0, Math.min(values.length - 1, i))
-    if (values[clamped] !== selected) onChange(values[clamped])
+    clearTimeout(settle.current)
+    settle.current = setTimeout(() => {
+      const i = Math.round(ref.current.scrollTop / ITEM_H)
+      const value = values[Math.max(0, Math.min(values.length - 1, i))]
+      if (value !== selected) onChange(value)
+    }, 120)
+  }
+
+  function onKeyDown(e) {
+    const step = { ArrowUp: -1, ArrowDown: 1 }[e.key]
+    if (!step) return
+    e.preventDefault()
+    const next = values[idx + step]
+    if (next !== undefined) onChange(next)
   }
 
   return (
     <div className="flex flex-col items-center gap-1" style={{ width }}>
-      {label && <span className="text-[10px] uppercase tracking-wider text-white/30">{label}</span>}
+      {label && <span className="text-[10px] uppercase tracking-wider text-ink-400">{label}</span>}
       <div className="relative" style={{ width, height: ITEM_H * 3 }}>
-        {/* Selection highlight */}
-        <div
-          className="absolute inset-x-0 rounded-xl pointer-events-none z-10"
-          style={{ top: ITEM_H, height: ITEM_H, background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.12)' }}
-        />
-        {/* Fade top */}
-        <div className="absolute inset-x-0 top-0 h-10 pointer-events-none z-10" style={{ background: 'linear-gradient(to bottom, rgba(10,10,15,0.9), transparent)' }} />
-        {/* Fade bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none z-10" style={{ background: 'linear-gradient(to top, rgba(10,10,15,0.9), transparent)' }} />
-        {/* Scroll container */}
+        <div className="absolute inset-x-0 rounded-xl pointer-events-none z-10 bg-ink-100/[0.06] border border-ink-600"
+          style={{ top: ITEM_H, height: ITEM_H }} />
+        <div className="absolute inset-x-0 top-0 h-10 pointer-events-none z-10 bg-gradient-to-b from-ink-800 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none z-10 bg-gradient-to-t from-ink-800 to-transparent" />
         <div
           ref={ref}
           onScroll={onScroll}
-          className="absolute inset-0 overflow-y-scroll"
-          style={{
-            scrollSnapType: 'y mandatory',
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
+          onKeyDown={onKeyDown}
+          tabIndex={0}
+          role="spinbutton"
+          aria-label={label}
+          aria-valuenow={selected}
+          aria-valuetext={String(selected).padStart(2, '0')}
+          className="absolute inset-0 overflow-y-scroll no-scrollbar rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          style={{ scrollSnapType: 'y mandatory', scrollbarWidth: 'none' }}
         >
-          <style>{`.drum-no-scrollbar::-webkit-scrollbar{display:none}`}</style>
-          {/* Padding items top */}
           <div style={{ height: ITEM_H }} />
-          {values.map((v, i) => (
-            <div
-              key={v}
-              onClick={() => {
-                onChange(v)
-                ref.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' })
-              }}
-              style={{ height: ITEM_H, scrollSnapAlign: 'center' }}
-              className="flex items-center justify-center text-lg font-semibold cursor-pointer select-none"
-            >
-              <span style={{ color: v === selected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.25)', transition: 'color 0.15s' }}>
-                {String(v).padStart(2, '0')}
-              </span>
+          {values.map((v) => (
+            <div key={v} onClick={() => onChange(v)} style={{ height: ITEM_H, scrollSnapAlign: 'center' }}
+              className={`flex items-center justify-center font-mono text-lg font-semibold cursor-pointer select-none transition-colors ${
+                v === selected ? 'text-ink-100' : 'text-ink-500'
+              }`}>
+              {String(v).padStart(2, '0')}
             </div>
           ))}
-          {/* Padding items bottom */}
           <div style={{ height: ITEM_H }} />
         </div>
       </div>

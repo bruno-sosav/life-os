@@ -7,7 +7,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-56 flex-col z-30 sidebar-surface">
       {/* Logo */}
-      <div className="px-4 py-5 flex items-center gap-2.5 border-b border-white/[0.05]">
+      <div className="px-4 py-5 flex items-center gap-2.5 border-b border-ink-700">
         <div
           className="w-9 h-9 rounded-[11px] grid place-items-center shrink-0 bg-up/15 border border-up/30"
         >
@@ -15,7 +15,7 @@ export default function Sidebar() {
         </div>
         <div>
           <div className="font-bold text-sm">Life OS</div>
-          <div className="text-[10px] text-white/30">Segundo cerebro</div>
+          <div className="text-[10px] text-ink-400">Segundo cerebro</div>
         </div>
       </div>
 
@@ -41,10 +41,10 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-2.5 border-t border-white/[0.05]">
+      <div className="p-2.5 border-t border-ink-700">
         <button
           onClick={logout}
-          className="w-full text-xs text-white/30 hover:text-[#F6465D] px-3 py-2.5 rounded-xl hover:bg-white/[0.04] text-left transition"
+          className="w-full text-xs text-ink-400 hover:text-down px-3 py-2.5 rounded-xl hover:bg-ink-800 text-left transition"
         >
           Cerrar sesión
         </button>

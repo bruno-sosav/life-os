@@ -31,8 +31,6 @@ body {
   }
 
   /* Los números van en monoespaciada, como en una terminal */
-  .stat-num { @apply font-mono text-2xl font-bold tracking-tight; }
-
   .chip { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold; }
 
   .section-header {

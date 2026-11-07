@@ -30,15 +30,12 @@ export default function LoginPage() {
     <div className="min-h-screen grid place-items-center px-4">
       <form onSubmit={submit} className="w-full max-w-sm space-y-4">
         <div className="flex items-center gap-2.5 mb-6">
-          <div
-            className="w-10 h-10 rounded-[12px] grid place-items-center"
-            style={{ background: 'linear-gradient(135deg, #BF5AF2, #7C5CFF)' }}
-          >
-            <span className="text-white text-lg font-black">L</span>
+          <div className="w-10 h-10 rounded-[12px] grid place-items-center bg-up/15 border border-up/30">
+            <span className="text-up text-lg font-black font-mono">L</span>
           </div>
           <div>
             <div className="font-bold">Life OS</div>
-            <div className="text-xs text-white/35">Iniciá sesión para continuar</div>
+            <div className="text-xs text-ink-400">Iniciá sesión para continuar</div>
           </div>
         </div>
 
@@ -57,7 +54,7 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && <p className="text-sm text-[#F6465D]">{error}</p>}
+        {error && <p role="alert" className="text-sm text-down">{error}</p>}
 
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
           {loading ? 'Entrando…' : 'Entrar'}
