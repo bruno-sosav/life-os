@@ -2,6 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// En Vercel, sin VITE_API_URL el build apuntaría a localhost y la app no podría entrar
+if (process.env.VERCEL && !process.env.VITE_API_URL) {
+  throw new Error('Falta VITE_API_URL en las variables de entorno de Vercel')
+}
+
 export default defineConfig({
   base: '/',
   plugins: [
