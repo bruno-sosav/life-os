@@ -63,6 +63,6 @@ Variables del servicio:
 | `ENVIRONMENT` | `production` |
 | `JWT_SECRET` | clave aleatoria propia (≥ 32 caracteres), distinta de la local |
 
-Crear el usuario en producción, una vez desplegado: `railway ssh` en el servicio del backend y ahí `python -m app.cli create-user`.
+Crear el usuario en producción, una vez desplegado: `railway ssh` en el servicio del backend y ahí `/app/.venv/bin/python -m app.cli create-user` (la sesión SSH no hereda el `PATH` del Dockerfile).
 
 La base MySQL de Railway debe quedar solo en la red privada: no actives su *TCP Proxy* público.
