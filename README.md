@@ -101,7 +101,7 @@ Requisitos: Python 3.13 con [uv](https://docs.astral.sh/uv/), Node 20+ y MySQL 8
 
 ```bash
 # 1. Base de datos: crea la base, el usuario y backend/.env
-./database/setup_mysql.sh
+python3 database/setup_mysql.py
 
 # 2. Backend (http://localhost:8000, documentación en /docs)
 cd backend
